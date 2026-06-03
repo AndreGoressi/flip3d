@@ -157,22 +157,38 @@ void Flip3DPrototypeApp::BuildCardModels()
 // ============================================================================
 // Create per-window captures
 // ============================================================================
-void Flip3DPrototypeApp::CreateWindowCaptures()
+bool Flip3DPrototypeApp::CreateAppWindow()
 {
-    if (!m_device) return;
-    ComPtr<IDXGIDevice> dxgiDevice;
-    m_device.As(&dxgiDevice);
-    if (!dxgiDevice) return;
+    WNDCLASSEXW windowClass = {};
+    windowClass.cbSize = sizeof(windowClass);
+    windowClass.hInstance = m_instance;
+    windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
+    windowClass.lpszClassName = kWindowClassName;
+    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    if (!RegisterClassExW(&windowClass)) return false;
 
-    for (auto &card : m_cards)
-    {
-        if (!card.hwnd) continue;
-        auto cap = std::make_unique<WindowCapture>();
-        HRESULT hr = cap->Initialize(card.hwnd, m_hwnd, m_device.Get());
-        if (SUCCEEDED(hr))
-            card.captureSRV = cap->GetSRV();
-        card.capture = std::move(cap);
-    }
+    // Monitor-Auflösung für den Vollbildmodus abfragen
+    const int width = GetSystemMetrics(SM_CXSCREEN);
+    const int height = GetSystemMetrics(SM_CYSCREEN);
+
+    // ERWEITERTE STILE: WS_EX_TOOLWINDOW sorgt dafür, dass die App NICHT in der Taskleiste erscheint.
+    // WS_EX_NOREDIRECTIONBITMAP bleibt für dein Rendering aktiv.
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
+
+    // FENSTER-STILE: WS_POPUP für rahmenloses Vollbild, WS_VISIBLE damit es sofort angezeigt wird.
+    DWORD style = WS_POPUP | WS_VISIBLE;
+
+    m_hwnd = CreateWindowExW(
+        exStyle, 
+        kWindowClassName, 
+        kWindowTitle,
+        style, 
+        0, 0, width, height, 
+        nullptr, nullptr, m_instance, this
+    );
+        
+    return m_hwnd != nullptr;
 }
 
 // ============================================================================
