@@ -92,23 +92,31 @@ cbuffer FrameCB : register(b0)
     float4 viewport;
 };
 
+inline constexpr const char *kCardPixelShader = R"(
+Texture2D<float4> cardTexture : register(t0);
+SamplerState cardSampler : register(s0);
+
+cbuffer FrameCB : register(b0)
+{
+    row_major float4x4 viewProj;
+    float4 washParams;
+    float4 viewport;
+};
+
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
-    // Fensterinhalt abfragen
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
     
-    // Ambient Light anwenden
+    float alpha = windowColor.a * color.a;
+
     float3 lit = windowColor.rgb * washParams.w;
     
-    // --- HDR / ÜBERBELICHTUNGS-SCHUTZ (Tonemapping) ---
-    // Wenn das System in SDR läuft, passiert nichts. 
-    // Wenn HDR die Werte über 1.0 drückt, staucht diese Formel sie sauber zurück.
-    lit = lit / (lit + float3(1.0f, 1.0f, 1.0f));
-    
-    // Srgb-Korrektur, um das Auswaschen bei HDR zu verhindern
-    lit = pow(max(lit, 0.0f), 1.0f / 2.2f);
+    lit = min(lit, 1.0f);
 
-    float alpha = windowColor.a * color.a;
+    return float4(lit * color.a, alpha);
+}
+)";
+    
     return float4(lit * alpha, alpha);
 }
 )";
