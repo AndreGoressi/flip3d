@@ -175,29 +175,6 @@ void Flip3DPrototypeApp::CreateWindowCaptures()
     }
 }
 
-#include <windows.h>
-HHOOK hKeyHook = nullptr;
-HWND hOverlayWnd = nullptr;
-
-LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    if (nCode == HC_ACTION) {
-        KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
-        
-        if (hOverlayWnd && IsWindowVisible(hOverlayWnd)) {
-            if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
-                PostMessageW(hOverlayWnd, WM_KEYDOWN, pKey->vkCode, pKey->scanCode << 16);
-                
-                if (pKey->vkCode == VK_TAB || pKey->vkCode == VK_RETURN || 
-                    pKey->vkCode == VK_LEFT || pKey->vkCode == VK_RIGHT || 
-                    pKey->vkCode == VK_UP || pKey->vkCode == VK_DOWN || 
-                    pKey->vkCode == VK_ESCAPE || pKey->vkCode == VK_SPACE) {
-                    return 1; 
-                }
-            }
-        }
-    }
-    return CallNextHookEx(hKeyHook, nCode, wParam, lParam);
-}
 // ============================================================================
 // Window creation
 // ============================================================================
@@ -212,23 +189,21 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
+    // Monitor-Auflösung für ein echtes Vollbild abfragen
     const int width = GetSystemMetrics(SM_CXSCREEN);
     const int height = GetSystemMetrics(SM_CYSCREEN);
 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
-    DWORD style = WS_POPUP;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT | WS_EX_LAYERED;
+    DWORD style = WS_POPUP; 
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
         style, 0, 0, width, height, nullptr, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
-        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
+        SetLayeredWindowAttributes(m_hwnd, 0, 255, LWA_ALPHA);
+
+        ShowWindow(m_hwnd, SW_SHOW);
         UpdateWindow(m_hwnd);
-        
-        extern HHOOK hKeyHook;
-        extern LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
-        hKeyHook = SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, m_instance, 0);
-        
         return true;
     }
         
