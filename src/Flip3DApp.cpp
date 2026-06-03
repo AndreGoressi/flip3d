@@ -175,6 +175,29 @@ void Flip3DPrototypeApp::CreateWindowCaptures()
     }
 }
 
+#include <windows.h>
+
+HHOOK hKeyHook = nullptr;
+HWND hOverlayWnd = nullptr;
+
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)) {
+        KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
+        
+        if (hOverlayWnd && IsWindowVisible(hOverlayWnd)) {
+            SendMessageW(hOverlayWnd, wParam, pKey->vkCode, 0);
+            
+            if (pKey->vkCode == VK_TAB || pKey->vkCode == VK_RETURN || 
+                pKey->vkCode == VK_LEFT || pKey->vkCode == VK_RIGHT || 
+                pKey->vkCode == VK_UP || pKey->vkCode == VK_DOWN || 
+                pKey->vkCode == VK_ESCAPE || pKey->vkCode == VK_SPACE) {
+                return 1; 
+            }
+        }
+    }
+    return CallNextHookEx(hKeyHook, nCode, wParam, lParam);
+}
+
 // ============================================================================
 // Window creation
 // ============================================================================
@@ -199,24 +222,12 @@ bool Flip3DPrototypeApp::CreateAppWindow()
         style, 0, 0, width, height, nullptr, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
+        hOverlayWnd = m_hwnd; 
+
         ShowWindow(m_hwnd, SW_SHOW);
         UpdateWindow(m_hwnd);
         
-        SetForegroundWindow(m_hwnd);
-        SetFocus(m_hwnd);
-        
-        RegisterHotKey(m_hwnd, 1, 0, VK_TAB);              
-        RegisterHotKey(m_hwnd, 2, MOD_SHIFT, VK_TAB);       
-        RegisterHotKey(m_hwnd, 3, 0, VK_LEFT);             
-        RegisterHotKey(m_hwnd, 4, 0, VK_RIGHT);             
-        RegisterHotKey(m_hwnd, 5, 0, VK_UP);                
-        RegisterHotKey(m_hwnd, 6, 0, VK_DOWN);              
-
-        RegisterHotKey(m_hwnd, 7, 0, VK_RETURN);           
-        RegisterHotKey(m_hwnd, 8, 0, VK_HOME);              
-
-        RegisterHotKey(m_hwnd, 9, 0, VK_ESCAPE);            
-        RegisterHotKey(m_hwnd, 10, 0, VK_SPACE);          
+        hKeyHook = SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, m_instance, 0);
         
         return true;
     }
