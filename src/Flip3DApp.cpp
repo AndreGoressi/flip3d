@@ -192,8 +192,17 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     const int width = GetSystemMetrics(SM_CXSCREEN);
     const int height = GetSystemMetrics(SM_CYSCREEN);
 
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_POPUP | WS_VISIBLE, 0, 0, width, height, nullptr, nullptr, m_instance, this);
+    DWORD style = WS_POPUP | WS_MAXIMIZE;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP;
+
+    m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
+        style, 0, 0, width, height, nullptr, nullptr, m_instance, this);
+    
+    if (m_hwnd != nullptr) {
+        ShowWindow(m_hwnd, SW_SHOWMAXIMIZED);
+        UpdateWindow(m_hwnd);
+        return true;
+    }
         
     return m_hwnd != nullptr;
 }
