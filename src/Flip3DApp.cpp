@@ -157,6 +157,27 @@ void Flip3DPrototypeApp::BuildCardModels()
 // ============================================================================
 // Create per-window captures
 // ============================================================================
+void Flip3DPrototypeApp::CreateWindowCaptures()
+{
+    if (!m_device) return;
+    ComPtr<IDXGIDevice> dxgiDevice;
+    m_device.As(&dxgiDevice);
+    if (!dxgiDevice) return;
+
+    for (auto &card : m_cards)
+    {
+        if (!card.hwnd) continue;
+        auto cap = std::make_unique<WindowCapture>();
+        HRESULT hr = cap->Initialize(card.hwnd, m_hwnd, m_device.Get());
+        if (SUCCEEDED(hr))
+            card.captureSRV = cap->GetSRV();
+        card.capture = std::move(cap);
+    }
+}
+
+// ============================================================================
+// Window creation
+// ============================================================================
 bool Flip3DPrototypeApp::CreateAppWindow()
 {
     WNDCLASSEXW windowClass = {};
@@ -172,14 +193,9 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     const int height = GetSystemMetrics(SM_CYSCREEN);
 
     m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_POPUP, 0, 0, width, height, nullptr, nullptr, m_instance, this);
+        WS_POPUP | WS_VISIBLE, 0, 0, width, height, nullptr, nullptr, m_instance, this);
         
-    if (m_hwnd != nullptr) {
-        SetWindowPos(m_hwnd, HWND_TOPMOST, 0, 0, width, height, SWP_SHOWWINDOW | SWP_FRAMECHANGED);
-        return true;
-    }
-        
-    return false;
+    return m_hwnd != nullptr;
 }
 
 // ============================================================================
