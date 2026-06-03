@@ -212,11 +212,14 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
+    const int width = GetSystemMetrics(SM_CXSCREEN);
+    const int height = GetSystemMetrics(SM_CYSCREEN);
+
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT;
     DWORD style = WS_POPUP;
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
-        style, 0, 0, 1, 1, nullptr, nullptr, m_instance, this);
+        style, 0, 0, width, height, nullptr, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
         ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
