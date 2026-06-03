@@ -187,26 +187,16 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClassExW(&windowClass))
-        return false;
+    if (!RegisterClassExW(&windowClass)) return false;
 
-    // Headless: unsichtbares, aber vollwertiges DComp-Fenster
-    m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP |
-        WS_EX_TOOLWINDOW |          // kein Taskleisten-Button
-        WS_EX_LAYERED,              // erlaubt transparente Composition
-        kWindowClassName,
-        nullptr,                    // kein Titel
-        WS_POPUP,                   // kein Rahmen, kein Titel
-        0, 0,
-        1, 1,                        // winzig, unsichtbar
-        nullptr, nullptr,
-        m_instance,
-        this);
+    // Monitor-Auflösung für echtes rahmenloses Vollbild abfragen
+    const int width = GetSystemMetrics(SM_CXSCREEN);
+    const int height = GetSystemMetrics(SM_CYSCREEN);
 
-    // Fenster unsichtbar lassen
-    ShowWindow(m_hwnd, SW_HIDE);
-
+    // WS_POPUP entfernt den Rahmen und die Titelleiste für den Vollbildmodus
+    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
+        WS_POPUP | WS_VISIBLE, 0, 0, width, height, nullptr, nullptr, m_instance, this);
+        
     return m_hwnd != nullptr;
 }
 
