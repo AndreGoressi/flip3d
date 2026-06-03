@@ -176,28 +176,28 @@ void Flip3DPrototypeApp::CreateWindowCaptures()
 }
 
 #include <windows.h>
-
 HHOOK hKeyHook = nullptr;
 HWND hOverlayWnd = nullptr;
 
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
-    if (nCode == HC_ACTION && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)) {
+    if (nCode == HC_ACTION) {
         KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
         
         if (hOverlayWnd && IsWindowVisible(hOverlayWnd)) {
-            SendMessageW(hOverlayWnd, wParam, pKey->vkCode, 0);
-            
-            if (pKey->vkCode == VK_TAB || pKey->vkCode == VK_RETURN || 
-                pKey->vkCode == VK_LEFT || pKey->vkCode == VK_RIGHT || 
-                pKey->vkCode == VK_UP || pKey->vkCode == VK_DOWN || 
-                pKey->vkCode == VK_ESCAPE || pKey->vkCode == VK_SPACE) {
-                return 1; 
+            if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
+                PostMessageW(hOverlayWnd, WM_KEYDOWN, pKey->vkCode, pKey->scanCode << 16);
+                
+                if (pKey->vkCode == VK_TAB || pKey->vkCode == VK_RETURN || 
+                    pKey->vkCode == VK_LEFT || pKey->vkCode == VK_RIGHT || 
+                    pKey->vkCode == VK_UP || pKey->vkCode == VK_DOWN || 
+                    pKey->vkCode == VK_ESCAPE || pKey->vkCode == VK_SPACE) {
+                    return 1; 
+                }
             }
         }
     }
     return CallNextHookEx(hKeyHook, nCode, wParam, lParam);
 }
-
 // ============================================================================
 // Window creation
 // ============================================================================
