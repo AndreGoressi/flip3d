@@ -203,20 +203,33 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 // ============================================================================
 bool Flip3DPrototypeApp::CreateAppWindow()
 {
-    HWND hwndShell = GetShellWindow();
-    if (!hwndShell) return false;
+    WNDCLASSEXW windowClass = {};
+    windowClass.cbSize = sizeof(windowClass);
+    windowClass.hInstance = m_instance;
+    windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
+    windowClass.lpszClassName = kWindowClassName;
+    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    if (!RegisterClassExW(&windowClass)) return false;
 
-    m_hwnd = hwndShell; 
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
+    DWORD style = WS_POPUP;
 
-    const int width = GetSystemMetrics(SM_CXSCREEN);
-    const int height = GetSystemMetrics(SM_CYSCREEN);
-
-    extern HHOOK hKeyHook;
-    extern LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
-    
-    hKeyHook = SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, m_instance, 0);
-
-    return m_hwnd != nullptr;
+    m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
+        style, 0, 0, 1, 1, nullptr, nullptr, m_instance, this);
+        
+    if (m_hwnd != nullptr) {
+        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
+        UpdateWindow(m_hwnd);
+        
+        extern HHOOK hKeyHook;
+        extern LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+        hKeyHook = SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, m_instance, 0);
+        
+        return true;
+    }
+        
+    return false;
 }
 
 // ============================================================================
