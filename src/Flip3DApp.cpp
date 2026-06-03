@@ -168,15 +168,10 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    // Monitor-Auflösung für den Vollbildmodus abfragen
     const int width = GetSystemMetrics(SM_CXSCREEN);
     const int height = GetSystemMetrics(SM_CYSCREEN);
 
-    // ERWEITERTE STILE: WS_EX_TOOLWINDOW sorgt dafür, dass die App NICHT in der Taskleiste erscheint.
-    // WS_EX_NOREDIRECTIONBITMAP bleibt für dein Rendering aktiv.
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
-
-    // FENSTER-STILE: WS_POPUP für rahmenloses Vollbild, WS_VISIBLE damit es sofort angezeigt wird.
     DWORD style = WS_POPUP | WS_VISIBLE;
 
     m_hwnd = CreateWindowExW(
@@ -187,8 +182,15 @@ bool Flip3DPrototypeApp::CreateAppWindow()
         0, 0, width, height, 
         nullptr, nullptr, m_instance, this
     );
+    
+    if (m_hwnd != nullptr) {
+        BOOL enableSrgbVirtualization = TRUE;
+        DwmSetWindowAttribute(m_hwnd, 38, &enableSrgbVirtualization, sizeof(enableSrgbVirtualization));
         
-    return m_hwnd != nullptr;
+        return true;
+    }
+        
+    return false;
 }
 
 // ============================================================================
