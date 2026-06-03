@@ -214,20 +214,17 @@ bool Flip3DPrototypeApp::CreateAppWindow()
 
     const int width = GetSystemMetrics(SM_CXSCREEN);
     const int height = GetSystemMetrics(SM_CYSCREEN);
-
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
+    
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
+    
     DWORD style = WS_POPUP;
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
         style, 0, 0, width, height, nullptr, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
-        hOverlayWnd = m_hwnd; 
-
-        ShowWindow(m_hwnd, SW_SHOW);
+        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
         UpdateWindow(m_hwnd);
-        
-        hKeyHook = SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, m_instance, 0);
         
         return true;
     }
