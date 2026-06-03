@@ -194,31 +194,6 @@ bool Flip3DPrototypeApp::CreateAppWindow()
 }
 
 // ============================================================================
-// Window creation
-// ============================================================================
-bool Flip3DPrototypeApp::CreateAppWindow()
-{
-    WNDCLASSEXW windowClass = {};
-    windowClass.cbSize = sizeof(windowClass);
-    windowClass.hInstance = m_instance;
-    windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
-    windowClass.lpszClassName = kWindowClassName;
-    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClassExW(&windowClass)) return false;
-
-    // Monitor-Auflösung für echtes rahmenloses Vollbild abfragen
-    const int width = GetSystemMetrics(SM_CXSCREEN);
-    const int height = GetSystemMetrics(SM_CYSCREEN);
-
-    // WS_POPUP entfernt den Rahmen und die Titelleiste für den Vollbildmodus
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_POPUP | WS_VISIBLE, 0, 0, width, height, nullptr, nullptr, m_instance, this);
-        
-    return m_hwnd != nullptr;
-}
-
-// ============================================================================
 // D3D initialisation
 // ============================================================================
 HRESULT Flip3DPrototypeApp::InitializeD3D()
