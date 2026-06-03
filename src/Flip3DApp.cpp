@@ -174,23 +174,24 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
     DWORD style = WS_POPUP | WS_VISIBLE;
 
-    m_hwnd = CreateWindowExW(
-        exStyle, 
-        kWindowClassName, 
-        kWindowTitle,
-        style, 
-        0, 0, width, height, 
-        nullptr, nullptr, m_instance, this
-    );
+    m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle, style, 0, 0, width, height, nullptr, nullptr, m_instance, this);
     
     if (m_hwnd != nullptr) {
         BOOL enableSrgbVirtualization = TRUE;
         DwmSetWindowAttribute(m_hwnd, 38, &enableSrgbVirtualization, sizeof(enableSrgbVirtualization));
-        
         return true;
     }
-        
     return false;
+}
+
+// DIESE FUNKTION HAT GEFEHLT UND REPARIERT DEN LINKER-FEHLER:
+void Flip3DPrototypeApp::CreateWindowCaptures()
+{
+    // Falls du den originalen Inhalt dieser Funktion noch hast, füge ihn hier ein.
+    // Falls nicht, sorgt dieser Standard-Aufruf dafür, dass es zumindest fehlerfrei kompiliert:
+    if (m_captureManager) {
+        m_captureManager->RefreshWindowList();
+    }
 }
 
 // ============================================================================
