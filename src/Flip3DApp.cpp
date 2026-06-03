@@ -186,7 +186,7 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    windowClass.style = CS_HREDRAW | CS_VREDRAW; 
+    windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
     const int width = GetSystemMetrics(SM_CXSCREEN);
@@ -205,9 +205,22 @@ bool Flip3DPrototypeApp::CreateAppWindow()
         SetForegroundWindow(m_hwnd);
         SetFocus(m_hwnd);
         
+        RegisterHotKey(m_hwnd, 1, 0, VK_TAB);              
+        RegisterHotKey(m_hwnd, 2, MOD_SHIFT, VK_TAB);       
+        RegisterHotKey(m_hwnd, 3, 0, VK_LEFT);             
+        RegisterHotKey(m_hwnd, 4, 0, VK_RIGHT);             
+        RegisterHotKey(m_hwnd, 5, 0, VK_UP);                
+        RegisterHotKey(m_hwnd, 6, 0, VK_DOWN);              
+
+        RegisterHotKey(m_hwnd, 7, 0, VK_RETURN);           
+        RegisterHotKey(m_hwnd, 8, 0, VK_HOME);              
+
+        RegisterHotKey(m_hwnd, 9, 0, VK_ESCAPE);            
+        RegisterHotKey(m_hwnd, 10, 0, VK_SPACE);          
+        
         return true;
     }
-                
+        
     return false;
 }
 
