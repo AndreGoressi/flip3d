@@ -101,8 +101,10 @@ LRESULT CALLBACK Flip3DPrototypeApp::WndProc(HWND hwnd, UINT message, WPARAM wPa
     {
         auto *create = reinterpret_cast<CREATESTRUCTW *>(lParam);
         auto *self = static_cast<Flip3DPrototypeApp *>(create->lpCreateParams);
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
-        self->m_hwnd = hwnd;
+        SetWindowLongPtrW(
+    m_hwnd,
+    GWL_EXSTYLE,
+    GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) | WS_EX_TRANSPARENT);
     }
     auto *self = reinterpret_cast<Flip3DPrototypeApp *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     return self ? self->HandleMessage(message, wParam, lParam) : DefWindowProcW(hwnd, message, wParam, lParam);
@@ -196,9 +198,20 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
     const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
 
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_OVERLAPPEDWINDOW, x, y, width, height, nullptr, nullptr, m_instance, this);
-    return m_hwnd != nullptr;
+    m_hwnd = CreateWindowExW(
+    WS_EX_NOREDIRECTIONBITMAP |
+    WS_EX_TOOLWINDOW |          // kein Taskleisten-Button
+    WS_EX_TOPMOST |             // immer über allem
+    WS_EX_LAYERED,              // erlaubt transparente Composition
+    kWindowClassName,
+    nullptr,                    // kein Titel
+    WS_POPUP,                   // kein Rahmen, kein Titel, kein App-Fenster
+    0, 0,
+    GetSystemMetrics(SM_CXSCREEN),
+    GetSystemMetrics(SM_CYSCREEN),
+    nullptr, nullptr,
+    m_instance,
+    this);
 }
 
 // ============================================================================
