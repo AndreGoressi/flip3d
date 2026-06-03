@@ -189,31 +189,30 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClassExW(&windowClass)) return false;
+    if (!RegisterClassExW(&windowClass))
+        return false;
 
-    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
-    const int width = bounds.right - bounds.left;
-    const int height = bounds.bottom - bounds.top;
-    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
-    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
+    // Vollbildgröße holen
+    const int screenW = GetSystemMetrics(SM_CXSCREEN);
+    const int screenH = GetSystemMetrics(SM_CYSCREEN);
 
+    // >>> DIE MAGIE PASSIERT HIER <<<
     m_hwnd = CreateWindowExW(
-    WS_EX_NOREDIRECTIONBITMAP |
-    WS_EX_TOOLWINDOW |          // kein Taskleisten-Button
-    WS_EX_TOPMOST |             // immer über allem
-    WS_EX_LAYERED,              // erlaubt transparente Composition
-    kWindowClassName,
-    nullptr,                    // kein Titel
-    WS_POPUP,                   // kein Rahmen, kein Titel, kein App-Fenster
-    0, 0,
-    GetSystemMetrics(SM_CXSCREEN),
-    GetSystemMetrics(SM_CYSCREEN),
-    nullptr, nullptr,
-    m_instance,
-    this);
-}
+        WS_EX_NOREDIRECTIONBITMAP |
+        WS_EX_TOOLWINDOW |          // kein Taskleisten-Button
+        WS_EX_TOPMOST |             // immer über allem
+        WS_EX_LAYERED,              // erlaubt transparente Composition
+        kWindowClassName,
+        nullptr,                    // kein Titel
+        WS_POPUP,                   // kein Rahmen, kein Titel, kein App-Fenster
+        0, 0,
+        screenW, screenH,
+        nullptr, nullptr,
+        m_instance,
+        this);
 
+    return m_hwnd != nullptr;
+}
 // ============================================================================
 // D3D initialisation
 // ============================================================================
