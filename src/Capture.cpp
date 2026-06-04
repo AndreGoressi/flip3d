@@ -164,12 +164,6 @@ bool QualifiesForFlip3DProxyWindow(HWND hwnd, LONG_PTR style, LONG_PTR exStyle)
         return false;
     }
 
-    // UNIVERSAL-FILTER ERGÄNZUNG: Tool-Windows (Overlays/Kontrollleisten) aussortieren
-    if ((exStyle & WS_EX_TOOLWINDOW) != 0)
-    {
-        return false;
-    }
-
     // uDWM: the Shell desktop window is explicitly allowed even with
     // disqualifying exstyle (it's the Progman window behind the icons).
     bool isShellDesktop = (hwnd == GetShellWindow());
@@ -228,22 +222,6 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
-    // ========================================================================
-    // FILTER AGAINST WINDOWS RECORDING OVERLAYS & SNIPPING TOOL
-    // ========================================================================
-    wchar_t windowTitle[256] = {};
-    GetWindowTextW(hwnd, windowTitle, 256);
-    
-    // Check if the window is the Windows Screen Recorder UI or Snipping Tool
-    if (wcsstr(windowTitle, L"Snipping Tool") != nullptr || 
-        wcsstr(windowTitle, L"Screen Recording") != nullptr ||
-        wcsstr(windowTitle, L"Bildschirmaufzeichnung") != nullptr ||
-        wcscmp(windowTitle, L"CaptureStatusView") == 0) 
-    {
-        return TRUE; // skip?!
-    }
-    // ========================================================================
-
     DWORD cloaked = 0;
     if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) && cloaked != 0)
     {
@@ -251,7 +229,6 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     }
 
     const bool isMinimized = IsIconic(hwnd) != FALSE;
-
 
     // Get the window's *own* monitor work area (not the primary monitor).
     RECT winWorkArea = context->workArea;
@@ -292,9 +269,7 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     if (!IntersectRect(&targetClipped, &targetBounds, &winWorkArea))
         return TRUE;
 
-    // UNIVERSAL-FILTER UPDATE: Slightly increase minimum size (from 80 to 150x100)
-    // This cleanly filters out narrow system bars, mini-widgets, and controls.
-    if ((targetClipped.right - targetClipped.left) < 150 || (targetClipped.bottom - targetClipped.top) < 100)
+    if ((targetClipped.right - targetClipped.left) < 80 || (targetClipped.bottom - targetClipped.top) < 80)
         return TRUE;
 
     CapturedWindowLayout layout = {};
