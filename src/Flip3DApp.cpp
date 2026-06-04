@@ -188,15 +188,21 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
-
-    const int width = GetSystemMetrics(SM_CXSCREEN);
-    const int height = GetSystemMetrics(SM_CYSCREEN);
+    
+    const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
-    DWORD style = WS_POPUP;
+    DWORD style = WS_OVERLAPPEDWINDOW;
+
+    RECT bounds = { 0, 0, screenWidth, screenHeight };
+    AdjustWindowRectEx(&bounds, style, FALSE, exStyle);
+    
+    const int width = bounds.right - bounds.left;
+    const int height = bounds.bottom - bounds.top;
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
-        style, 0, 0, width, height, nullptr, nullptr, m_instance, this);
+        style, bounds.left, bounds.top, width, height, nullptr, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
         ShowWindow(m_hwnd, SW_SHOW);
