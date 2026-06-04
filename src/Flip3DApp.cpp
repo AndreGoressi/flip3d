@@ -202,33 +202,31 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
-    DWORD style = WS_OVERLAPPEDWINDOW;
+    DWORD exStyle = WS_EX_TOOLWINDOW;
+    DWORD style = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
         style, 0, 0, screenWidth, screenHeight, hwndHiddenParent, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
+        
+        BOOL disableCloak = FALSE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAK, &disableCloak, sizeof(disableCloak));
+        BOOL forceDisableTransitions = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &forceDisableTransitions, sizeof(forceDisableTransitions));
 
-        LONG lStyle = GetWindowLongW(m_hwnd, GWL_STYLE);
-        lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
-        SetWindowLongW(m_hwnd, GWL_STYLE, lStyle);
-
-        LONG lExStyle = GetWindowLongW(m_hwnd, GWL_EXSTYLE);
-        lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
-        SetWindowLongW(m_hwnd, GWL_EXSTYLE, lExStyle);
-        SetWindowPos(m_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
-                     SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-        // ----------------------------------------------
+        SetWindowPos(m_hwnd, HWND_TOP, 0, 0, screenWidth, screenHeight, 
+                     SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 
         ShowWindow(m_hwnd, SW_SHOW);
         UpdateWindow(m_hwnd);
-        
         SetForegroundWindow(m_hwnd);
+        SetActiveWindow(m_hwnd);
         SetFocus(m_hwnd);
+        
         return true;
     }
-    return false;
+    return false
 }
 
 // ============================================================================
