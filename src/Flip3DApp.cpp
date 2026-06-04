@@ -226,7 +226,7 @@ bool Flip3DPrototypeApp::CreateAppWindow()
         
         return true;
     }
-    return false
+    return false;
 }
 
 // ============================================================================
