@@ -189,42 +189,16 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    WNDCLASSEXW dummyClass = {};
-    dummyClass.cbSize = sizeof(dummyClass);
-    dummyClass.hInstance = m_instance;
-    dummyClass.lpfnWndProc = DefWindowProcW;
-    dummyClass.lpszClassName = L"Flip3D_InvisibleParent";
-    RegisterClassExW(&dummyClass);
+    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
+    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    const int width = bounds.right - bounds.left;
+    const int height = bounds.bottom - bounds.top;
+    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
+    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
 
-    HWND hwndHiddenParent = CreateWindowExW(0, L"Flip3D_InvisibleParent", L"", 
-        WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, m_instance, nullptr);
-
-    const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    DWORD exStyle = WS_EX_TOOLWINDOW;
-    DWORD style = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-
-    m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
-        style, 0, 0, screenWidth, screenHeight, hwndHiddenParent, nullptr, m_instance, this);
-        
-    if (m_hwnd != nullptr) {
-        BOOL disableCloak = FALSE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAK, &disableCloak, sizeof(disableCloak));
-        BOOL forceDisableTransitions = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &forceDisableTransitions, sizeof(forceDisableTransitions));
-
-        SetWindowPos(m_hwnd, HWND_TOP, 0, 0, screenWidth, screenHeight, 
-                     SWP_FRAMECHANGED | SWP_SHOWWINDOW);
-
-        ShowWindow(m_hwnd, SW_SHOW);
-        UpdateWindow(m_hwnd);
-        SetForegroundWindow(m_hwnd);
-        SetActiveWindow(m_hwnd);
-        SetFocus(m_hwnd);
-        
-        return true;
-    }
-    return false;
+    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
+        WS_OVERLAPPEDWINDOW, x, y, width, height, nullptr, nullptr, m_instance, this);
+    return m_hwnd != nullptr;
 }
 
 // ============================================================================

@@ -88,34 +88,16 @@ SamplerState cardSampler : register(s0);
 cbuffer FrameCB : register(b0)
 {
     row_major float4x4 viewProj;
-    float4 washParams;  // w = ambient light
+    float4 washParams;
     float4 viewport;
 };
 
-// Encode linear scene light to ST.2084 (PQ) for HDR10 displays
-float3 LinearToST2084(float3 x)
+float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
-    float3 xp = pow(max(x, 0.0f), 0.1593017578f);
-    return pow((0.8359375f + 18.8515625f * xp) /
-               (1.0f       + 18.6875f    * xp), 78.84375f);
-}
-
-float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0,
-            float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
-{
+    // Sample captured window content; premultiply for DXGI_ALPHA_MODE_PREMULTIPLIED.
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
     float alpha = windowColor.a * color.a;
-
-    // sRGB decode -> linear
-    float3 linear = pow(max(windowColor.rgb, 0.0f), 2.2f);
-
-    // Scale to reference white (80 nit SDR on HDR display)
-    // 80/10000 = 0.008 puts SDR content at correct brightness on HDR display
-    linear *= washParams.w * (80.0f / 10000.0f);
-
-    // Encode to ST.2084 for HDR output
-    float3 hdr = LinearToST2084(linear);
-
-    return float4(hdr * alpha, alpha);
+    float3 lit = windowColor.rgb * washParams.w;  // ambient light
+    return float4(lit * alpha, alpha);
 }
 )";
