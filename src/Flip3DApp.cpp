@@ -189,16 +189,41 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    WNDCLASSEXW dummyClass = {};
+    dummyClass.cbSize = sizeof(dummyClass);
+    dummyClass.hInstance = m_instance;
+    dummyClass.lpfnWndProc = DefWindowProcW;
+    dummyClass.lpszClassName = L"Flip3D_InvisibleParent";
+    RegisterClassExW(&dummyClass);
+
+    HWND hwndHiddenParent = CreateWindowExW(0, L"Flip3D_InvisibleParent", L"", 
+        WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, m_instance, nullptr);
+    // ------------------------------------------------------------------
+
+    const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
+    DWORD style = WS_OVERLAPPEDWINDOW;
+
+    RECT bounds = { 0, 0, screenWidth, screenHeight };
+    AdjustWindowRectEx(&bounds, style, FALSE, exStyle);
+    
     const int width = bounds.right - bounds.left;
     const int height = bounds.bottom - bounds.top;
-    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
-    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
 
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_OVERLAPPEDWINDOW, x, y, width, height, nullptr, nullptr, m_instance, this);
-    return m_hwnd != nullptr;
+    m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
+        style, bounds.left, bounds.top, width, height, hwndHiddenParent, nullptr, m_instance, this);
+        
+    if (m_hwnd != nullptr) {
+        ShowWindow(m_hwnd, SW_SHOW);
+        UpdateWindow(m_hwnd);
+        
+        SetForegroundWindow(m_hwnd);
+        SetFocus(m_hwnd);
+        return true;
+    }
+    return false;
 }
 
 // ============================================================================
