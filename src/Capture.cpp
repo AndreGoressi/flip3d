@@ -164,6 +164,12 @@ bool QualifiesForFlip3DProxyWindow(HWND hwnd, LONG_PTR style, LONG_PTR exStyle)
         return false;
     }
 
+    // UNIVERSAL-FILTER ERGÄNZUNG: Tool-Windows (Overlays/Kontrollleisten) aussortieren
+    if ((exStyle & WS_EX_TOOLWINDOW) != 0)
+    {
+        return false;
+    }
+
     // uDWM: the Shell desktop window is explicitly allowed even with
     // disqualifying exstyle (it's the Progman window behind the icons).
     bool isShellDesktop = (hwnd == GetShellWindow());
@@ -269,7 +275,9 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     if (!IntersectRect(&targetClipped, &targetBounds, &winWorkArea))
         return TRUE;
 
-    if ((targetClipped.right - targetClipped.left) < 80 || (targetClipped.bottom - targetClipped.top) < 80)
+    // UNIVERSAL-FILTER UPDATE: Slightly increase minimum size (from 80 to 150x100)
+    // This cleanly filters out narrow system bars, mini-widgets, and controls.
+    if ((targetClipped.right - targetClipped.left) < 150 || (targetClipped.bottom - targetClipped.top) < 100)
         return TRUE;
 
     CapturedWindowLayout layout = {};
