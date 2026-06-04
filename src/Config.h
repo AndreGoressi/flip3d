@@ -203,6 +203,7 @@ struct FrameConstants
     XMFLOAT4X4 viewProj;
     XMFLOAT4 washParams;
     XMFLOAT4 viewport;
+    XMFLOAT4 hdrParams;
 };
 
 struct ObjectConstants
