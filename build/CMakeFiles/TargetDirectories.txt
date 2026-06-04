@@ -1,3 +1,0 @@
-C:/Users/btdef/source/repos/flip3d/build/CMakeFiles/flip3d.dir
-C:/Users/btdef/source/repos/flip3d/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/btdef/source/repos/flip3d/build/CMakeFiles/ZERO_CHECK.dir
