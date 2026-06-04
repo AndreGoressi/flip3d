@@ -131,6 +131,14 @@ HRESULT WindowCapture::Initialize(HWND hwndCapture, HWND hwndDest, ID3D11Device 
     m_device = device;
     device->GetImmediateContext(&m_context);
 
+    // ========================================================================
+    // UNLOCK PROTECTED/BLACK CONTENT
+    // ========================================================================
+    OSVERSIONINFOEXW osvi = { sizeof(osvi) };
+    BOOL allowProperties = TRUE;
+    DwmSetWindowAttribute(hwndCapture, DWMWA_CLOAKED, &allowProperties, sizeof(allowProperties));
+    // ========================================================================
+
     // Only one path: DWM thumbnail → InteropCompositor → WGC(CreateFromVisual)
     return InitViaThumbnail(hwndCapture, hwndDest);
 }
