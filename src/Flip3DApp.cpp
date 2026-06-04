@@ -198,7 +198,6 @@ bool Flip3DPrototypeApp::CreateAppWindow()
 
     HWND hwndHiddenParent = CreateWindowExW(0, L"Flip3D_InvisibleParent", L"", 
         WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, m_instance, nullptr);
-    // ------------------------------------------------------------------
 
     const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -206,7 +205,7 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
     DWORD style = WS_OVERLAPPEDWINDOW;
 
-    RECT bounds = { 0, 0, screenWidth, screenHeight };
+    RECT bounds = { 0, 0, screenWidth + 10, screenHeight + 10 };
     AdjustWindowRectEx(&bounds, style, FALSE, exStyle);
     
     const int width = bounds.right - bounds.left;
