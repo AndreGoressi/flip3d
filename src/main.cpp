@@ -2,9 +2,17 @@
 // All implementation lives in Flip3DApp, Capture, and Config modules.
 
 #include "Flip3DApp.h"
+#include <shlobj.h>   
+#include <shlwapi.h>
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
+    wchar_t desktopPath[MAX_PATH];
+    if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_DESKTOPDIRECTORY, nullptr, 0, desktopPath)))
+    {
+        SetCurrentDirectoryW(desktopPath);
+    }
+
     Flip3DPrototypeApp app;
     if (!app.Initialize(instance))
     {
