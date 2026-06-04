@@ -175,6 +175,34 @@ void Flip3DPrototypeApp::CreateWindowCaptures()
     }
 }
 
+HWND FindDesktopWorkerWindow()
+{
+    HWND progman = FindWindowW(L"Progman", nullptr);
+    HWND desktopWorker = nullptr;
+    
+    if (progman)
+    {
+        HWND shellDll = FindWindowExW(progman, nullptr, L"SHELLDLL_DefView", nullptr);
+        if (shellDll) return progman;
+    }
+    
+    enum WindowsContext { EnumArgs = 0 };
+    struct DesktopFinder {
+        static BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
+            HWND shell = FindWindowExW(hwnd, nullptr, L"SHELLDLL_DefView", nullptr);
+            if (shell) {
+                *reinterpret_cast<HWND*>(lParam) = hwnd;
+                return FALSE;
+            }
+            return TRUE;
+        }
+    };
+    
+    HWND workerW = nullptr;
+    EnumWindows(&DesktopFinder::EnumWindowsProc, reinterpret_cast<LPARAM>(&workerW));
+    return workerW ? workerW : progman;
+}
+
 // ============================================================================
 // Window creation
 // ============================================================================
@@ -188,21 +216,20 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
-
-    // Monitor-Auflösung für ein echtes Vollbild abfragen
     const int width = GetSystemMetrics(SM_CXSCREEN);
     const int height = GetSystemMetrics(SM_CYSCREEN);
 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT | WS_EX_LAYERED;
-    DWORD style = WS_POPUP; 
+    HWND hwndExplorerParent = FindDesktopWorkerWindow();
+    if (!hwndExplorerParent) return false;
+
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT;
+    DWORD style = WS_CHILD | WS_POPUP; 
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
-        style, 0, 0, width, height, nullptr, nullptr, m_instance, this);
+        style, 0, 0, width, height, hwndExplorerParent, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
-        SetLayeredWindowAttributes(m_hwnd, 0, 255, LWA_ALPHA);
-
-        ShowWindow(m_hwnd, SW_SHOW);
+        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
         UpdateWindow(m_hwnd);
         return true;
     }
