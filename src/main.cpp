@@ -2,8 +2,34 @@
 // All implementation lives in Flip3DApp, Capture, and Config modules.
 
 #include "Flip3DApp.h"
-#include <shlobj.h>   
+#include <shlobj.h>   // for CSIDL_DESKTOPDIRECTORY & SHGetFolderPathW
 #include <shlwapi.h>
+
+HHOOK g_hKeyboardHook = nullptr;
+HWND g_hAppWindow = nullptr;
+
+LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    if (nCode >= 0)
+    {
+        KBDLLHOOKSTRUCT* pKeyStruct = (KBDLLHOOKSTRUCT*)lParam;
+        if (wParam == WM_KEYDOWN && pKeyStruct->vkCode == VK_TAB)
+        {
+            if ((GetAsyncKeyState(VK_LWIN) & 0x8000) || (GetAsyncKeyState(VK_RWIN) & 0x8000))
+            {
+                if (g_hAppWindow && IsWindow(g_hAppWindow))
+                {
+                    ShowWindow(g_hAppWindow, SW_SHOWNORMAL);
+                    SetForegroundWindow(g_hAppWindow);
+                    SetActiveWindow(g_hAppWindow);
+                    
+                    return 1;
+                }
+            }
+        }
+    }
+    return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
+}
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
@@ -13,33 +39,21 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
         SetCurrentDirectoryW(desktopPath);
     }
 
-    if (!RegisterHotKey(nullptr, 1, MOD_WIN, VK_TAB))
-    {
-        RegisterHotKey(nullptr, 1, MOD_WIN | MOD_SHIFT, VK_TAB);
-    }
-
     Flip3DPrototypeApp app;
     if (!app.Initialize(instance))
     {
         MessageBoxW(nullptr, L"Failed to initialize the Flip3D D3D11 prototype.", kWindowTitle, MB_OK | MB_ICONERROR);
         return 1;
     }
-    
-    MSG msg;
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        if (msg.message == WM_HOTKEY && msg.wParam == 1)
-        {
-            ShowWindow(app.WindowHandle(), SW_SHOWNORMAL);
-            SetForegroundWindow(app.WindowHandle());
-            SetActiveWindow(app.WindowHandle());
-        }
 
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+    g_hAppWindow = app.WindowHandle();
+    g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, KeyboardHookProc, instance, 0);
+
+    int exitCode = app.Run();
+    if (g_hKeyboardHook)
+    {
+        UnhookWindowsHookEx(g_hKeyboardHook);
     }
 
-    UnregisterHotKey(nullptr, 1);
-
-    return (int)msg.wParam;
+    return exitCode;
 }
