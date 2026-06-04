@@ -198,13 +198,15 @@ struct Vertex
     XMFLOAT2 uv;
 };
 
-struct FrameConstants
+#pragma pack(push, 16)
+struct alignas(16) FrameConstants
 {
-    XMFLOAT4X4 viewProj;
-    XMFLOAT4 washParams;
-    XMFLOAT4 viewport;
-    XMFLOAT4 hdrParams;
+    XMFLOAT4X4 viewProj;   // 64 Bytes
+    XMFLOAT4 washParams;   // 16 Bytes
+    XMFLOAT4 viewport;     // 16 Bytes
+    XMFLOAT4 hdrParams;    // 16 Bytes
 };
+#pragma pack(pop)
 
 struct ObjectConstants
 {
