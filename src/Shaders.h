@@ -98,20 +98,24 @@ cbuffer FrameCB : register(b0)
     float4 hdrParams;
 };
 
+float3 SRGBToLinear(float3 c)
+{
+    return c < 0.04045f ? c / 12.92f : pow(c * (1.0f / 1.055f) + 0.055f / 1.055f, 2.4f);
+}
+
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
-    float3 rgb = windowColor.rgb;
-    
-    rgb *= washParams.w;
+    float3 linearRGB = SRGBToLinear(windowColor.rgb);
+    linearRGB *= washParams.w;
 
     if (hdrParams.x > 0.0f)
     {
         float sdrScale = hdrParams.y / 80.0f;
-        rgb *= sdrScale;
+        linearRGB *= sdrScale;
     }
 
     float alpha = windowColor.a * color.a;
-    return float4(rgb * alpha, alpha);
+    return float4(linearRGB * alpha, alpha);
 }
 )";
