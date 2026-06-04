@@ -1626,10 +1626,16 @@ void Flip3DPrototypeApp::Render()
     m_monitorWidth = static_cast<int>(m_width);
     m_monitorHeight = static_cast<int>(m_height);
 
+
     FrameConstants frameConstants = {};
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
     frameConstants.washParams = XMFLOAT4(enterProgress * 0.5f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f);
     frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
+    
+
+    frameConstants.hdrParams = XMFLOAT4(1.0f, 200.0f, 0.0f, 0.0f); 
+    // ====================================================================
+
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
     static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
