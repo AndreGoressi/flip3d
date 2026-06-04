@@ -2,6 +2,29 @@
 #include "Shaders.h"
 #include "Capture.h"
 
+#include <shlobj.h>
+#include <string>
+
+std::wstring GetAppHomeDirectory()
+{
+    PWSTR pszPath = nullptr;
+    HRESULT hr = SHGetKnownFolderPath(FOLDERID_Desktop, 0, nullptr, &pszPath);
+    
+    std::wstring fakeHomePath = L"";
+    if (SUCCEEDED(hr))
+    {
+        fakeHomePath = pszPath;
+        CoTaskMemFree(pszPath);
+        fakeHomePath += L"\\";
+    }
+    else
+    {
+        fakeHomePath = L"C:\\Users\\Public\\Desktop\\";
+    }
+
+    return fakeHomePath; 
+}
+
 namespace
 {
 void ActivateWindowLikeThreadMessage403(HWND selectedHwnd)
