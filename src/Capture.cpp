@@ -228,6 +228,22 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
+    // ========================================================================
+    // FILTER AGAINST WINDOWS RECORDING OVERLAYS & SNIPPING TOOL
+    // ========================================================================
+    wchar_t windowTitle[256] = {};
+    GetWindowTextW(hwnd, windowTitle, 256);
+    
+    // Check if the window is the Windows Screen Recorder UI or Snipping Tool
+    if (wcsstr(windowTitle, L"Snipping Tool") != nullptr || 
+        wcsstr(windowTitle, L"Screen Recording") != nullptr ||
+        wcsstr(windowTitle, L"Bildschirmaufzeichnung") != nullptr ||
+        wcscmp(windowTitle, L"CaptureStatusView") == 0) 
+    {
+        return TRUE; // skip?!
+    }
+    // ========================================================================
+
     DWORD cloaked = 0;
     if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) && cloaked != 0)
     {
@@ -235,6 +251,7 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     }
 
     const bool isMinimized = IsIconic(hwnd) != FALSE;
+
 
     // Get the window's *own* monitor work area (not the primary monitor).
     RECT winWorkArea = context->workArea;
