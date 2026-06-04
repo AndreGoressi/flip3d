@@ -189,16 +189,29 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
-    const int width = bounds.right - bounds.left;
-    const int height = bounds.bottom - bounds.top;
-    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
-    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
+    const int width = GetSystemMetrics(SM_CXSCREEN);
+    const int height = GetSystemMetrics(SM_CYSCREEN);
 
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_OVERLAPPEDWINDOW, x, y, width, height, nullptr, nullptr, m_instance, this);
-    return m_hwnd != nullptr;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
+    DWORD style = WS_POPUP; 
+
+    HWND hwndPreviousForeground = GetForegroundWindow();
+
+    m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
+        style, 0, 0, width, height, nullptr, nullptr, m_instance, this);
+        
+    if (m_hwnd != nullptr) {
+
+        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
+        UpdateWindow(m_hwnd);
+        
+        if (hwndPreviousForeground) {
+            SetForegroundWindow(hwndPreviousForeground);
+        }
+        return true;
+    }
+        
+    return false;
 }
 
 // ============================================================================
