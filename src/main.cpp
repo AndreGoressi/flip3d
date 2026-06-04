@@ -5,6 +5,7 @@
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
+    SetCurrentDirectoryW(GetAppHomeDirectory().c_str());
     Flip3DPrototypeApp app;
     if (!app.Initialize(instance))
     {
