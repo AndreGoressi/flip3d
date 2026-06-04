@@ -1,4 +1,4 @@
-﻿// Flip3D D3D11 Prototype — Entry point
+// Flip3D D3D11 Prototype — Entry point
 // All implementation lives in Flip3DApp, Capture, and Config modules.
 
 #include "Flip3DApp.h"
