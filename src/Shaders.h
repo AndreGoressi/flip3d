@@ -87,16 +87,9 @@ SamplerState cardSampler : register(s0);
 cbuffer FrameCB : register(b0)
 {
     row_major float4x4 viewProj;
-    float4 washParams;  // w = ambient light
+    float4 washParams;  
     float4 viewport;
 };
-
-float3 LinearToST2084(float3 x)
-{
-    float3 xp = pow(max(x, 0.0f), float3(0.1593017578f, 0.1593017578f, 0.1593017578f));
-    return pow((0.8359375f + 18.8515625f * xp) /
-               (1.0f       + 18.6875f    * xp), float3(78.84375f, 78.84375f, 78.84375f));
-}
 
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0,
             float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
@@ -107,12 +100,8 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0,
 
     float alpha = windowColor.a * color.a;
 
-    float3 linearColor = pow(max(windowColor.rgb, 0.0f), float3(2.2f, 2.2f, 2.2f));
+    float3 litColor = windowColor.rgb * washParams.w;
 
-    linearColor *= washParams.w * (80.0f / 10000.0f);
-
-    float3 hdr = LinearToST2084(linearColor);
-
-    return float4(hdr * alpha, alpha);
+    return float4(litColor * alpha, alpha);
 }
 )";
