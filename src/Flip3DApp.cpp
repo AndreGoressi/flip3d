@@ -50,56 +50,13 @@ bool Flip3DPrototypeApp::Initialize(HINSTANCE instance)
     m_instance = instance;
     LoadFlip3DPreferences();
     BuildCardModels();
+
     if (!CreateAppWindow()) return false;
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
+
     if (FAILED(InitializeD3D())) return false;
-
-    // GDI-Snapshot sofort als Fallback-Textur für alle Karten
-    // bevor WGC bereit ist — verhindert Überbelichtung beim ersten Frame
-    for (auto &card : m_cards)
-    {
-        if (!card.hwnd) continue;
-        RECT rc = {};
-        if (FAILED(DwmGetWindowAttribute(card.hwnd, DWMWA_EXTENDED_FRAME_BOUNDS,
-            &rc, sizeof(rc))))
-            GetWindowRect(card.hwnd, &rc);
-        int w = std::max(1L, rc.right  - rc.left);
-        int h = std::max(1L, rc.bottom - rc.top);
-        w = std::min(w, 1920); h = std::min(h, 1200);
-
-        HDC dcSrc = GetDC(nullptr);
-        HDC dcMem = CreateCompatibleDC(dcSrc);
-        HBITMAP bmp = CreateCompatibleBitmap(dcSrc, w, h);
-        HGDIOBJ old = SelectObject(dcMem, bmp);
-        PrintWindow(card.hwnd, dcMem, PW_RENDERFULLCONTENT);
-
-        BITMAPINFOHEADER bi = {};
-        bi.biSize = sizeof(bi); bi.biWidth = w; bi.biHeight = -h;
-        bi.biPlanes = 1; bi.biBitCount = 32; bi.biCompression = BI_RGB;
-        std::vector<BYTE> px(w * h * 4);
-        GetDIBits(dcMem, bmp, 0, h, px.data(), (BITMAPINFO*)&bi, DIB_RGB_COLORS);
-        SelectObject(dcMem, old);
-        DeleteObject(bmp); DeleteDC(dcMem); ReleaseDC(nullptr, dcSrc);
-
-        // BGRA -> RGBA, alpha = 255
-        for (int i = 0; i < w * h; i++)
-        {
-            BYTE b = px[i*4+0], g = px[i*4+1], r = px[i*4+2];
-            px[i*4+0] = r; px[i*4+1] = g; px[i*4+2] = b; px[i*4+3] = 255;
-        }
-
-        D3D11_TEXTURE2D_DESC td = {};
-        td.Width = w; td.Height = h; td.MipLevels = 1; td.ArraySize = 1;
-        td.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        td.SampleDesc.Count = 1; td.Usage = D3D11_USAGE_DEFAULT;
-        td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-        D3D11_SUBRESOURCE_DATA sd2 = { px.data(), (UINT)w * 4 };
-        ComPtr<ID3D11Texture2D> tex;
-        if (SUCCEEDED(m_device->CreateTexture2D(&td, &sd2, &tex)))
-            m_device->CreateShaderResourceView(tex.Get(), nullptr, &card.captureSRV);
-    }
-
     CreateWindowCaptures();
+
     m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
@@ -1721,9 +1678,9 @@ void Flip3DPrototypeApp::Render()
 
         size_t pos = 0;
         ID3D11ShaderResourceView *srv = nullptr;
-        bool captureReady = true;
-        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; captureReady = !card.capture || card.capture->HasFirstFrame(); break; } ++pos; }
-        if (!srv || !captureReady) continue;
+        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; break; } ++pos; }
+        if (!srv) continue;
+
         m_context->PSSetShaderResources(0, 1, &srv);
         ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()};
         m_context->VSSetConstantBuffers(1, 1, objectBuffers);
