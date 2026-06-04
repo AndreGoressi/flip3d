@@ -175,72 +175,30 @@ void Flip3DPrototypeApp::CreateWindowCaptures()
     }
 }
 
-HWND FindDesktopWorkerWindow()
-{
-    HWND progman = FindWindowW(L"Progman", nullptr);
-    HWND desktopWorker = nullptr;
-    
-    if (progman)
-    {
-        HWND shellDll = FindWindowExW(progman, nullptr, L"SHELLDLL_DefView", nullptr);
-        if (shellDll) return progman;
-    }
-    
-    enum WindowsContext { EnumArgs = 0 };
-    struct DesktopFinder {
-        static BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
-            HWND shell = FindWindowExW(hwnd, nullptr, L"SHELLDLL_DefView", nullptr);
-            if (shell) {
-                *reinterpret_cast<HWND*>(lParam) = hwnd;
-                return FALSE;
-            }
-            return TRUE;
-        }
-    };
-    
-    HWND workerW = nullptr;
-    EnumWindows(&DesktopFinder::EnumWindowsProc, reinterpret_cast<LPARAM>(&workerW));
-    return workerW ? workerW : progman;
-}
-
 // ============================================================================
 // Window creation
 // ============================================================================
 bool Flip3DPrototypeApp::CreateAppWindow()
 {
-    WNDCLASSEXW wc = {};
-    wc.cbSize = sizeof(wc);
-    wc.hInstance = m_instance;
-    wc.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
-    wc.lpszClassName = kWindowClassName;
-    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    wc.style = CS_HREDRAW | CS_VREDRAW;
+    WNDCLASSEXW windowClass = {};
+    windowClass.cbSize = sizeof(windowClass);
+    windowClass.hInstance = m_instance;
+    windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
+    windowClass.lpszClassName = kWindowClassName;
+    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    if (!RegisterClassExW(&windowClass)) return false;
 
-    if (!RegisterClassExW(&wc))
-        return false;
+    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
+    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    const int width = bounds.right - bounds.left;
+    const int height = bounds.bottom - bounds.top;
+    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
+    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
 
-    m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP |
-        WS_EX_TOOLWINDOW |          
-        WS_EX_LAYERED,             
-        kWindowClassName,
-        nullptr,                   
-        WS_POPUP,                  
-        0, 0,
-        1, 1,                       
-        nullptr, nullptr,
-        m_instance,
-        this);
-
-    if (!m_hwnd)
-        return false;
-
-    BOOL cloak = TRUE;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAK, &cloak, sizeof(cloak));
-
-    ShowWindow(m_hwnd, SW_HIDE);
-
-    return true;
+    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
+        WS_OVERLAPPEDWINDOW, x, y, width, height, nullptr, nullptr, m_instance, this);
+    return m_hwnd != nullptr;
 }
 
 // ============================================================================
