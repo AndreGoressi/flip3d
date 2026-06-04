@@ -202,28 +202,30 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    DWORD exStyle = WS_EX_TOOLWINDOW;
-    DWORD style = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
+    DWORD style = WS_OVERLAPPEDWINDOW;
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
         style, 0, 0, screenWidth, screenHeight, hwndHiddenParent, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
-        
-        BOOL disableCloak = FALSE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAK, &disableCloak, sizeof(disableCloak));
-        BOOL forceDisableTransitions = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &forceDisableTransitions, sizeof(forceDisableTransitions));
 
-        SetWindowPos(m_hwnd, HWND_TOP, 0, 0, screenWidth, screenHeight, 
-                     SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+        LONG lStyle = GetWindowLongW(m_hwnd, GWL_STYLE);
+        lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
+        SetWindowLongW(m_hwnd, GWL_STYLE, lStyle);
+
+        LONG lExStyle = GetWindowLongW(m_hwnd, GWL_EXSTYLE);
+        lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
+        SetWindowLongW(m_hwnd, GWL_EXSTYLE, lExStyle);
+        SetWindowPos(m_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
+                     SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+        // ----------------------------------------------
 
         ShowWindow(m_hwnd, SW_SHOW);
         UpdateWindow(m_hwnd);
-        SetForegroundWindow(m_hwnd);
-        SetActiveWindow(m_hwnd);
-        SetFocus(m_hwnd);
         
+        SetForegroundWindow(m_hwnd);
+        SetFocus(m_hwnd);
         return true;
     }
     return false;
@@ -361,7 +363,7 @@ HRESULT Flip3DPrototypeApp::CreateDeviceResources()
     if (FAILED(hr)) return hr;
 
     D3D11_BUFFER_DESC cbDesc = {};
-    cbDesc.ByteWidth = sizeof(FrameConstants); 
+    cbDesc.ByteWidth = sizeof(FrameConstants);
     cbDesc.Usage = D3D11_USAGE_DEFAULT;
     cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     hr = m_device->CreateBuffer(&cbDesc, nullptr, &m_frameConstantsBuffer);
@@ -1626,16 +1628,10 @@ void Flip3DPrototypeApp::Render()
     m_monitorWidth = static_cast<int>(m_width);
     m_monitorHeight = static_cast<int>(m_height);
 
-
     FrameConstants frameConstants = {};
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
     frameConstants.washParams = XMFLOAT4(enterProgress * 0.5f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f);
     frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
-    
-
-    frameConstants.hdrParams = XMFLOAT4(1.0f, 200.0f, 0.0f, 0.0f); 
-    // ====================================================================
-
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
     static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
@@ -1703,11 +1699,7 @@ void Flip3DPrototypeApp::Render()
     {
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-        {
-            D3D11_TEXTURE2D_DESC backBufferDesc;
-            backBuffer->GetDesc(&backBufferDesc);
-            m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, backBufferDesc.Format);
-        }
+            m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
     }
 
     m_swapChain->Present(1, 0);
