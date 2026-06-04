@@ -32,7 +32,6 @@ cbuffer FrameCB : register(b0)
     float4 viewport;
 };
 
-// Simplified wash matching uDWM: solid black with alpha = enterProgress * 0.5
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
 {
     float wash = washParams.x;
@@ -92,29 +91,27 @@ cbuffer FrameCB : register(b0)
     float4 viewport;
 };
 
-// Encode linear scene light to ST.2084 (PQ) for HDR10 displays
 float3 LinearToST2084(float3 x)
 {
-    float3 xp = pow(max(x, 0.0f), 0.1593017578f);
+    float3 xp = pow(max(x, 0.0f), float3(0.1593017578f, 0.1593017578f, 0.1593017578f));
     return pow((0.8359375f + 18.8515625f * xp) /
-               (1.0f       + 18.6875f    * xp), 78.84375f);
+               (1.0f       + 18.6875f    * xp), float3(78.84375f, 78.84375f, 78.84375f));
 }
 
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0,
             float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
+    
+    if (windowColor.a == 0.0f) return float4(0.0f, 0.0f, 0.0f, 0.0f);
+
     float alpha = windowColor.a * color.a;
 
-    // sRGB decode -> linear
-    float3 linear = pow(max(windowColor.rgb, 0.0f), 2.2f);
+    float3 linearColor = pow(max(windowColor.rgb, 0.0f), float3(2.2f, 2.2f, 2.2f));
 
-    // Scale to reference white (80 nit SDR on HDR display)
-    // 80/10000 = 0.008 puts SDR content at correct brightness on HDR display
-    linear *= washParams.w * (80.0f / 10000.0f);
+    linearColor *= washParams.w * (80.0f / 10000.0f);
 
-    // Encode to ST.2084 for HDR output
-    float3 hdr = LinearToST2084(linear);
+    float3 hdr = LinearToST2084(linearColor);
 
     return float4(hdr * alpha, alpha);
 }
