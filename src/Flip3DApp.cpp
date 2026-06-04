@@ -197,7 +197,7 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
 
     m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_OVERLAPPEDWINDOW, x, y, width, height, nullptr, nullptr, m_instance, this);
+        WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, m_instance, this);
     return m_hwnd != nullptr;
 }
 

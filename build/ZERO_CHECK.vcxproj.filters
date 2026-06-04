@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\btdef\source\repos\flip3d\build\CMakeFiles\eef8c11ecaee4bb0ad678e8d60508f5a\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{155A209E-3C94-3911-A4C0-578773F73EB9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
