@@ -18,3 +18,4 @@ std::array<XMFLOAT3, 3> gBezierControls = {
 };
 XMFLOAT3 gCameraFinalTranslate = kCameraFinalTranslate;
 XMFLOAT3 gCameraFinalRotate = kCameraFinalRotate;
+XMFLOAT3 gCameraFinalRotate = kCameraFinalRotate;
