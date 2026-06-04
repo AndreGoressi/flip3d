@@ -290,36 +290,8 @@ HRESULT WindowCapture::StartWGCSession(
     if (FAILED(hr))
         return hr;
 
-    // Warmup: pump the WGC frame queue until the first real frame arrives.
-    // WGC needs ~2-4 frames (60-130ms) before it delivers valid content.
-    // Without this, the first render shows the placeholder until the user
-    // tabs in/out which triggers a redraw.
-    {
-        bool gotFrame = false;
-        for (int attempt = 0; attempt < 8 && !gotFrame; attempt++)
-        {
-            Sleep(20);
-            ComPtr<ABI::Windows::Graphics::Capture::IDirect3D11CaptureFrame> warmFrame;
-            if (SUCCEEDED(m_framePool->TryGetNextFrame(&warmFrame)) && warmFrame)
-            {
-                ComPtr<ABI::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface> surface;
-                if (SUCCEEDED(warmFrame->get_Surface(&surface)) && surface)
-                {
-                    ComPtr<IDirect3DDxgiInterfaceAccess> access;
-                    if (SUCCEEDED(surface.As(&access)))
-                    {
-                        ComPtr<ID3D11Texture2D> tex;
-                        if (SUCCEEDED(access->GetInterface(IID_PPV_ARGS(&tex))) && tex)
-                        {
-                            m_context->CopyResource(m_captureTexture.Get(), tex.Get());
-                            m_context->Flush();
-                            gotFrame = true;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // No warmup sleep needed - m_hasFirstFrame guards rendering until
+    // PollFrame() delivers the first real frame asynchronously.
 
     // Configure session for lower GPU usage.
     // Minimum 33ms between capture updates (~30 fps per window).
@@ -425,5 +397,8 @@ void WindowCapture::PollFrame()
 
     // Only copy the most recent frame to our texture
     if (gotAny && latestTexture)
+    {
         m_context->CopyResource(m_captureTexture.Get(), latestTexture.Get());
+        m_hasFirstFrame = true;
+    }
 }
