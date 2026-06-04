@@ -190,21 +190,38 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    const int screenWidth  = GetSystemMetrics(SM_CXSCREEN);
+    const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
-    DWORD style   = WS_POPUP;
+    DWORD style = WS_OVERLAPPEDWINDOW;
+
+    RECT bounds = { 0, 0, screenWidth, screenHeight };
+    AdjustWindowRectEx(&bounds, style, FALSE, exStyle);
+    
+    const int width = bounds.right - bounds.left;
+    const int height = bounds.bottom - bounds.top;
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
-        style, 0, 0, screenWidth, screenHeight,
-        nullptr, nullptr, m_instance, this);
-
+        style, bounds.left, bounds.top, width, height, nullptr, nullptr, m_instance, this);
+        
     if (m_hwnd != nullptr) {
-        ShowWindow(m_hwnd, SW_SHOWMAXIMIZED);
+        ShowWindow(m_hwnd, SW_SHOW);
         UpdateWindow(m_hwnd);
+        
         SetForegroundWindow(m_hwnd);
         SetFocus(m_hwnd);
+
+        RegisterHotKey(m_hwnd, 201, 0, VK_TAB);         
+        RegisterHotKey(m_hwnd, 202, MOD_SHIFT, VK_TAB);
+        RegisterHotKey(m_hwnd, 203, 0, VK_RETURN);     
+        RegisterHotKey(m_hwnd, 204, 0, VK_ESCAPE);      
+        RegisterHotKey(m_hwnd, 205, 0, VK_LEFT);        
+        RegisterHotKey(m_hwnd, 206, 0, VK_RIGHT);      
+        RegisterHotKey(m_hwnd, 207, 0, VK_HOME);       
+        RegisterHotKey(m_hwnd, 208, 0, VK_SPACE);       
+        // ---------------------------------------
+
         return true;
     }
     return false;
