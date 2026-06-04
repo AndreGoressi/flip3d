@@ -180,7 +180,7 @@ void Flip3DPrototypeApp::CreateWindowCaptures()
 // ============================================================================
 bool Flip3DPrototypeApp::CreateAppWindow()
 {
-    WNDCLASSEXW windowClass = {};
+        WNDCLASSEXW windowClass = {};
     windowClass.cbSize = sizeof(windowClass);
     windowClass.hInstance = m_instance;
     windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
@@ -190,14 +190,25 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     if (!RegisterClassExW(&windowClass)) return false;
 
     RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_NOREDIRECTIONBITMAP);
-    const int width = bounds.right - bounds.left;
+
+    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+
+    const int width  = bounds.right  - bounds.left;
     const int height = bounds.bottom - bounds.top;
     const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
     const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
 
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_OVERLAPPEDWINDOW, x, y, width, height, nullptr, nullptr, m_instance, this);
+    m_hwnd = CreateWindowExW(
+        WS_EX_NOREDIRECTIONBITMAP,
+        kWindowClassName,
+        kWindowTitle,
+        WS_OVERLAPPEDWINDOW,
+        x, y, width, height,
+        nullptr, nullptr,
+        m_instance,
+        this
+    );
+
     return m_hwnd != nullptr;
 }
 
