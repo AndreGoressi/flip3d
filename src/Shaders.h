@@ -102,14 +102,24 @@ float3 LinearToST2084(float3 linearRGB)
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
+
+    // FIX: Textur noch nicht bereit (erster Frame, alpha=0) -> transparent rendern
+    // verhindert Überbelichtung beim ersten Start
+    if (windowColor.a < 0.01f)
+        return float4(0.0f, 0.0f, 0.0f, 0.0f);
+
     float alpha = windowColor.a * color.a;
+
+    // FIX: Nur rendern wenn alpha sinnvoll - verhindert Garbage bei leerer Textur
+    if (alpha < 0.01f)
+        return float4(0.0f, 0.0f, 0.0f, 0.0f);
+
     float3 rgb = SRGBToLinear(windowColor.rgb) * washParams.w;
 
     if (hdrParams.x > 0.0f)
     {
         float nits = max(80.0f, hdrParams.y);
         float3 normalizedHDR = (rgb * nits) / 10000.0f;
-        // FIX: alpha nicht in LinearToST2084 reinmischen
         float3 hdr = LinearToST2084(normalizedHDR);
         return float4(hdr * alpha, alpha);
     }
