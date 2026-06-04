@@ -100,6 +100,7 @@ cbuffer FrameCB : register(b0)
 
 float3 SRGBToLinear(float3 c)
 {
+    c = max(0.0f, c);
     return c < 0.04045f ? c / 12.92f : pow(c * (1.0f / 1.055f) + 0.055f / 1.055f, 2.4f);
 }
 
@@ -119,25 +120,22 @@ float3 LinearToST2084(float3 linearRGB)
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
-    float3 linearRGB = SRGBToLinear(windowColor.rgb);
+    float3 rgb = SRGBToLinear(windowColor.rgb);
     
-    linearRGB *= washParams.w;
-    
+    rgb *= washParams.w;
     float alpha = windowColor.a * color.a;
 
     if (hdrParams.x > 0.0f)
     {
-        float nits = hdrParams.y; 
-        float3 normalizedHDR = (linearRGB * nits) / 10000.0f;
-        normalizedHDR *= alpha; 
-        
-        float3 finalPQ = LinearToST2084(normalizedHDR);
-        return float4(finalPQ, alpha);
+        float nits = max(80.0f, hdrParams.y);
+        float3 normalizedHDR = (rgb * nits) / 10000.0f;
+        rgb = LinearToST2084(normalizedHDR * alpha);
+        return float4(rgb, alpha);
     }
     else
     {
-        linearRGB = pow(abs(linearRGB), 1.0f / 2.2f);
-        return float4(linearRGB * alpha, alpha);
+        rgb = pow(max(0.0f, rgb), 1.0f / 2.2f);
+        return float4(rgb * alpha, alpha);
     }
 }
 )";
