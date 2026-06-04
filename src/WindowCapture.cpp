@@ -131,7 +131,7 @@ HRESULT WindowCapture::Initialize(HWND hwndCapture, HWND hwndDest, ID3D11Device 
     m_device = device;
     device->GetImmediateContext(&m_context);
 
-    // Only one path: DWM thumbnail → InteropCompositor → WGC(CreateFromVisual)
+    // Only one path: DWM thumbnail -> InteropCompositor -> WGC(CreateFromVisual)
     return InitViaThumbnail(hwndCapture, hwndDest);
 }
 
@@ -290,6 +290,37 @@ HRESULT WindowCapture::StartWGCSession(
     if (FAILED(hr))
         return hr;
 
+    // Warmup: pump the WGC frame queue until the first real frame arrives.
+    // WGC needs ~2-4 frames (60-130ms) before it delivers valid content.
+    // Without this, the first render shows the placeholder until the user
+    // tabs in/out which triggers a redraw.
+    {
+        bool gotFrame = false;
+        for (int attempt = 0; attempt < 8 && !gotFrame; attempt++)
+        {
+            Sleep(20);
+            ComPtr<ABI::Windows::Graphics::Capture::IDirect3D11CaptureFrame> warmFrame;
+            if (SUCCEEDED(m_framePool->TryGetNextFrame(&warmFrame)) && warmFrame)
+            {
+                ComPtr<ABI::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface> surface;
+                if (SUCCEEDED(warmFrame->get_Surface(&surface)) && surface)
+                {
+                    ComPtr<IDirect3DDxgiInterfaceAccess> access;
+                    if (SUCCEEDED(surface.As(&access)))
+                    {
+                        ComPtr<ID3D11Texture2D> tex;
+                        if (SUCCEEDED(access->GetInterface(IID_PPV_ARGS(&tex))) && tex)
+                        {
+                            m_context->CopyResource(m_captureTexture.Get(), tex.Get());
+                            m_context->Flush();
+                            gotFrame = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Configure session for lower GPU usage.
     // Minimum 33ms between capture updates (~30 fps per window).
     if (auto s5 = TryUpgrade<ABI::Windows::Graphics::Capture::IGraphicsCaptureSession5>(m_session))
@@ -328,11 +359,19 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
     if (FAILED(hr))
         return hr;
 
-    // Zero-fill so there's no garbage before the first captured frame
+    // Fill with opaque mid-gray placeholder until first real WGC frame arrives.
+    // Alpha=255 is critical: alpha=0 causes the HDR shader to show garbage.
     {
-        std::vector<uint8_t> zeros(width * height * 4, 0);
+        std::vector<uint8_t> placeholder(width * height * 4);
+        for (size_t i = 0; i < width * height; i++)
+        {
+            placeholder[i * 4 + 0] = 30;   // B
+            placeholder[i * 4 + 1] = 30;   // G
+            placeholder[i * 4 + 2] = 30;   // R
+            placeholder[i * 4 + 3] = 255;  // A = fully opaque
+        }
         m_context->UpdateSubresource(m_captureTexture.Get(), 0, nullptr,
-            zeros.data(), width * 4, 0);
+            placeholder.data(), width * 4, 0);
     }
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -353,26 +392,38 @@ void WindowCapture::PollFrame()
 
     using namespace ABI::Windows::Graphics::Capture;
 
-    ComPtr<IDirect3D11CaptureFrame> frame;
-    HRESULT hr = m_framePool->TryGetNextFrame(&frame);
-    if (FAILED(hr) || !frame)
-        return;
+    // Drain ALL pending frames - only keep the most recent one.
+    // This prevents stale frames from overwriting good ones ("resets after a while" bug).
+    bool gotAny = false;
+    ComPtr<ID3D11Texture2D> latestTexture;
 
-    ComPtr<ABI::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface> surface;
-    hr = frame->get_Surface(&surface);
-    if (FAILED(hr) || !surface)
-        return;
+    for (;;)
+    {
+        ComPtr<IDirect3D11CaptureFrame> frame;
+        HRESULT hr = m_framePool->TryGetNextFrame(&frame);
+        if (FAILED(hr) || !frame)
+            break;
 
-    ComPtr<IDirect3DDxgiInterfaceAccess> dxgiAccess;
-    hr = surface.As(&dxgiAccess);
-    if (FAILED(hr))
-        return;
+        ComPtr<ABI::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface> surface;
+        hr = frame->get_Surface(&surface);
+        if (FAILED(hr) || !surface)
+            break;
 
-    ComPtr<ID3D11Texture2D> capturedTexture;
-    hr = dxgiAccess->GetInterface(IID_PPV_ARGS(&capturedTexture));
-    if (FAILED(hr) || !capturedTexture)
-        return;
+        ComPtr<IDirect3DDxgiInterfaceAccess> dxgiAccess;
+        hr = surface.As(&dxgiAccess);
+        if (FAILED(hr))
+            break;
 
-    // GPU-side copy to our managed texture
-    m_context->CopyResource(m_captureTexture.Get(), capturedTexture.Get());
+        ComPtr<ID3D11Texture2D> capturedTexture;
+        hr = dxgiAccess->GetInterface(IID_PPV_ARGS(&capturedTexture));
+        if (FAILED(hr) || !capturedTexture)
+            break;
+
+        latestTexture = capturedTexture;
+        gotAny = true;
+    }
+
+    // Only copy the most recent frame to our texture
+    if (gotAny && latestTexture)
+        m_context->CopyResource(m_captureTexture.Get(), latestTexture.Get());
 }
