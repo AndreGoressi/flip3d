@@ -1707,6 +1707,7 @@ void Flip3DPrototypeApp::Render()
             D3D11_TEXTURE2D_DESC backBufferDesc;
             backBuffer->GetDesc(&backBufferDesc);
             m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, backBufferDesc.Format);
+        }
     }
 
     m_swapChain->Present(1, 0);
