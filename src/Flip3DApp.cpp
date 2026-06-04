@@ -361,7 +361,7 @@ HRESULT Flip3DPrototypeApp::CreateDeviceResources()
     if (FAILED(hr)) return hr;
 
     D3D11_BUFFER_DESC cbDesc = {};
-    cbDesc.ByteWidth = 112; 
+    cbDesc.ByteWidth = sizeof(FrameConstants); 
     cbDesc.Usage = D3D11_USAGE_DEFAULT;
     cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     hr = m_device->CreateBuffer(&cbDesc, nullptr, &m_frameConstantsBuffer);
