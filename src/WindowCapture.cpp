@@ -131,14 +131,6 @@ HRESULT WindowCapture::Initialize(HWND hwndCapture, HWND hwndDest, ID3D11Device 
     m_device = device;
     device->GetImmediateContext(&m_context);
 
-    // ========================================================================
-    // UNLOCK PROTECTED/BLACK CONTENT
-    // ========================================================================
-    OSVERSIONINFOEXW osvi = { sizeof(osvi) };
-    BOOL allowProperties = TRUE;
-    DwmSetWindowAttribute(hwndCapture, DWMWA_CLOAKED, &allowProperties, sizeof(allowProperties));
-    // ========================================================================
-
     // Only one path: DWM thumbnail → InteropCompositor → WGC(CreateFromVisual)
     return InitViaThumbnail(hwndCapture, hwndDest);
 }
@@ -200,10 +192,8 @@ HRESULT WindowCapture::InitViaThumbnail(HWND hwndCapture, HWND hwndDestination)
 
     // --- Create DWM thumbnail visual ---
     DWM_THUMBNAIL_PROPERTIES thumbProps = {};
-    // FIX: We remove DWM_TNP_DISABLEFORCECVI and replace it with DWM_TNP_FORCECVI
-    // to force Windows to render the actual live content of the overlay.
     thumbProps.dwFlags        = DWM_TNP_VISIBLE
-                                | DWM_TNP_RECTDESTINATION | DWM_TNP_ENABLE3D | DWM_TNP_FORCECVI;
+                                | DWM_TNP_RECTDESTINATION | DWM_TNP_ENABLE3D | DWM_TNP_DISABLEFORCECVI;
     thumbProps.fVisible       = TRUE;
     thumbProps.rcDestination  = { 0, 0, srcSize.cx, srcSize.cy };
 
