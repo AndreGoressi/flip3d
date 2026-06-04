@@ -208,33 +208,39 @@ HWND FindDesktopWorkerWindow()
 // ============================================================================
 bool Flip3DPrototypeApp::CreateAppWindow()
 {
-    WNDCLASSEXW windowClass = {};
-    windowClass.cbSize = sizeof(windowClass);
-    windowClass.hInstance = m_instance;
-    windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
-    windowClass.lpszClassName = kWindowClassName;
-    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClassExW(&windowClass)) return false;
-    const int width = GetSystemMetrics(SM_CXSCREEN);
-    const int height = GetSystemMetrics(SM_CYSCREEN);
+    WNDCLASSEXW wc = {};
+    wc.cbSize = sizeof(wc);
+    wc.hInstance = m_instance;
+    wc.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
+    wc.lpszClassName = kWindowClassName;
+    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
 
-    HWND hwndExplorerParent = FindDesktopWorkerWindow();
-    if (!hwndExplorerParent) return false;
+    if (!RegisterClassExW(&wc))
+        return false;
 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT;
-    DWORD style = WS_CHILD | WS_POPUP; 
+    m_hwnd = CreateWindowExW(
+        WS_EX_NOREDIRECTIONBITMAP |
+        WS_EX_TOOLWINDOW |          
+        WS_EX_LAYERED,             
+        kWindowClassName,
+        nullptr,                   
+        WS_POPUP,                  
+        0, 0,
+        1, 1,                       
+        nullptr, nullptr,
+        m_instance,
+        this);
 
-    m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
-        style, 0, 0, width, height, hwndExplorerParent, nullptr, m_instance, this);
-        
-    if (m_hwnd != nullptr) {
-        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
-        UpdateWindow(m_hwnd);
-        return true;
-    }
-        
-    return false;
+    if (!m_hwnd)
+        return false;
+
+    BOOL cloak = TRUE;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAK, &cloak, sizeof(cloak));
+
+    ShowWindow(m_hwnd, SW_HIDE);
+
+    return true;
 }
 
 // ============================================================================
