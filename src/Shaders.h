@@ -103,16 +103,35 @@ float3 SRGBToLinear(float3 c)
     return c < 0.04045f ? c / 12.92f : pow(c * (1.0f / 1.055f) + 0.055f / 1.055f, 2.4f);
 }
 
+float3 LinearToST2084(float3 linearRGB)
+{
+    float m1 = 2610.0f / 16384.0f;
+    float m2 = 2523.0f / 32.0f;
+    float o1 = 3424.0f / 4096.0f;
+    float o2 = 2413.0f / 4096.0f;
+
+    float3 L = pow(max(0.0f, linearRGB), m1);
+    float3 num = o1 + o2 * L;
+    float3 den = 1.0f + 32.0f * L;
+    return pow(num / den, m2);
+}
+
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
     float3 linearRGB = SRGBToLinear(windowColor.rgb);
+    
     linearRGB *= washParams.w;
 
     if (hdrParams.x > 0.0f)
     {
-        float sdrScale = hdrParams.y / 80.0f;
-        linearRGB *= sdrScale;
+        float nits = hdrParams.y; 
+        float3 normalizedHDR = (linearRGB * nits) / 10000.0f;
+        linearRGB = LinearToST2084(normalizedHDR);
+    }
+    else
+    {
+        linearRGB = pow(abs(linearRGB), 1.0f / 2.2f);
     }
 
     float alpha = windowColor.a * color.a;
