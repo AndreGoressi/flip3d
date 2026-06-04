@@ -103,16 +103,26 @@ float3 SRGBToLinear(float3 c)
     return c < 0.04045f ? c / 12.92f : pow(c * (1.0f / 1.055f) + 0.055f / 1.055f, 2.4f);
 }
 
+float3 LinearToSRGB(float3 c)
+{
+    return c < 0.0031308f ? c * 12.92f : 1.055f * pow(c, 1.0f / 2.4f) - 0.055f;
+}
+
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
     float3 linearRGB = SRGBToLinear(windowColor.rgb);
+    
     linearRGB *= washParams.w;
 
     if (hdrParams.x > 0.0f)
     {
         float sdrScale = hdrParams.y / 80.0f;
         linearRGB *= sdrScale;
+    }
+    else
+    {
+        linearRGB = LinearToSRGB(linearRGB);
     }
 
     float alpha = windowColor.a * color.a;
