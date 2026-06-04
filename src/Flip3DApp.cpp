@@ -1703,7 +1703,10 @@ void Flip3DPrototypeApp::Render()
     {
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-            m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
+        {
+            D3D11_TEXTURE2D_DESC backBufferDesc;
+            backBuffer->GetDesc(&backBufferDesc);
+            m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, backBufferDesc.Format);
     }
 
     m_swapChain->Present(1, 0);
