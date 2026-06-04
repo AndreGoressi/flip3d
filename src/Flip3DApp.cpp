@@ -190,7 +190,7 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     if (!RegisterClassExW(&windowClass)) return false;
 
     RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_NOREDIRECTIONBITMAP);
     const int width = bounds.right - bounds.left;
     const int height = bounds.bottom - bounds.top;
     const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
