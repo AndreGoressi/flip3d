@@ -1678,10 +1678,9 @@ void Flip3DPrototypeApp::Render()
 
         size_t pos = 0;
         ID3D11ShaderResourceView *srv = nullptr;
-        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; break; } ++pos; }
-        if (!srv) continue;
-        if (card.capture && !card.capture->HasFirstFrame()) continue;
-
+        bool captureReady = true;
+        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; captureReady = !card.capture || card.capture->HasFirstFrame(); break; } ++pos; }
+        if (!srv || !captureReady) continue;
         m_context->PSSetShaderResources(0, 1, &srv);
         ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()};
         m_context->VSSetConstantBuffers(1, 1, objectBuffers);
