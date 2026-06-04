@@ -192,7 +192,7 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     const int screenWidth  = GetSystemMetrics(SM_CXSCREEN);
     const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
     DWORD style   = WS_POPUP;
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
