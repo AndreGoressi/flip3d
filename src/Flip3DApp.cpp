@@ -195,16 +195,14 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
     DWORD style = WS_OVERLAPPEDWINDOW;
 
-    RECT bounds = { 0, 0, screenWidth, screenHeight };
+    RECT bounds = { -10, -10, screenWidth + 10, screenHeight + 10 };
     AdjustWindowRectEx(&bounds, style, FALSE, exStyle);
     
     const int width = bounds.right - bounds.left;
     const int height = bounds.bottom - bounds.top;
-    const int x = bounds.left;
-    const int y = bounds.top;
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
-        style, x, y, width, height, nullptr, nullptr, m_instance, this);
+        style, bounds.left, bounds.top, width, height, nullptr, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
         ShowWindow(m_hwnd, SW_SHOW);
