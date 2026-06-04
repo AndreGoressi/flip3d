@@ -98,10 +98,9 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0,
     
     if (windowColor.a == 0.0f) return float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-    float alpha = windowColor.a * color.a;
+    float3 finalRgb = windowColor.rgb * washParams.w;
+    float finalAlpha = windowColor.a * color.a;
 
-    float3 litColor = windowColor.rgb * washParams.w;
-
-    return float4(litColor * alpha, alpha);
+    return float4(finalRgb * color.a, finalAlpha);
 }
 )";
