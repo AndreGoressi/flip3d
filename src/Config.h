@@ -199,7 +199,7 @@ struct Vertex
 };
 
 #pragma pack(push, 16)
-struct alignas(16) FrameConstants
+struct FrameConstants
 {
     XMFLOAT4X4 viewProj;   // 64 Bytes
     XMFLOAT4 washParams;   // 16 Bytes
