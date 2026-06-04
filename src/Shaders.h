@@ -26,7 +26,7 @@ cbuffer FrameCB : register(b0)
     row_major float4x4 viewProj;
     float4 washParams;
     float4 viewport;
-    float4 hdrParams; // Liegt sicher am Ende des 16-Byte-Rasters
+    float4 hdrParams;
 };
 
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
