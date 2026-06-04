@@ -209,6 +209,18 @@ bool Flip3DPrototypeApp::CreateAppWindow()
         style, 0, 0, screenWidth, screenHeight, hwndHiddenParent, nullptr, m_instance, this);
         
     if (m_hwnd != nullptr) {
+
+        LONG lStyle = GetWindowLongW(m_hwnd, GWL_STYLE);
+        lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
+        SetWindowLongW(m_hwnd, GWL_STYLE, lStyle);
+
+        LONG lExStyle = GetWindowLongW(m_hwnd, GWL_EXSTYLE);
+        lExStyle &= ~(WS_EX_DLGMODALFRAME | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE);
+        SetWindowLongW(m_hwnd, GWL_EXSTYLE, lExStyle);
+        SetWindowPos(m_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
+                     SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+        // ----------------------------------------------
+
         ShowWindow(m_hwnd, SW_SHOW);
         UpdateWindow(m_hwnd);
         
