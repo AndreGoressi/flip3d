@@ -189,33 +189,13 @@ bool Flip3DPrototypeApp::CreateAppWindow()
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    const int screenW = GetSystemMetrics(SM_CXSCREEN);
-    const int screenH = GetSystemMetrics(SM_CYSCREEN);
-    RECT bounds = { 0, 0, screenW, screenH };
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    const int width = GetSystemMetrics(SM_CXSCREEN);
+    const int height = GetSystemMetrics(SM_CYSCREEN);
 
-    const int width  = bounds.right  - bounds.left;
-    const int height = bounds.bottom - bounds.top;
-
-    m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP,
-        kWindowClassName,
-        kWindowTitle,
-        WS_OVERLAPPEDWINDOW,
-        0, 0,
-        width, height,
-        nullptr, nullptr,
-        m_instance,
-        this
-    );
-
-    if (!m_hwnd)
-        return false;
-
-    ShowWindow(m_hwnd, SW_SHOWMAXIMIZED);
-    UpdateWindow(m_hwnd);
-
-    return true;
+    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
+        WS_POPUP | WS_VISIBLE, 0, 0, width, height, nullptr, nullptr, m_instance, this);
+        
+    return m_hwnd != nullptr;
 }
 
 // ============================================================================
