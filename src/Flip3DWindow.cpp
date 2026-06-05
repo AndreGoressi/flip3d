@@ -183,55 +183,30 @@ bool Flip3DPrototype::Create_Window()
     WNDCLASSEXW windowClass = {};
     windowClass.cbSize = sizeof(windowClass);
     windowClass.hInstance = m_instance;
-    windowClass.lpfnWndProc = &Flip3DPrototype::WndProc;
+    windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    if (!RegisterClassExW(&windowClass)) return false;
 
-    if (!RegisterClassExW(&windowClass))
-        return false;
+    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
+    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    const int width = bounds.right - bounds.left;
+    const int height = bounds.bottom - bounds.top;
+    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
+    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
 
-    DWORD exStyle =
-        WS_EX_NOREDIRECTIONBITMAP |
-        WS_EX_TOOLWINDOW |         
-        WS_EX_LAYERED;              
-    DWORD style =
-        WS_POPUP |                 
-        WS_VISIBLE;                 
     m_hwnd = CreateWindowExW(
-        exStyle,
+        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW,   
         kWindowClassName,
         kWindowTitle,
-        style,
-        0, 0,
-        GetSystemMetrics(SM_CXSCREEN) / 2,
-        GetSystemMetrics(SM_CYSCREEN) / 2,
-        nullptr,
-        nullptr,
+        WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE,
+        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+        nullptr, nullptr,
         m_instance,
         this
     );
-
-    if (!m_hwnd)
-        return false;
-    {
-        BOOL cloak = TRUE;
-        DwmSetWindowAttribute(
-            m_hwnd,
-            DWMWA_CLOAK,
-            &cloak,
-            sizeof(cloak)
-        );
-    }
-    
-    SetWindowPos(
-        m_hwnd,
-        HWND_TOPMOST,
-        0, 0, 0, 0,
-        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
-    );
-
-    return true;
+    return m_hwnd != nullptr;
 }
 
 
