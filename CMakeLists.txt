@@ -11,10 +11,7 @@ add_executable(flip3d WIN32
     src/Config.cpp
     src/Capture.cpp
     src/WindowCapture.cpp
-    src/flip3d.cpp
-    src/flip3d_dllmain.cpp
-    src/vtablehook.cpp
-    
+    src/flip3d.cpp  
 )
 
 target_compile_definitions(flip3d PRIVATE
