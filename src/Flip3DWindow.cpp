@@ -183,7 +183,7 @@ bool Flip3DPrototype::Create_Window()
     WNDCLASSEXW windowClass = {};
     windowClass.cbSize = sizeof(windowClass);
     windowClass.hInstance = m_instance;
-    windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
+    windowClass.lpfnWndProc = &Flip3DPrototype::WndProc;
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
