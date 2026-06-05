@@ -61,7 +61,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     GetModuleFileNameW(nullptr, dllPath, MAX_PATH);
     wchar_t* lastSlash = wcsrchr(dllPath, L'\\');
     if (lastSlash) *(lastSlash + 1) = L'\0';
-    wcscat_s(dllPath, L"dwm_unlocker.dll");
+    wcscat_s(dllPath, L"flip3d_dwm_hook.dll");
 
     InjectDwmHelper(dllPath);
 
