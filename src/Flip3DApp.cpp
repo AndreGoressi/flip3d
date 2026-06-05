@@ -201,7 +201,8 @@ bool Flip3DPrototypeApp::CreateAppWindow()
 
     const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    DWORD exStyle = WS_EX_TOOLWINDOW;
+    
+    DWORD exStyle = WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
     DWORD style = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 
     m_hwnd = CreateWindowExW(exStyle, kWindowClassName, kWindowTitle,
@@ -213,14 +214,19 @@ bool Flip3DPrototypeApp::CreateAppWindow()
         BOOL forceDisableTransitions = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &forceDisableTransitions, sizeof(forceDisableTransitions));
 
-        SetWindowPos(m_hwnd, HWND_TOP, 0, 0, screenWidth, screenHeight, 
+        AllowSetForegroundWindow(ASFW_ANY); 
+        
+        SetWindowPos(m_hwnd, HWND_TOPMOST, 0, 0, screenWidth, screenHeight, 
                      SWP_FRAMECHANGED | SWP_SHOWWINDOW);
 
         ShowWindow(m_hwnd, SW_SHOW);
         UpdateWindow(m_hwnd);
+        
         SetForegroundWindow(m_hwnd);
         SetActiveWindow(m_hwnd);
         SetFocus(m_hwnd);
+        LockSetForegroundWindow(LSFW_LOCK);
+        // ========================================================================
         
         return true;
     }
