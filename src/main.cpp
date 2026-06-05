@@ -66,7 +66,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     InjectDwmHelper(dllPath);
 
     Flip3DPrototype wnd;
-    if (!app.Initialize(instance))
+    if (!wnd.Initialize(instance))
     {
         MessageBoxW(nullptr, L"Failed to initialize the Flip3D D3D11 prototype.", kWindowTitle, MB_OK | MB_ICONERROR);
         return 1;
