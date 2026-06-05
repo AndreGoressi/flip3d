@@ -51,7 +51,7 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     LoadFlip3DPreferences();
     BuildCardModels();
 
-    if (!CreateWindow()) return false;
+    if (!Create_Window()) return false;
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 
     if (FAILED(InitializeD3D())) return false;
