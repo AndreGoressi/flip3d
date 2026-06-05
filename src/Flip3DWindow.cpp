@@ -187,17 +187,33 @@ bool Flip3DPrototype::Create_Window()
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClassExW(&windowClass)) return false;
 
-    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
-    const int width = bounds.right - bounds.left;
-    const int height = bounds.bottom - bounds.top;
-    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
-    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
+    if (!RegisterClassExW(&windowClass))
+        return false;
 
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, m_instance, this);
+    DWORD exStyle =
+        WS_EX_NOREDIRECTIONBITMAP |
+        WS_EX_TOOLWINDOW |          
+        WS_EX_LAYERED;              
+
+    DWORD style =
+        WS_POPUP |                  
+        WS_VISIBLE;                 
+
+    m_hwnd = CreateWindowExW(
+        exStyle,
+        kWindowClassName,
+        kWindowTitle,
+        style,
+        0, 0,
+        GetSystemMetrics(SM_CXSCREEN),
+        GetSystemMetrics(SM_CYSCREEN),
+        nullptr,
+        nullptr,
+        m_instance,
+        this
+    );
+
     return m_hwnd != nullptr;
 }
 
