@@ -72,8 +72,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
         return 1;
     }
 
-    const int initialShow = (showCommand == SW_HIDE) ? SW_SHOWNORMAL : showCommand;
-    ShowWindow(wnd.WindowHandle(), SW_MAXIMIZE);
+    const int initialShow = (showCommand == SW_HIDE) ? SW_MAXIMIZE : showCommand;
+    ShowWindow(wnd.WindowHandle(), initialShow);
     UpdateWindow(wnd.WindowHandle());
     return wnd.Run();
 }
