@@ -193,29 +193,47 @@ bool Flip3DPrototype::Create_Window()
 
     DWORD exStyle =
         WS_EX_NOREDIRECTIONBITMAP |
-        WS_EX_TOOLWINDOW |          
+        WS_EX_TOOLWINDOW |         
         WS_EX_LAYERED;              
-
     DWORD style =
-        WS_POPUP |                  
+        WS_POPUP |                 
         WS_VISIBLE;                 
-
     m_hwnd = CreateWindowExW(
         exStyle,
         kWindowClassName,
         kWindowTitle,
         style,
         0, 0,
-        GetSystemMetrics(SM_CXSCREEN),
-        GetSystemMetrics(SM_CYSCREEN),
+        GetSystemMetrics(SM_CXSCREEN) / 2,
+        GetSystemMetrics(SM_CYSCREEN) / 2,
         nullptr,
         nullptr,
         m_instance,
         this
     );
 
-    return m_hwnd != nullptr;
+    if (!m_hwnd)
+        return false;
+    {
+        BOOL cloak = TRUE;
+        DwmSetWindowAttribute(
+            m_hwnd,
+            DWMWA_CLOAK,
+            &cloak,
+            sizeof(cloak)
+        );
+    }
+    
+    SetWindowPos(
+        m_hwnd,
+        HWND_TOPMOST,
+        0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
+    );
+
+    return true;
 }
+
 
 // ============================================================================
 // D3D initialisation
