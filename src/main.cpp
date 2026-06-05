@@ -1,7 +1,7 @@
 // Flip3D D3D11 Prototype — Entry point
 // All implementation lives in Flip3D, Capture, and Config modules.
 
-#include "flip3d.h"
+#include "Flip3DWindow.h"
 #include <shlobj.h>   
 #include <shlwapi.h>
 #include <TlHelp32.h> 
