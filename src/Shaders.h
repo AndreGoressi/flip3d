@@ -157,4 +157,5 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color :
     }
 
     return float4(encoded, windowColor.a * color.a);
+  }
 )";
