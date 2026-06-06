@@ -200,9 +200,12 @@ struct Vertex
 
 struct FrameConstants
 {
-    XMFLOAT4X4 viewProj;
-    XMFLOAT4 washParams;
-    XMFLOAT4 viewport;
+    DirectX::XMFLOAT4X4 viewProj;
+    DirectX::XMFLOAT4   washParams;
+    DirectX::XMFLOAT4   viewport;
+
+    UINT isHDR;          // <--- NEW
+    UINT padding[3];     // <--- Alignment fix (16‑Byte Boundary)
 };
 
 struct ObjectConstants
