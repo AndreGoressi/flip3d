@@ -4,6 +4,40 @@
 // HLSL shader source code strings
 // ============================================================================
 
+float3 DecodeSDR(float3 c)
+{
+    return pow(c, 2.2);
+}
+float3 EncodeSDR(float3 c)
+{
+    return pow(c, 1.0 / 2.2);
+}
+
+float3 DecodePQ(float3 c)
+{
+    // PQ → linear Nits
+    const float m1 = 2610.0 / 16384.0;
+    const float m2 = 2523.0 / 32.0;
+    const float c1 = 3424.0 / 4096.0;
+    const float c2 = 2413.0 / 128.0;
+    const float c3 = 2392.0 / 128.0;
+
+    float3 cp = pow(c, 1.0 / m2);
+    return pow(max(cp - c1, 0.0) / (c2 - c3 * cp), 1.0 / m1);
+}
+float3 EncodePQ(float3 L)
+{
+    const float m1 = 2610.0 / 16384.0;
+    const float m2 = 2523.0 / 32.0;
+    const float c1 = 3424.0 / 4096.0;
+    const float c2 = 2413.0 / 128.0;
+    const float c3 = 2392.0 / 128.0;
+
+    float3 Lm1 = pow(L, m1);
+    return pow((c1 + c2 * Lm1) / (1.0 + c3 * Lm1), m2);
+}
+
+
 inline constexpr const char *kBackgroundVertexShader = R"(
 struct VSOut
 {
@@ -96,8 +130,24 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color :
 {
     // Sample captured window content; premultiply for DXGI_ALPHA_MODE_PREMULTIPLIED.
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
-    float alpha = windowColor.a * color.a;
-    float3 lit = windowColor.rgb * washParams.w;  // ambient light
-    return float4(lit * alpha, alpha);
-}
+    //float alpha = windowColor.a * color.a;
+    //float3 lit = windowColor.rgb * washParams.w;  // ambient light
+    //return float4(lit * alpha, alpha);
+    float3 linear;
+    //
+    if (isHDR)
+        linear = DecodePQ(windowColor.rgb);
+    else
+        linear = DecodeSDR(windowColor.rgb);
+
+    linear *= washParams.w;
+
+    float3 encoded;
+    if (isHDR)
+        encoded = EncodePQ(linear);
+    else
+        encoded = EncodeSDR(linear);
+
+    return float4(encoded, windowColor.a * color.a);
+    }
 )";
