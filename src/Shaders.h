@@ -101,10 +101,7 @@ cbuffer FrameCB : register(b0)
     return float4(lit * alpha, alpha);
 }*/
 
-float4 main(float4 position : SV_POSITION,
-            float2 uv : TEXCOORD0,
-            float4 color : COLOR0,
-            float4 accent : COLOR1) : SV_TARGET
+float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
 
@@ -114,6 +111,4 @@ float4 main(float4 position : SV_POSITION,
 
     return float4(rgb, alpha);
 }
-
-
 )";
