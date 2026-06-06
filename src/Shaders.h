@@ -136,18 +136,25 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color :
     float3 linear;
     //
     if (isHDR)
+    { 
         linear = DecodePQ(windowColor.rgb);
+    }
     else
+    {
         linear = DecodeSDR(windowColor.rgb);
+    }
 
     linear *= washParams.w;
 
     float3 encoded;
     if (isHDR)
+    {
         encoded = EncodePQ(linear);
+    }
     else
+    {
         encoded = EncodeSDR(linear);
+    }
 
     return float4(encoded, windowColor.a * color.a);
-    }
 )";
