@@ -1608,6 +1608,8 @@ void Flip3DPrototype::Render()
     m_monitorHeight = static_cast<int>(m_height);
 
     FrameConstants frameConstants = {};
+    //
+    frameConstants.isHDR = m_isHDR ? 1 : 0;
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
     frameConstants.washParams = XMFLOAT4(enterProgress * 0.5f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f);
     frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
