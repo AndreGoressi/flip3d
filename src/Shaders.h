@@ -4,6 +4,9 @@
 // HLSL shader source code strings
 // ============================================================================
 
+// ============================================================================
+// Background Vertex Shader
+// ============================================================================
 inline constexpr const char *kBackgroundVertexShader = R"(
 struct VSOut
 {
@@ -24,6 +27,9 @@ VSOut main(uint vertexId : SV_VertexID)
 }
 )";
 
+// ============================================================================
+// Background Pixel Shader
+// ============================================================================
 inline constexpr const char *kBackgroundPixelShader = R"(
 cbuffer FrameCB : register(b0)
 {
@@ -34,7 +40,6 @@ cbuffer FrameCB : register(b0)
     float3 padding;
 };
 
-// Simplified wash matching uDWM: solid black with alpha = enterProgress * 0.5
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
 {
     float wash = washParams.x;
@@ -42,6 +47,9 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
 }
 )";
 
+// ============================================================================
+// Card Vertex Shader
+// ============================================================================
 inline constexpr const char *kCardVertexShader = R"(
 cbuffer FrameCB : register(b0)
 {
@@ -85,6 +93,9 @@ VSOut main(VSIn input)
 }
 )";
 
+// ============================================================================
+// Card Pixel Shader (SDR + HDR PQ Support)
+// ============================================================================
 inline constexpr const char *kCardPixelShader = R"(
 Texture2D<float4> cardTexture : register(t0);
 SamplerState cardSampler : register(s0);
@@ -141,25 +152,17 @@ float4 main(float4 position : SV_POSITION,
 
     float3 linear;
     if (isHDR != 0)
-    {
         linear = DecodePQ(windowColor.rgb);
-    }
     else
-    {
         linear = DecodeSDR(windowColor.rgb);
-    }
 
     linear *= washParams.w;
 
     float3 encoded;
     if (isHDR != 0)
-    {
         encoded = EncodePQ(linear);
-    }
     else
-    {
         encoded = EncodeSDR(linear);
-    }
 
     return float4(encoded, windowColor.a * color.a);
 }
