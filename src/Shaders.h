@@ -92,12 +92,28 @@ cbuffer FrameCB : register(b0)
     float4 viewport;
 };
 
-float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
+/*float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     // Sample captured window content; premultiply for DXGI_ALPHA_MODE_PREMULTIPLIED.
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
     float alpha = windowColor.a * color.a;
     float3 lit = windowColor.rgb * washParams.w;  // ambient light
     return float4(lit * alpha, alpha);
+}*/
+
+float4 main(float4 position : SV_POSITION,
+            float2 uv : TEXCOORD0,
+            float4 color : COLOR0,
+            float4 accent : COLOR1) : SV_TARGET
+{
+    float4 windowColor = cardTexture.Sample(cardSampler, uv);
+
+    // Ambient nur auf RGB, Alpha nicht anfassen
+    float3 rgb   = windowColor.rgb * washParams.w;
+    float  alpha = windowColor.a * color.a; // wenn du das Objekt-Alpha brauchst
+
+    return float4(rgb, alpha);
 }
+
+
 )";
