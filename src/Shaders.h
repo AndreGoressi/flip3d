@@ -97,8 +97,7 @@ float4 main(float4 position : SV_POSITION,
             float4 color : COLOR0,
             float4 accent : COLOR1) : SV_TARGET
 {
-    float4 windowColor = cardTexture.Sample(cardSampler, uv);
-    return float4(windowColor.rgb, 1.0f);
+    return float4(1.0, 0.0, 0.0, 1.0); // reines Rot, keine Textur
 }
 )";
 
