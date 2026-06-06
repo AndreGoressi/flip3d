@@ -1640,7 +1640,7 @@ void Flip3DPrototype::Render()
     m_context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
     m_context->VSSetShader(m_cardVertexShader.Get(), nullptr, 0);
     m_context->PSSetShader(m_cardPixelShader.Get(), nullptr, 0);
-    m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
+    m_context->OMSetBlendState(m_blendState.Get(), nullptr, 0xFFFFFFFFu);
     m_context->PSSetSamplers(0, 1, m_cardSampler.GetAddressOf());
 
     const auto drawItems = BuildDrawItems(enterProgress);
