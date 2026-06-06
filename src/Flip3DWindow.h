@@ -138,6 +138,7 @@ private:
     ComPtr<ID3D11Device> m_device;
     ComPtr<ID3D11DeviceContext> m_context;
     ComPtr<IDXGISwapChain1> m_swapChain;
+    bool m_isHDR = false; // <--- NEW
 
     // DirectComposition resources (for transparency support)
     ComPtr<IDCompositionDevice> m_dcompDevice;
