@@ -4,6 +4,7 @@
 // HLSL shader source code strings
 // ============================================================================
 
+inline constexpr const char *kCardPixelShader = R"(
 Texture2D<float4> cardTexture : register(t0);
 SamplerState cardSampler : register(s0);
 
@@ -23,4 +24,4 @@ float4 main(float4 position : SV_POSITION,
     float alpha = windowColor.a * color.a;
     return float4(windowColor.rgb, alpha);
 }
-
+)";
