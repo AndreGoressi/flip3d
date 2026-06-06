@@ -98,8 +98,7 @@ float4 main(float4 position : SV_POSITION,
             float4 accent : COLOR1) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
-    float alpha = windowColor.a * color.a;
-    return float4(windowColor.rgb, alpha);
+    return float4(windowColor.rgb, 1.0f);
 }
 )";
 
