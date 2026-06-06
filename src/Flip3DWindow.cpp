@@ -193,8 +193,8 @@ bool Flip3DPrototype::Create_Window()
     AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
     const int width = bounds.right - bounds.left;
     const int height = bounds.bottom - bounds.top;
-    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
-    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
+    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width));
+    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height));
 
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW,   
