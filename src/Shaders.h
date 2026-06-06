@@ -99,7 +99,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color :
     float alpha = windowColor.a * color.a;
     float3 lit = windowColor.rgb * washParams.w;  // ambient light
     //return float4(lit * alpha, alpha);
-    return float4(windowColor.rgb, alpha);
+    return float4(windowColor.rgb, windowColor.a);
     //return float4(1,0,0,1);
 }
 )";
