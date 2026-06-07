@@ -181,32 +181,55 @@ void Flip3DPrototype::CreateWindowCaptures()
 bool Flip3DPrototype::Create_Window()
 {
     WNDCLASSEXW windowClass = {};
-    windowClass.cbSize = sizeof(windowClass);
-    windowClass.hInstance = m_instance;
-    windowClass.lpfnWndProc = &Flip3DPrototype::WndProc;
+    windowClass.cbSize        = sizeof(windowClass);
+    windowClass.hInstance     = m_instance;
+    windowClass.lpfnWndProc   = &Flip3DPrototype::WndProc;
     windowClass.lpszClassName = kWindowClassName;
-    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    windowClass.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
+    windowClass.style         = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
-    const int width = bounds.right - bounds.left;
-    const int height = bounds.bottom - bounds.top;
-    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width));
-    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height));
+    // Vollbild — exakt wie Win+Tab
+    const int screenW = GetSystemMetrics(SM_CXSCREEN);
+    const int screenH = GetSystemMetrics(SM_CYSCREEN);
 
     m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW,   
+        WS_EX_NOREDIRECTIONBITMAP   
+        | WS_EX_TOOLWINDOW          
+        | WS_EX_TOPMOST,            
         kWindowClassName,
         kWindowTitle,
-        WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE,
-        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+        WS_POPUP,                   
+        0, 0,
+        screenW, screenH,
         nullptr, nullptr,
         m_instance,
         this
     );
-    return m_hwnd != nullptr;
+
+    if (!m_hwnd) return false;
+
+    DWM_SYSTEMBACKDROP_TYPE backdrop = DWMSBT_MAINWINDOW;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
+        &backdrop, sizeof(backdrop));
+
+    auto user32 = LoadLibraryW(L"user32.dll");
+    if (user32)
+    {
+        typedef BOOL(WINAPI* SetWCA)(HWND, WINDOWCOMPOSITIONATTRIBDATA*);
+        auto setWCA = (SetWCA)GetProcAddress(user32, "SetWindowCompositionAttribute");
+        if (setWCA)
+        {
+            BOOL exclude = TRUE;
+            WINDOWCOMPOSITIONATTRIBDATA wData{};
+            wData.Attrib  = WCA_EXCLUDED_FROM_LIVEPREVIEW;
+            wData.pvData  = &exclude;
+            wData.cbData  = sizeof(BOOL);
+            setWCA(m_hwnd, &wData);
+        }
+    }
+
+    return true;
 }
 
 
