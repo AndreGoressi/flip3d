@@ -220,24 +220,6 @@ bool Flip3DPrototype::Create_Window()
     );
 
     if (!m_hwnd) return false;
-
-    BOOL useDarkMode = FALSE; 
-    HKEY hKey;
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
-    {
-        DWORD value = 1;
-        DWORD size = sizeof(value);
-        if (RegQueryValueExW(hKey, L"AppsUseLightTheme", nullptr, nullptr, reinterpret_cast<LPBYTE>(&value), &size) == ERROR_SUCCESS)
-        {
-            useDarkMode = (value == 0);
-        }
-        RegCloseKey(hKey);
-    }
-    
-    DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
-    
-    DWM_SYSTEMBACKDROP_TYPE backdrop = DWMSBT_MAINWINDOW;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
     
     auto user32 = LoadLibraryW(L"user32.dll");
     if (user32)
@@ -1644,7 +1626,7 @@ std::vector<DrawItem> Flip3DPrototype::BuildDrawItems(float enterProgress) const
     return items;
 }
 
-void Flip3DPrototype::Render()
+void Flip3DPrototypeApp::Render()
 {
     if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
 
@@ -1675,9 +1657,14 @@ void Flip3DPrototype::Render()
     m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     ID3D11Buffer *frameBuffers[] = {m_frameConstantsBuffer.Get()};
+    m_context->IASetInputLayout(nullptr);
     m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_context->VSSetShader(m_backgroundVertexShader.Get(), nullptr, 0);
+    m_context->PSSetShader(m_backgroundPixelShader.Get(), nullptr, 0);
     m_context->VSSetConstantBuffers(0, 1, frameBuffers);
     m_context->PSSetConstantBuffers(0, 1, frameBuffers);
+    m_context->Draw(3, 0);
+    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     const UINT stride = sizeof(Vertex);
     const UINT offset = 0;
