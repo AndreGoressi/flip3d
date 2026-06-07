@@ -1626,7 +1626,7 @@ std::vector<DrawItem> Flip3DPrototype::BuildDrawItems(float enterProgress) const
     return items;
 }
 
-void Flip3DPrototypeApp::Render()
+void Flip3DPrototype::Render()
 {
     if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
 
