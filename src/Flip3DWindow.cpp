@@ -188,15 +188,191 @@ struct WINDOWCOMPOSITIONATTRIBDATA
     DWORD cbData;
 };
 
+bool InitPrivateDwmAPIs()
+{
+    auto dwmapiLib = LoadLibrary(L"dwmapi.dll");
+
+    if (!dwmapiLib)
+        return false;
+
+    lDwmpQueryThumbnailType = (DwmpQueryThumbnailType)GetProcAddress(dwmapiLib, MAKEINTRESOURCEA(114));
+    lDwmpCreateSharedThumbnailVisual = (DwmpCreateSharedThumbnailVisual)GetProcAddress(dwmapiLib, MAKEINTRESOURCEA(147));
+    lDwmpQueryWindowThumbnailSourceSize = (DwmpQueryWindowThumbnailSourceSize)GetProcAddress(dwmapiLib, MAKEINTRESOURCEA(162));
+
+    //PRE-IRON
+    lDwmpCreateSharedVirtualDesktopVisual = (DwmpCreateSharedVirtualDesktopVisual)GetProcAddress(dwmapiLib, MAKEINTRESOURCEA(163));
+    lDwmpUpdateSharedVirtualDesktopVisual = (DwmpUpdateSharedVirtualDesktopVisual)GetProcAddress(dwmapiLib, MAKEINTRESOURCEA(164));
+
+    //20xxx+
+    lDwmpCreateSharedMultiWindowVisual = (DwmpCreateSharedMultiWindowVisual)GetProcAddress(dwmapiLib, MAKEINTRESOURCEA(163));
+    lDwmpUpdateSharedMultiWindowVisual = (DwmpUpdateSharedMultiWindowVisual)GetProcAddress(dwmapiLib, MAKEINTRESOURCEA(164));
+
+    if (false) //Just a placeholder, don't.
+        return false;
+
+    return true;
+}
+
+bool CreateDevice()
+{
+    if (D3D11CreateDevice(0, //Adapter
+        D3D_DRIVER_TYPE_HARDWARE,
+        NULL,
+        D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+        NULL,
+        0,
+        D3D11_SDK_VERSION,
+        direct3dDevice.GetAddressOf(),
+        nullptr,
+        nullptr
+    ) != S_OK)
+    {
+        //Maybe try creating with D3D_DRIVER_TYPE_WARP before returning false.
+        //Always listen to device changes.
+        return false;
+    }
+
+    if (direct3dDevice->QueryInterface(dxgiDevice.GetAddressOf()) != S_OK)
+    {
+        return false;
+    }
+
+    if (D2D1CreateFactory(
+        D2D1_FACTORY_TYPE::D2D1_FACTORY_TYPE_SINGLE_THREADED,
+        __uuidof(ID2D1Factory2),
+        (void**)d2dFactory2.GetAddressOf()) != S_OK)
+    {
+        return false;
+    }
+
+    if (d2dFactory2->CreateDevice(
+        dxgiDevice.Get(), 
+        d2dDevice.GetAddressOf()) != S_OK)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool InitializeInteropCompositor(HWND hwnd, IUnknown* d2dDevice, Compositor* compositor, IUnknown** compositionTarget, ContainerVisual* rootVisual)
+{
+    auto interopCompositorFactory = winrt::get_activation_factory<Compositor, IInteropCompositorFactoryPartner>();
+
+    com_ptr<IInteropCompositorPartner> interopCompositor;
+    auto interopRes = interopCompositorFactory->CreateInteropCompositor(d2dDevice, NULL, winrt::guid_of<IInteropCompositorPartner>(), interopCompositor.put_void());
+    if (interopRes != S_OK)
+        return false;
+
+    //Get as Compositor and as IDCompositionDevice
+    auto m_compositor = interopCompositor.as<Compositor>();
+    dcompDevice = interopCompositor.as<IDCompositionDesktopDevice>().detach();
+
+    //Create a target for our window
+    com_ptr<IDCompositionTarget> dcompTarget;
+    auto res = dcompDevice->CreateTargetForHwnd(hwnd, TRUE, dcompTarget.put());
+
+    if (res != S_OK)
+        return false;
+
+    //Create a container visual to hold all our visuals and then set it as root. 
+    //InteropCompositionTarget derives from DesktopWindowTarget which ultimately derives from CompositionTarget - 16299+
+    //InteropCompositionTarget derives from HwndTarget - 14393-15063
+
+    auto containerVisual = m_compositor.CreateContainerVisual();
+
+    auto compTarget = dcompTarget.try_as<CompositionTarget>();
+    if (compTarget)
+    {
+        compTarget.Root(containerVisual);
+        *compositionTarget = compTarget.as<IUnknown>().detach();
+    }
+    else
+    {
+        //We are on 15063 or 14393
+
+        //Get "raw" pointer to IVisual
+        winrt::com_ptr<ABI::Windows::UI::Composition::IVisual> visualAbi;
+        winrt::get_unknown(containerVisual)->QueryInterface(visualAbi.put());
+
+        auto hwndTarget = dcompTarget.as<HwndTarget>();
+        hwndTarget->SetRoot(visualAbi.get());
+
+        *compositionTarget = hwndTarget.as<IUnknown>().detach();
+    }
+    
+    *compositor = m_compositor;
+    *rootVisual = containerVisual;
+
+    return true;
+}
+
+void DemoCreateMultiWindowThumbnail(HWND myWnd, IDCompositionVisual2** ppVirtualDesktopVisual, SIZE* thumbSize)
+{
+    HTHUMBNAIL hThumbVirtualDesktop;
+    auto virtualDeskRes = lDwmpCreateSharedMultiWindowVisual(myWnd, dcompDevice.Get(), 
+                                    (void**)ppVirtualDesktopVisual, &hThumbVirtualDesktop);
+
+    auto monitorSize = RECT{ 0, 0, 1920, 1080 };
+    auto targetSize = SIZE{ 960, 540 };
+
+    *thumbSize = targetSize;
+
+    HWND hwndTest = (HWND)0x1; //Exclude from the list what you want to exclude
+    HWND* excludeArray = new HWND[1];
+    excludeArray[0] = hwndTest;
+
+    //The include list is useless as it will include every window in every case.
+    //You can only play with the exclusion list.
+    auto virtualDesktopUpdate = lDwmpUpdateSharedMultiWindowVisual(hThumbVirtualDesktop, NULL, 0, 
+                                    excludeArray, 1, &monitorSize, &targetSize, 1); //Last parameter has to be "1"
+    
+    //use lDwmpUpdateSharedVirtualDesktopVisual for 19043 or older
+}
+
+Visual DCompVisualToVisual(Compositor compositor, IDCompositionVisual2* dcompVisual, SIZE dcompVisualSize)
+{
+    winrt::com_ptr<IDCompositionVisual2> dcompVisualContainer;
+    compositor.as<IDCompositionDesktopDevice>()->CreateVisual(dcompVisualContainer.put());
+
+    dcompVisualContainer->AddVisual(dcompVisual, TRUE, nullptr);
+    auto visualContainer = dcompVisualContainer.as<Visual>();
+
+    visualContainer.Size({ (float)dcompVisualSize.cx, (float)dcompVisualSize.cy });
+
+    return visualContainer;
+}
+
+void CreateAnimationForVisual(Compositor compositor, Visual visual)
+{
+    auto animationScale = compositor.CreateVector3KeyFrameAnimation();
+    auto spring = compositor.CreateCubicBezierEasingFunction({ .41F, .51999998F }, { .00F, .94F });
+
+    animationScale.InsertKeyFrame(.15F, { 1.F, 1.F, 1.F }, spring);
+    animationScale.InsertKeyFrame(.3F, { .5F, .5F, .5F }, spring);
+    animationScale.InsertKeyFrame(.6F, { .5F, .5F, .5F }, spring);
+    animationScale.InsertKeyFrame(.85F, { 1.F, 1.F, 1.F }, spring);
+
+    animationScale.Duration(std::chrono::milliseconds(3000));
+
+    animationScale.IterationBehavior(AnimationIterationBehavior::Forever);
+
+    visual.CenterPoint({ visual.Size() / 2, 0.f });
+
+    visual.StartAnimation(L"Scale", animationScale);
+}
+
+
 // ============================================================================
 // Window creation
 // ============================================================================
 bool Flip3DPrototype::Create_Window()
 {
+    // 1. Fensterklasse registrieren
     WNDCLASSEXW windowClass = {};
     windowClass.cbSize        = sizeof(windowClass);
     windowClass.hInstance     = m_instance;
-    windowClass.lpfnWndProc   = &Flip3DPrototype::WndProc;
+    windowClass.lpfnWndProc   = &Flip3DPrototype::WndProc; 
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style         = CS_HREDRAW | CS_VREDRAW;
@@ -231,7 +407,7 @@ bool Flip3DPrototype::Create_Window()
         {
             BOOL exclude = TRUE;
             WINDOWCOMPOSITIONATTRIBDATA wData{};
-            wData.Attrib  = WCA_EXCLUDED_FROM_LIVEPREVIEW;
+            wData.Attrib  = WCA_EXCLUDED_FROM_LIVEPREVIEW; // Entspricht 0xD
             wData.pvData  = &exclude;
             wData.cbData  = sizeof(BOOL);
             
@@ -240,8 +416,50 @@ bool Flip3DPrototype::Create_Window()
         FreeLibrary(user32);
     }
 
+    if (!InitPrivateDwmAPIs()) // Lädt dwmapi.dll Ordinal 163 & 164
+    {
+        return false; 
+    }
+
+    if (!CreateDevice()) 
+    {
+        return false;
+    }
+
+    winrt::Windows::UI::Composition::Compositor compositor{ nullptr };
+    winrt::Windows::UI::Composition::ContainerVisual rootVisual{ nullptr };
+    IUnknown* compositionTarget{ nullptr };
+
+    if (!InitializeInteropCompositor(m_hwnd, d2dDevice.Get(), &compositor, &compositionTarget, &rootVisual))
+    {
+        return false;
+    }
+
+    auto backgroundVisual = compositor.CreateSpriteVisual();
+    backgroundVisual.Size({ (float)screenW, (float)screenH });
+    
+    auto darkBrush = compositor.CreateColorBrush(winrt::Windows::UI::ColorHelper::FromArgb(255, 15, 15, 15));
+    backgroundVisual.Brush(darkBrush);
+    
+    rootVisual.Children().InsertAtBottom(backgroundVisual);
+
+    Microsoft::WRL::ComPtr<IDCompositionVisual2> multiWindowDCompVisual;
+    SIZE multiWindowSize{};
+    
+    DemoCreateMultiWindowThumbnail(m_hwnd, multiWindowDCompVisual.GetAddressOf(), &multiWindowSize);
+
+    auto flip3DVisual = DCompVisualToVisual(compositor, multiWindowDCompVisual.Get(), multiWindowSize);
+
+    rootVisual.Children().InsertAtTop(flip3DVisual);
+
+    CreateAnimationForVisual(compositor, flip3DVisual);
+
+    this->m_compositor = compositor;
+    this->m_rootVisual = rootVisual;
+
     return true;
 }
+
 
 
 // ============================================================================
