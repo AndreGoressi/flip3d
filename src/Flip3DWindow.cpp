@@ -175,6 +175,19 @@ void Flip3DPrototype::CreateWindowCaptures()
     }
 }
 
+enum WINDOWCOMPOSITIONATTRIB
+{
+    WCA_UNDEFINED = 0x0,
+    WCA_EXCLUDED_FROM_LIVEPREVIEW = 0xD 
+};
+
+struct WINDOWCOMPOSITIONATTRIBDATA
+{
+    WINDOWCOMPOSITIONATTRIB Attrib;
+    void* pvData;
+    DWORD cbData;
+};
+
 // ============================================================================
 // Window creation
 // ============================================================================
@@ -189,7 +202,6 @@ bool Flip3DPrototype::Create_Window()
     windowClass.style         = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    // Vollbild — exakt wie Win+Tab
     const int screenW = GetSystemMetrics(SM_CXSCREEN);
     const int screenH = GetSystemMetrics(SM_CYSCREEN);
 
@@ -210,14 +222,14 @@ bool Flip3DPrototype::Create_Window()
     if (!m_hwnd) return false;
 
     DWM_SYSTEMBACKDROP_TYPE backdrop = DWMSBT_MAINWINDOW;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
-        &backdrop, sizeof(backdrop));
-
+    DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
+    
     auto user32 = LoadLibraryW(L"user32.dll");
     if (user32)
     {
         typedef BOOL(WINAPI* SetWCA)(HWND, WINDOWCOMPOSITIONATTRIBDATA*);
         auto setWCA = (SetWCA)GetProcAddress(user32, "SetWindowCompositionAttribute");
+        
         if (setWCA)
         {
             BOOL exclude = TRUE;
@@ -225,8 +237,10 @@ bool Flip3DPrototype::Create_Window()
             wData.Attrib  = WCA_EXCLUDED_FROM_LIVEPREVIEW;
             wData.pvData  = &exclude;
             wData.cbData  = sizeof(BOOL);
+            
             setWCA(m_hwnd, &wData);
         }
+        FreeLibrary(user32);
     }
 
     return true;
