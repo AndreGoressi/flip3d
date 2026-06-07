@@ -1674,7 +1674,7 @@ void Flip3DPrototype::Render()
     m_context->ClearRenderTargetView(m_msaaRTV.Get(), clearColor);
     m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-    ID3D11Buffer *frameBuffers[] = {m_frameConstantsBuffer.Get()};
+    /*ID3D11Buffer *frameBuffers[] = {m_frameConstantsBuffer.Get()};
     m_context->IASetInputLayout(nullptr);
     m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_context->VSSetShader(m_backgroundVertexShader.Get(), nullptr, 0);
@@ -1682,7 +1682,7 @@ void Flip3DPrototype::Render()
     m_context->VSSetConstantBuffers(0, 1, frameBuffers);
     m_context->PSSetConstantBuffers(0, 1, frameBuffers);
     m_context->Draw(3, 0);
-    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);*/
 
     const UINT stride = sizeof(Vertex);
     const UINT offset = 0;
