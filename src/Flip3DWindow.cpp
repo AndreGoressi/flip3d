@@ -221,8 +221,18 @@ bool Flip3DPrototype::Create_Window()
 
     if (!m_hwnd) return false;
 
-    DWM_SYSTEMBACKDROP_TYPE backdrop = DWMSBT_MAINWINDOW;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
+    BOOL useDarkMode = FALSE;
+    HKEY hKey;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", 0, KEY_READ, &hKey) == ERROR_SUCCESS)
+    {
+        DWORD value = 1;
+        DWORD size = sizeof(value);
+        if (RegQueryValueExW(hKey, L"AppsUseLightTheme", nullptr, nullptr, reinterpret_cast<LPBYTE>(&value), &size) == ERROR_SUCCESS)
+        {
+            useDarkMode = (value == 0);
+        }
+        RegCloseKey(hKey);
+    }
     
     auto user32 = LoadLibraryW(L"user32.dll");
     if (user32)
