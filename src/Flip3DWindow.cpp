@@ -179,10 +179,13 @@ void Flip3DPrototype::CreateWindowCaptures()
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
 #endif
 #ifndef DWMSBT_MAINWINDOW
-#define DWMSBT_MAINWINDOW 2 // 2 steht f r das klassische Mica-Material
+#define DWMSBT_MAINWINDOW 2 // mica classic
 #endif
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+#ifndef DWMSBT_TRANSIENTWINDOW
+#define DWMSBT_TRANSIENTWINDOW 3
 #endif
 
 // ============================================================================
@@ -220,7 +223,7 @@ bool Flip3DPrototype::Create_Window()
         MARGINS margins = {-1, -1, -1, -1};
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
 
-        DWORD backdropType = DWMSBT_MAINWINDOW;
+        DWORD backdropType = DWMSBT_TRANSIENTWINDOW;
         DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
             &backdropType, sizeof(backdropType));
     }
