@@ -426,54 +426,66 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
 
 HRESULT Flip3DPrototype::CreateWindowSizeResources(bool resizeBuffers)
 {
-    if (!m_swapChain) return E_FAIL;
-    m_msaaRTV.Reset(); m_renderTargetView.Reset(); m_msaaRenderTarget.Reset();
-    m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
-    m_context->OMSetRenderTargets(0, nullptr, nullptr);
+    if (!m_swapChain) return E_FAIL; //
+    m_msaaRTV.Reset(); m_renderTargetView.Reset(); m_msaaRenderTarget.Reset(); //[cite: 4]
+    m_depthStencilTexture.Reset(); m_depthStencilView.Reset(); //[cite: 4]
+    if (m_sceneSRV) m_sceneSRV.Reset(); 
+    m_context->OMSetRenderTargets(0, nullptr, nullptr); //[cite: 4]
 
     static constexpr UINT kSampleCount = 1;
-    if (resizeBuffers)
+    
+    const UINT ssaaWidth = m_width * 2;
+    const UINT ssaaHeight = m_height * 2;
+
+    if (resizeBuffers) //[cite: 4]
     {
-        HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
-        if (FAILED(hr)) return hr;
+        HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0); //[cite: 4]
+        if (FAILED(hr)) return hr; //[cite: 4]
     }
 
-    ComPtr<ID3D11Texture2D> backBuffer;
-    HRESULT hr = m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
+    ComPtr<ID3D11Texture2D> backBuffer; //[cite: 4]
+    HRESULT hr = m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer)); //[cite: 4]
+    if (FAILED(hr)) return hr; //[cite: 4]
+    hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView); //[cite: 4]
+    if (FAILED(hr)) return hr; //[cite: 4]
+
+    
+    D3D11_TEXTURE2D_DESC msaaDesc = {}; //[cite: 4]
+    msaaDesc.Width = ssaaWidth; 
+    msaaDesc.Height = ssaaHeight;
+    msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1; //[cite: 4]
+    msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM; //[cite: 4]
+    msaaDesc.SampleDesc.Count = kSampleCount; //[cite: 4]
+    msaaDesc.Usage = D3D11_USAGE_DEFAULT; //[cite: 4]
+   
+    msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE; 
+    hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget); //[cite: 4]
+    if (FAILED(hr)) return hr; //[cite: 4]
+
+    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {}; //[cite: 4]
+    rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM; //[cite: 4]
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D; // TEXTURE2D statt TEXTURE2DMS
+    hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV); //[cite: 4]
+    if (FAILED(hr)) return hr; //[cite: 4]
+
+    hr = m_device->CreateShaderResourceView(m_msaaRenderTarget.Get(), nullptr, &m_sceneSRV);
     if (FAILED(hr)) return hr;
 
-    D3D11_TEXTURE2D_DESC msaaDesc = {};
-    msaaDesc.Width = m_width; msaaDesc.Height = m_height;
-    msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
-    msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    msaaDesc.SampleDesc.Count = kSampleCount;
-    msaaDesc.Usage = D3D11_USAGE_DEFAULT;
-    msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
-    hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
-    if (FAILED(hr)) return hr;
+    D3D11_TEXTURE2D_DESC depthDesc = {}; //[cite: 4]
+    depthDesc.Width = ssaaWidth; 
+    depthDesc.Height = ssaaHeight;
+    depthDesc.MipLevels = 1; depthDesc.ArraySize = 1; //[cite: 4]
+    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT; //[cite: 4]
+    depthDesc.SampleDesc.Count = kSampleCount; //[cite: 4]
+    depthDesc.Usage = D3D11_USAGE_DEFAULT; //[cite: 4]
+    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL; //[cite: 4]
+    hr = m_device->CreateTexture2D(&depthDesc, nullptr, &m_depthStencilTexture); //[cite: 4]
+    if (FAILED(hr)) return hr; //[cite: 4]
+    hr = m_device->CreateDepthStencilView(m_depthStencilTexture.Get(), nullptr, &m_depthStencilView); //[cite: 4]
+    if (FAILED(hr)) return hr; //[cite: 4]
 
-    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-    rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
-    hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
-    if (FAILED(hr)) return hr;
-
-    D3D11_TEXTURE2D_DESC depthDesc = {};
-    depthDesc.Width = m_width; depthDesc.Height = m_height;
-    depthDesc.MipLevels = 1; depthDesc.ArraySize = 1;
-    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = kSampleCount;
-    depthDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    hr = m_device->CreateTexture2D(&depthDesc, nullptr, &m_depthStencilTexture);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreateDepthStencilView(m_depthStencilTexture.Get(), nullptr, &m_depthStencilView);
-    if (FAILED(hr)) return hr;
-
-    m_viewport = {0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
-    return S_OK;
+    m_viewport = {0.0f, 0.0f, static_cast<float>(ssaaWidth), static_cast<float>(ssaaHeight), 0.0f, 1.0f};
+    return S_OK; //[cite: 4]
 }
 
 // ============================================================================
