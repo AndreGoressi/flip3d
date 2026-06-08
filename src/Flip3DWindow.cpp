@@ -209,20 +209,31 @@ bool Flip3DPrototype::Create_Window()
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClassExW(&windowClass)) return false;
+
+    if (!RegisterClassExW(&windowClass))
+        return false;
 
     RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
     AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
-    const int width = bounds.right - bounds.left;
+
+    const int width  = bounds.right  - bounds.left;
     const int height = bounds.bottom - bounds.top;
     const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width));
     const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height));
 
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_OVERLAPPEDWINDOW, x, y, width, height, nullptr, nullptr, m_instance, this);
+    m_hwnd = CreateWindowExW(
+        WS_EX_NOREDIRECTIONBITMAP,
+        kWindowClassName,
+        kWindowTitle,
+        WS_OVERLAPPEDWINDOW,
+        x, y, width, height,
+        nullptr, nullptr,
+        m_instance,
+        this
+    );
 
-    // --- 
-    if (m_hwnd)
+    if (!m_hwnd)
+        return false;
     {
         MARGINS margins = { -1, -1, -1, -1 };
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
@@ -232,14 +243,16 @@ bool Flip3DPrototype::Create_Window()
 
         BOOL disableTransitions = TRUE;
         DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
-
         BOOL useDarkMode = TRUE;
         DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
     }
-    // -------------------------------
 
-    return m_hwnd != nullptr;
+    ShowWindow(m_hwnd, SW_SHOW);
+    UpdateWindow(m_hwnd);
+
+    return true;
 }
+
 
 // ============================================================================
 // D3D initialisation
