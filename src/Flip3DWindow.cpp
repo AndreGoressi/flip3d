@@ -239,11 +239,17 @@ bool Flip3DPrototype::Create_Window()
 
     if (m_hwnd)
     {
+        BOOL cloak = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+
         BOOL darkMode = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
 
-        COLORREF flashColor = RGB(0, 0, 0); 
-        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashColor, sizeof(flashColor));
+        #ifndef DWMWA_BACKGROUND_COLOR
+        #define DWMWA_BACKGROUND_COLOR 37
+        #endif
+        COLORREF flashFixColor = RGB(0, 0, 0); 
+        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashFixColor, sizeof(flashFixColor));
 
         BOOL disableTransitions = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
@@ -253,16 +259,6 @@ bool Flip3DPrototype::Create_Window()
 
         DWORD backdropType = DWMSBT_TRANSIENTWINDOW; // Acrylic
         DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
-
-        BOOL cloak = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-
-        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
-        UpdateWindow(m_hwnd);
-
-        DwmFlush();
-        cloak = FALSE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
 
         PostMessageW(m_hwnd, WM_APP, 0, 0);
     }
