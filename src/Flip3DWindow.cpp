@@ -202,18 +202,6 @@ bool Flip3DPrototype::Create_Window()
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
     DWORD style = WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE;
 
-    BOOL darkMode = TRUE;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
-
-    DWORD backdropType = DWMSBT_MAINWINDOW; 
-    HRESULT hr = DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
-    
-    if (FAILED(hr))
-    {
-        BOOL micaTrue = TRUE;
-        DwmSetWindowAttribute(m_hwnd, 1029, &micaTrue, sizeof(micaTrue)); 
-    }
-
     m_hwnd = CreateWindowExW(
         exStyle, 
         kWindowClassName, 
