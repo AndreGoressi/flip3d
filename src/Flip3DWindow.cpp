@@ -14,12 +14,6 @@
 #ifndef DWMSBT_TRANSIENTWINDOW
 #define DWMSBT_TRANSIENTWINDOW 3
 #endif
-#ifndef DWMWA_BACKGROUND_COLOR
-#define DWMWA_BACKGROUND_COLOR 37
-#endif
-#ifndef DWMWA_CLOAKED
-#define DWMWA_CLOAKED 14
-#endif
 
 namespace
 {
@@ -239,38 +233,33 @@ bool Flip3DPrototype::Create_Window()
 
     if (m_hwnd)
     {
+        #ifndef DWMWA_CLOAKED
+        #define DWMWA_CLOAKED 14
+        #endif
+        BOOL cloak = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
 
-    BOOL darkMode = TRUE;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+        BOOL darkMode = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
 
-    COLORREF flashFixColor = RGB(0, 0, 0);
-    DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashFixColor, sizeof(flashFixColor));
+        #ifndef DWMWA_BACKGROUND_COLOR
+        #define DWMWA_BACKGROUND_COLOR 37
+        #endif
+        COLORREF flashFixColor = RGB(0, 0, 0); 
+        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashFixColor, sizeof(flashFixColor));
 
-    BOOL disableTransitions = TRUE;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
+        BOOL disableTransitions = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
 
-    MARGINS margins = {-1, -1, -1, -1};
-    DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+        MARGINS margins = {-1, -1, -1, -1};
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
 
-    DWORD backdropType = DWMSBT_TRANSIENTWINDOW;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
+        DWORD backdropType = DWMSBT_TRANSIENTWINDOW; // Acrylic
+        DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
 
-    #ifndef DWMWA_CLOAKED
-    #define DWMWA_CLOAKED 14
-    #endif
-    BOOL cloak = TRUE;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-
-    ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
-    UpdateWindow(m_hwnd);
-
-    DwmFlush();
-    DwmFlush();
-    DwmFlush();
-
-    cloak = FALSE;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+        PostMessageW(m_hwnd, WM_APP, 0, 0);
     }
+
     return m_hwnd != nullptr;
 }
 
@@ -1757,19 +1746,33 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
 {
     switch (message)
     {
+    case WM_APP:
+        {
+            #ifndef DWMWA_CLOAKED
+            #define DWMWA_CLOAKED 14
+            #endif
+            BOOL cloak = FALSE;
+            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+        }
+        return 0;
+
     case WM_NCACTIVATE:
         return DefWindowProcW(m_hwnd, WM_NCACTIVATE, TRUE, lParam);
+
     case WM_ACTIVATE:
         if (LOWORD(wParam) == WA_INACTIVE)
         {
             PostMessageW(m_hwnd, WM_CLOSE, 0, 0);
         }
         return 0;
+
     case WM_NCCALCSIZE:
         if (wParam == TRUE) return 0;
         break;
+
     case WM_ERASEBKGND:
         return 1; 
+
     case WM_SIZE:
         {
             if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
@@ -1779,27 +1782,29 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
             if (m_swapChain) CreateWindowSizeResources(true);
             return 0;
         }
+
     case WM_MOUSEWHEEL: case WM_MOUSEHWHEEL: case WM_LBUTTONDOWN: case WM_LBUTTONUP:
         if (ProcessMouseInput(message, wParam, lParam)) return 0;
         break;
+
     case WM_KEYDOWN:
         if (wParam == VK_SPACE) { if ((lParam & 0x40000000) == 0) ReplayEnterAnimation(); return 0; }
         if (ProcessKeyboardInput(true, static_cast<UINT>(wParam), (lParam & 0x40000000) != 0)) return 0;
         break;
+
     case WM_KEYUP:
         if (ProcessKeyboardInput(false, static_cast<UINT>(wParam), false)) return 0;
         break;
+
     case WM_CLOSE:
         if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) 
         {
-            BOOL cloak = TRUE;
-            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-            DwmFlush();
             ShowWindow(m_hwnd, SW_HIDE);
             DestroyWindow(m_hwnd);
         }
         else BeginExitView();
         return 0;
+
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
