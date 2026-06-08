@@ -139,7 +139,7 @@ private:
     ComPtr<ID3D11Device> m_device;
     ComPtr<ID3D11DeviceContext> m_context;
     ComPtr<IDXGISwapChain1> m_swapChain;
-    bool m_isHDR = false; // <--- NEW
+    bool m_isHDR = false;
 
     // DirectComposition resources (for transparency support)
     ComPtr<IDCompositionDevice> m_dcompDevice;
@@ -147,8 +147,12 @@ private:
     ComPtr<IDCompositionVisual> m_dcompVisual;
 
     ComPtr<ID3D11RenderTargetView> m_renderTargetView;
-    ComPtr<ID3D11Texture2D> m_msaaRenderTarget;     // MSAA color buffer
-    ComPtr<ID3D11RenderTargetView> m_msaaRTV;       // persistent MSAA RTV
+    
+    // Post-Processing Shaders (Aliased Scene Target)
+    ComPtr<ID3D11Texture2D>          m_sceneRenderTarget;
+    ComPtr<ID3D11RenderTargetView>   m_sceneRTV;
+    ComPtr<ID3D11ShaderResourceView> m_sceneSRV;
+    
     ComPtr<ID3D11Texture2D> m_depthStencilTexture;
     ComPtr<ID3D11DepthStencilView> m_depthStencilView;
 
@@ -156,6 +160,10 @@ private:
     ComPtr<ID3D11PixelShader> m_backgroundPixelShader;
     ComPtr<ID3D11VertexShader> m_cardVertexShader;
     ComPtr<ID3D11PixelShader> m_cardPixelShader;
+    
+    // Post-Processing Anti-Aliasing Pixel Shader
+    ComPtr<ID3D11PixelShader>  m_postProcessPixelShader;
+    
     ComPtr<ID3D11InputLayout> m_inputLayout;
     ComPtr<ID3D11Buffer> m_vertexBuffer;
     ComPtr<ID3D11Buffer> m_indexBuffer;
