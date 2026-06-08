@@ -1744,9 +1744,6 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
     {
     case WM_APP:
         {
-            #ifndef DWMWA_CLOAKED
-            #define DWMWA_CLOAKED 14
-            #endif
             BOOL cloak = FALSE;
             DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
         }
