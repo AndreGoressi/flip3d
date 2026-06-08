@@ -62,7 +62,7 @@ void CompleteDeferredSelectedWindowActivation(HWND selectedHwnd, bool activation
 // ============================================================================
 // Initialisation
 // ============================================================================
-bool Flip3DPrototype::Initialize(HINSTANCE instance)
+/*bool Flip3DPrototype::Initialize(HINSTANCE instance)
 {
     RoInitialize(RO_INIT_MULTITHREADED);
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -80,6 +80,45 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
     m_previousFrameTime = std::chrono::steady_clock::now();
+    return true;
+}*/
+
+bool Flip3DPrototype::Initialize(HINSTANCE instance)
+{
+    RoInitialize(RO_INIT_MULTITHREADED);
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+    
+    HMODULE hUxTheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (hUxTheme)
+    {
+        auto SetPreferredAppMode = reinterpret_cast<int(WINAPI*)(int)>(GetProcAddress(hUxTheme, MAKEINTRESOURCEA(135)));
+        if (SetPreferredAppMode) 
+        {
+            SetPreferredAppMode(2); 
+        }
+        FreeLibrary(hUxTheme);
+    }
+
+    m_instance = instance;
+    LoadFlip3DPreferences();
+    BuildCardModels();
+
+    if (!Create_Window()) return false;
+    m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
+
+    if (FAILED(InitializeD3D())) return false;
+    CreateWindowCaptures();
+    
+    m_previousFrameTime = std::chrono::steady_clock::now();
+    Update(0.0f);
+    Render(); 
+
+    BOOL cloak = FALSE;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+
+    m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
+    m_state = ViewState::Enter;
+    m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
     return true;
 }
 
