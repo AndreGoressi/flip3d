@@ -32,6 +32,7 @@ cbuffer FrameCB : register(b0)
     float4 viewport;
 };
 
+// Simplified wash matching uDWM: solid black with alpha = enterProgress * 0.5
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
 {
     float wash = washParams.x;
@@ -93,58 +94,10 @@ cbuffer FrameCB : register(b0)
 
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
+    // Sample captured window content; premultiply for DXGI_ALPHA_MODE_PREMULTIPLIED.
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
     float alpha = windowColor.a * color.a;
-    float3 lit = windowColor.rgb * washParams.w;
+    float3 lit = windowColor.rgb * washParams.w;  // ambient light
     return float4(lit * alpha, alpha);
-}
-)"; 
-
-inline constexpr const char *kPostProcessPixelShader = R"(
-Texture2D<float4> sceneTexture : register(t0);
-SamplerState sceneSampler : register(s0);
-
-cbuffer FrameCB : register(b0)
-{
-    row_major float4x4 viewProj;
-    float4 washParams;
-    float4 viewport; 
-};
-
-float RGBToLuma(float3 rgb)
-{
-    return dot(rgb, float3(0.299f, 0.587f, 0.114f));
-}
-
-float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
-{
-    float2 texelSize = 1.0f / viewport.xy;
-    float4 e = sceneTexture.Sample(sceneSampler, uv);
-    float4 b = sceneTexture.Sample(sceneSampler, uv + float2(0.0f, -texelSize.y));
-    float4 d = sceneTexture.Sample(sceneSampler, uv + float2(-texelSize.x, 0.0f));
-    float4 f = sceneTexture.Sample(sceneSampler, uv + float2(texelSize.x, 0.0f));
-    float4 h = sceneTexture.Sample(sceneSampler, uv + float2(0.0f, texelSize.y));
-    float lumaB = RGBToLuma(b.rgb);
-    float lumaD = RGBToLuma(d.rgb);
-    float lumaE = RGBToLuma(e.rgb);
-    float lumaF = RGBToLuma(f.rgb);
-    float lumaH = RGBToLuma(h.rgb);
-    float mn = min(lumaE, min(min(lumaB, lumaD), min(lumaF, lumaH)));
-    float mx = max(lumaE, max(max(lumaB, lumaD), max(lumaF, lumaH)));
-
-    float amg = mx - mn;
-    if (amg < 0.0001f) return e;
-
-    float4 edgeAA = (b + d + f + h + e) * 0.2f;
-
-    float sharpness = -0.125f; 
-    float w = amg * sharpness;
-    
-    float rcpWeight = 1.0f / (1.0f + 4.0f * w);
-    float4 casSharp = saturate((b * w + d * w + f * w + h * w + e) * rcpWeight);
-
-    float edgeThreshold = saturate(amg * 4.0f); 
-    
-    return lerp(casSharp, edgeAA, edgeThreshold * 0.35f);
 }
 )";
