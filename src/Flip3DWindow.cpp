@@ -1744,10 +1744,12 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
 {
     switch (message)
     {
-    case WM_APP:
+    case WM_TIMER:
+        if (wParam == 1)
         {
+            KillTimer(m_hwnd, 1);
             BOOL cloak = FALSE;
-            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak))
         }
         return 0;
 
@@ -1794,6 +1796,9 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
     case WM_CLOSE:
         if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) 
         {
+            BOOL cloak = TRUE;
+            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+            DwmFlush();
             ShowWindow(m_hwnd, SW_HIDE);
             DestroyWindow(m_hwnd);
         }
