@@ -2,25 +2,6 @@
 #include "Shaders.h"
 #include "Capture.h"
 
-#ifndef DWMWA_SYSTEMBACKDROP_TYPE
-#define DWMWA_SYSTEMBACKDROP_TYPE 38
-#endif
-#ifndef DWMSBT_MAINWINDOW
-#define DWMSBT_MAINWINDOW 2 // mica classic
-#endif
-#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
-#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
-#endif
-#ifndef DWMSBT_TRANSIENTWINDOW
-#define DWMSBT_TRANSIENTWINDOW 3
-#endif
-#ifndef DWMWA_BACKGROUND_COLOR
-#define DWMWA_BACKGROUND_COLOR 37
-#endif
-#ifndef DWMWA_CLOAKED
-#define DWMWA_CLOAKED 14
-#endif
-
 namespace
 {
 void ActivateWindowLikeThreadMessage403(HWND selectedHwnd)
@@ -80,16 +61,8 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
     m_previousFrameTime = std::chrono::steady_clock::now();
-
-    // Erst HIER uncloaken: D3D, DComp, SwapChain, Shader, Captures sind alle fertig.
-    // Der allererste sichtbare Frame ist bereits vollstaendig gerendert = kein Flash.
-    DwmFlush();
-    BOOL cloak = FALSE;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-
     return true;
 }
-
 
 int Flip3DPrototype::Run()
 {
@@ -214,60 +187,17 @@ bool Flip3DPrototype::Create_Window()
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    windowClass.hbrBackground = nullptr;
-    
     if (!RegisterClassExW(&windowClass)) return false;
 
-    int x = 0, y = 0;
-    int width = GetSystemMetrics(SM_CXSCREEN);
-    int height = GetSystemMetrics(SM_CYSCREEN);
+    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
+    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    const int width = bounds.right - bounds.left;
+    const int height = bounds.bottom - bounds.top;
+    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
+    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
 
-    HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
-    MONITORINFO mi = { sizeof(mi) };
-    if (GetMonitorInfoW(hMonitor, &mi))
-    {
-        x = mi.rcMonitor.left;
-        y = mi.rcMonitor.top;
-        width = mi.rcMonitor.right - mi.rcMonitor.left;
-        height = mi.rcMonitor.bottom - mi.rcMonitor.top;
-    }
-
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
-    DWORD style = WS_POPUP | WS_THICKFRAME; 
-
-    m_hwnd = CreateWindowExW(
-        exStyle, kWindowClassName, kWindowTitle, style, 
-        x, y, width, height, nullptr, nullptr, m_instance, this
-    );
-
-    if (m_hwnd)
-    {
-        // Sofort cloaken BEVOR ShowWindow - DWM zeigt das Fenster nie unkonfiguriert
-        BOOL cloak = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-
-        BOOL disableTransitions = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
-
-        BOOL darkMode = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
-
-        COLORREF bgColor = RGB(0, 0, 0);
-        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &bgColor, sizeof(bgColor));
-
-        MARGINS margins = {-1, -1, -1, -1};
-        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
-
-        DWORD backdropType = DWMSBT_TRANSIENTWINDOW; // Acrylic
-        DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
-
-        // ShowWindow NACH allen DWM-Attributen, Fenster ist aber noch gecloakt
-        // Uncloak passiert erst in Initialize() nachdem D3D vollstaendig bereit ist
-        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
-        UpdateWindow(m_hwnd);
-        // KEIN PostMessage(WM_APP) mehr - das wuerde zu frueh uncloaken!
-    }
-
+    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
+        WS_OVERLAPPEDWINDOW, x, y, width, height, nullptr, nullptr, m_instance, this);
     return m_hwnd != nullptr;
 }
 
@@ -1752,59 +1682,29 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
 {
     switch (message)
     {
-    case WM_NCACTIVATE:
-        return DefWindowProcW(m_hwnd, WM_NCACTIVATE, TRUE, lParam);
-
-    case WM_ACTIVATE:
-        if (LOWORD(wParam) == WA_INACTIVE)
-        {
-            PostMessageW(m_hwnd, WM_CLOSE, 0, 0);
-        }
-        return 0;
-
-    case WM_NCCALCSIZE:
-        if (wParam == TRUE) return 0;
-        break;
-
-    case WM_ERASEBKGND:
-        return 1; 
-
     case WM_SIZE:
-        {
-            if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
-            m_minimized = false;
-            m_width = std::max<UINT>(1, LOWORD(lParam));
-            m_height = std::max<UINT>(1, HIWORD(lParam));
-            if (m_swapChain) CreateWindowSizeResources(true);
-            return 0;
-        }
-
+    {
+        if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
+        m_minimized = false;
+        m_width = std::max<UINT>(1, LOWORD(lParam));
+        m_height = std::max<UINT>(1, HIWORD(lParam));
+        if (m_swapChain) CreateWindowSizeResources(true);
+        return 0;
+    }
     case WM_MOUSEWHEEL: case WM_MOUSEHWHEEL: case WM_LBUTTONDOWN: case WM_LBUTTONUP:
         if (ProcessMouseInput(message, wParam, lParam)) return 0;
         break;
-
     case WM_KEYDOWN:
         if (wParam == VK_SPACE) { if ((lParam & 0x40000000) == 0) ReplayEnterAnimation(); return 0; }
         if (ProcessKeyboardInput(true, static_cast<UINT>(wParam), (lParam & 0x40000000) != 0)) return 0;
         break;
-
     case WM_KEYUP:
         if (ProcessKeyboardInput(false, static_cast<UINT>(wParam), false)) return 0;
         break;
-
     case WM_CLOSE:
-        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) 
-        {
-            // Cloaken BEVOR wir das Fenster verstecken - verhindert Schliess-Flash
-            BOOL cloak = TRUE;
-            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-            DwmFlush(); // Warten bis DWM den Cloak applied hat
-            ShowWindow(m_hwnd, SW_HIDE);
-            DestroyWindow(m_hwnd);
-        }
+        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) DestroyWindow(m_hwnd);
         else BeginExitView();
         return 0;
-
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
