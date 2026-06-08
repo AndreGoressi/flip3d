@@ -175,18 +175,15 @@ void Flip3DPrototype::CreateWindowCaptures()
     }
 }
 
-enum WINDOWCOMPOSITIONATTRIB
-{
-    WCA_UNDEFINED = 0x0,
-    WCA_EXCLUDED_FROM_LIVEPREVIEW = 0xD 
-};
-
-struct WINDOWCOMPOSITIONATTRIBDATA
-{
-    WINDOWCOMPOSITIONATTRIB Attrib;
-    void* pvData;
-    DWORD cbData;
-};
+#ifndef DWMWA_SYSTEMBACKDROP_TYPE
+#define DWMWA_SYSTEMBACKDROP_TYPE 38
+#endif
+#ifndef DWMSBT_MAINWINDOW
+#define DWMSBT_MAINWINDOW 2 // 2 steht für das klassische Mica-Material
+#endif
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
 
 // ============================================================================
 // Window creation
@@ -204,6 +201,18 @@ bool Flip3DPrototype::Create_Window()
 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
     DWORD style = WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE;
+
+    BOOL darkMode = TRUE;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+
+    DWORD backdropType = DWMSBT_MAINWINDOW; 
+    HRESULT hr = DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
+    
+    if (FAILED(hr))
+    {
+        BOOL micaTrue = TRUE;
+        DwmSetWindowAttribute(m_hwnd, 1029, &micaTrue, sizeof(micaTrue)); 
+    }
 
     m_hwnd = CreateWindowExW(
         exStyle, 
