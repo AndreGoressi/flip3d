@@ -100,7 +100,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color :
     float3 lit = windowColor.rgb * washParams.w;  // ambient light
     return float4(lit * alpha, alpha);
 }
-)";
+)"; 
 
 inline constexpr const char *kPostProcessPixelShader = R"(
 Texture2D<float4> sceneTexture : register(t0);
@@ -116,21 +116,21 @@ cbuffer FrameCB : register(b0)
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
 {
     float2 texelSize = 1.0f / viewport.xy;
+    float3 luma = float3(0.299f, 0.587f, 0.114f);
 
     float4 colorCenter = sceneTexture.Sample(sceneSampler, uv);
-    float3 luma = float3(0.299f, 0.587f, 0.114f);
-    
     float lumaCenter = dot(colorCenter.rgb, luma);
+    
     float lumaDown   = dot(sceneTexture.Sample(sceneSampler, uv + float2(0.0f, texelSize.y)).rgb, luma);
     float lumaUp     = dot(sceneTexture.Sample(sceneSampler, uv - float2(0.0f, texelSize.y)).rgb, luma);
-    float lumaLeft   = dot(sceneTexture.Sample(sceneSampler, uv - float2(-texelSize.x, 0.0f)).rgb, luma);
+    float lumaLeft   = dot(sceneTexture.Sample(sceneSampler, uv - float2(texelSize.x, 0.0f)).rgb, luma);
     float lumaRight  = dot(sceneTexture.Sample(sceneSampler, uv + float2(texelSize.x, 0.0f)).rgb, luma);
 
     float lumaMin = min(lumaCenter, min(min(lumaDown, lumaUp), min(lumaLeft, lumaRight)));
     float lumaMax = max(lumaCenter, max(max(lumaDown, lumaUp), max(lumaLeft, lumaRight)));
     float lumaRange = lumaMax - lumaMin;
 
-    if (lumaRange < max(0.0312f, lumaMax * 0.125f))
+    if (lumaRange < max(0.063f, lumaMax * 0.166f))
     {
         return colorCenter;
     }
@@ -143,10 +143,10 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
     float dirX = -((lumaLeftUp + lumaLeftDown) - (lumaRightUp + lumaRightDown));
     float dirY = ((lumaLeftUp + lumaRightUp) - (lumaLeftDown + lumaRightDown));
 
-    float dirReduce = max((lumaLeftUp + lumaRightUp + lumaLeftDown + lumaRightDown) * 0.25f * 0.0078125f, 0.00001f);
+    float dirReduce = max((lumaLeftUp + lumaRightUp + lumaLeftDown + lumaRightDown) * 0.25f * 0.125f, 0.00001f);
     float rcpDirMin = 1.0f / (min(abs(dirX), abs(dirY)) + dirReduce);
 
-    float2 dir = min(float2(8.0f, 8.0f), max(float2(-8.0f, -8.0f), float2(dirX, dirY) * rcpDirMin)) * texelSize;
+    float2 dir = min(float2(2.5f, 2.5f), max(float2(-2.5f, -2.5f), float2(dirX, dirY) * rcpDirMin)) * texelSize;
 
     float4 rgbA = 0.5f * (
         sceneTexture.Sample(sceneSampler, uv + dir * (1.0f / 3.0f - 0.5f)) +
@@ -158,8 +158,9 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
     float lumaB = dot(rgbB.rgb, luma);
     if ((lumaB < lumaMin) || (lumaB > lumaMax))
     {
-        return rgbA;
+        return lerp(colorCenter, rgbA, 0.4f);
     }
-    return rgbB;
+    
+    return lerp(colorCenter, rgbB, 0.4f);
 }
 )";
