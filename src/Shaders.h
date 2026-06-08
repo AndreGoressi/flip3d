@@ -133,7 +133,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
     float mx = max(lumaE, max(max(lumaB, lumaD), max(lumaF, lumaH)));
 
     float amg = mx - mn;
-    if (amg < 0.0001f) return e; // Keine Kante -> Original zurückgeben
+    if (amg < 0.0001f) return e;
 
     float4 edgeAA = (b + d + f + h + e) * 0.2f;
 
