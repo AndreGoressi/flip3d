@@ -4,7 +4,7 @@
 #include "WindowCapture.h"
 
 // ============================================================================
-// Main Flip3D D3D11 prototype window class
+// Main Flip3D D3D11 prototype application class
 // ============================================================================
 class Flip3DPrototype
 {
@@ -27,7 +27,7 @@ private:
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
 
     // Window creation
-    bool Create_Window();
+    bool CreateAppWindow();
 
     // D3D initialization
     HRESULT InitializeD3D();
@@ -106,7 +106,6 @@ private:
     // Member variables
     HINSTANCE m_instance = nullptr;
     HWND m_hwnd = nullptr;
-    HWND m_hOwnerWnd = nullptr;
     UINT m_width = kInitialWidth;
     UINT m_height = kInitialHeight;
     bool m_minimized = false;
@@ -139,7 +138,6 @@ private:
     ComPtr<ID3D11Device> m_device;
     ComPtr<ID3D11DeviceContext> m_context;
     ComPtr<IDXGISwapChain1> m_swapChain;
-    bool m_isHDR = false;
 
     // DirectComposition resources (for transparency support)
     ComPtr<IDCompositionDevice> m_dcompDevice;
@@ -147,12 +145,8 @@ private:
     ComPtr<IDCompositionVisual> m_dcompVisual;
 
     ComPtr<ID3D11RenderTargetView> m_renderTargetView;
-    
-    // Post-Processing Shaders (Aliased Scene Target)
-    ComPtr<ID3D11Texture2D>          m_sceneRenderTarget;
-    ComPtr<ID3D11RenderTargetView>   m_sceneRTV;
-    ComPtr<ID3D11ShaderResourceView> m_sceneSRV;
-    
+    ComPtr<ID3D11Texture2D> m_msaaRenderTarget;     // MSAA color buffer
+    ComPtr<ID3D11RenderTargetView> m_msaaRTV;       // persistent MSAA RTV
     ComPtr<ID3D11Texture2D> m_depthStencilTexture;
     ComPtr<ID3D11DepthStencilView> m_depthStencilView;
 
@@ -160,10 +154,6 @@ private:
     ComPtr<ID3D11PixelShader> m_backgroundPixelShader;
     ComPtr<ID3D11VertexShader> m_cardVertexShader;
     ComPtr<ID3D11PixelShader> m_cardPixelShader;
-    
-    // Post-Processing Anti-Aliasing Pixel Shader
-    ComPtr<ID3D11PixelShader>  m_postProcessPixelShader;
-    
     ComPtr<ID3D11InputLayout> m_inputLayout;
     ComPtr<ID3D11Buffer> m_vertexBuffer;
     ComPtr<ID3D11Buffer> m_indexBuffer;
