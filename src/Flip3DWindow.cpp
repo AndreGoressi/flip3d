@@ -2,6 +2,25 @@
 #include "Shaders.h"
 #include "Capture.h"
 
+#ifndef DWMWA_SYSTEMBACKDROP_TYPE
+#define DWMWA_SYSTEMBACKDROP_TYPE 38
+#endif
+#ifndef DWMSBT_MAINWINDOW
+#define DWMSBT_MAINWINDOW 2 // mica classic
+#endif
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
+#ifndef DWMSBT_TRANSIENTWINDOW
+#define DWMSBT_TRANSIENTWINDOW 3
+#endif
+#ifndef DWMWA_BACKGROUND_COLOR
+#define DWMWA_BACKGROUND_COLOR 37
+#endif
+#ifndef DWMWA_CLOAKED
+#define DWMWA_CLOAKED 14
+#endif
+
 namespace
 {
 void ActivateWindowLikeThreadMessage403(HWND selectedHwnd)
@@ -179,25 +198,6 @@ void Flip3DPrototype::CreateWindowCaptures()
         card.capture = std::move(cap);
     }
 }
-
-#ifndef DWMWA_SYSTEMBACKDROP_TYPE
-#define DWMWA_SYSTEMBACKDROP_TYPE 38
-#endif
-#ifndef DWMSBT_MAINWINDOW
-#define DWMSBT_MAINWINDOW 2 // mica classic
-#endif
-#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
-#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
-#endif
-#ifndef DWMSBT_TRANSIENTWINDOW
-#define DWMSBT_TRANSIENTWINDOW 3
-#endif
-#ifndef DWMWA_BACKGROUND_COLOR
-#define DWMWA_BACKGROUND_COLOR 37
-#endif
-#ifndef DWMWA_CLOAKED
-#define DWMWA_CLOAKED 14
-#endif
 
 // ============================================================================
 // Window creation
