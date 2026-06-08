@@ -213,20 +213,18 @@ bool Flip3DPrototype::Create_Window()
     if (!RegisterClassExW(&windowClass))
         return false;
 
-    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    int screenW = GetSystemMetrics(SM_CXSCREEN);
+    int screenH = GetSystemMetrics(SM_CYSCREEN);
 
-    const int width  = bounds.right  - bounds.left;
-    const int height = bounds.bottom - bounds.top;
-    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width));
-    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height));
+    DWORD style   = WS_POPUP; 
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP;
 
     m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP,
+        exStyle,
         kWindowClassName,
         kWindowTitle,
-        WS_OVERLAPPEDWINDOW,
-        x, y, width, height,
+        style,
+        0, 0, screenW, screenH,
         nullptr, nullptr,
         m_instance,
         this
@@ -238,11 +236,12 @@ bool Flip3DPrototype::Create_Window()
         MARGINS margins = { -1, -1, -1, -1 };
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
 
-        int backdropType = 3;
+        int backdropType = 3; // Acrylic
         DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
 
         BOOL disableTransitions = TRUE;
         DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
+
         BOOL useDarkMode = TRUE;
         DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
     }
@@ -252,6 +251,7 @@ bool Flip3DPrototype::Create_Window()
 
     return true;
 }
+
 
 
 // ============================================================================
