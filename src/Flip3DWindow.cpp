@@ -202,6 +202,7 @@ void Flip3DPrototype::CreateWindowCaptures()
 }*/
 bool Flip3DPrototype::Create_Window()
 {
+    // --- Fensterklasse ---
     WNDCLASSEXW windowClass = {};
     windowClass.cbSize = sizeof(windowClass);
     windowClass.hInstance = m_instance;
@@ -213,12 +214,15 @@ bool Flip3DPrototype::Create_Window()
     if (!RegisterClassExW(&windowClass))
         return false;
 
+    // --- Monitorauflösung ---
     int screenW = GetSystemMetrics(SM_CXSCREEN);
     int screenH = GetSystemMetrics(SM_CYSCREEN);
 
-    DWORD style   = WS_POPUP; 
+    // --- WICHTIG: WS_OVERLAPPEDWINDOW behalten (Acrylic braucht das) ---
+    DWORD style   = WS_OVERLAPPEDWINDOW;
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP;
 
+    // --- Fenster erstellen ---
     m_hwnd = CreateWindowExW(
         exStyle,
         kWindowClassName,
@@ -232,6 +236,13 @@ bool Flip3DPrototype::Create_Window()
 
     if (!m_hwnd)
         return false;
+
+    // --- Titelleiste UNSICHTBAR machen ---
+    SetWindowLongW(m_hwnd, GWL_STYLE, style & ~WS_CAPTION);
+    SetWindowPos(m_hwnd, nullptr, 0, 0, screenW, screenH,
+                 SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOOWNERZORDER);
+
+    // --- Acrylic aktivieren ---
     {
         MARGINS margins = { -1, -1, -1, -1 };
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
@@ -246,6 +257,7 @@ bool Flip3DPrototype::Create_Window()
         DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
     }
 
+    // --- Anzeigen ---
     ShowWindow(m_hwnd, SW_SHOW);
     UpdateWindow(m_hwnd);
 
