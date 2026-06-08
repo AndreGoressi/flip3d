@@ -80,6 +80,13 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
     m_previousFrameTime = std::chrono::steady_clock::now();
+
+    // Erst HIER uncloaken: D3D, DComp, SwapChain, Shader, Captures sind alle fertig.
+    // Der allererste sichtbare Frame ist bereits vollstaendig gerendert = kein Flash.
+    DwmFlush();
+    BOOL cloak = FALSE;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+
     return true;
 }
 
@@ -235,11 +242,18 @@ bool Flip3DPrototype::Create_Window()
 
     if (m_hwnd)
     {
+        // Sofort cloaken BEVOR ShowWindow - DWM zeigt das Fenster nie unkonfiguriert
         BOOL cloak = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
 
         BOOL disableTransitions = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
+
+        BOOL darkMode = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+
+        COLORREF bgColor = RGB(0, 0, 0);
+        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &bgColor, sizeof(bgColor));
 
         MARGINS margins = {-1, -1, -1, -1};
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
@@ -247,7 +261,11 @@ bool Flip3DPrototype::Create_Window()
         DWORD backdropType = DWMSBT_TRANSIENTWINDOW; // Acrylic
         DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
 
-        PostMessageW(m_hwnd, WM_APP, 0, 0);
+        // ShowWindow NACH allen DWM-Attributen, Fenster ist aber noch gecloakt
+        // Uncloak passiert erst in Initialize() nachdem D3D vollstaendig bereit ist
+        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
+        UpdateWindow(m_hwnd);
+        // KEIN PostMessage(WM_APP) mehr - das wuerde zu frueh uncloaken!
     }
 
     return m_hwnd != nullptr;
@@ -1734,13 +1752,6 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
 {
     switch (message)
     {
-    case WM_APP:
-        {
-            BOOL cloak = FALSE;
-            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-        }
-        return 0;
-
     case WM_NCACTIVATE:
         return DefWindowProcW(m_hwnd, WM_NCACTIVATE, TRUE, lParam);
 
@@ -1784,6 +1795,10 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
     case WM_CLOSE:
         if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) 
         {
+            // Cloaken BEVOR wir das Fenster verstecken - verhindert Schliess-Flash
+            BOOL cloak = TRUE;
+            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+            DwmFlush(); // Warten bis DWM den Cloak applied hat
             ShowWindow(m_hwnd, SW_HIDE);
             DestroyWindow(m_hwnd);
         }
