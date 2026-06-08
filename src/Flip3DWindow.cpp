@@ -179,13 +179,10 @@ void Flip3DPrototype::CreateWindowCaptures()
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
 #endif
 #ifndef DWMSBT_MAINWINDOW
-#define DWMSBT_MAINWINDOW 2 // mica classic
+#define DWMSBT_MAINWINDOW 2 // 2 steht f r das klassische Mica-Material
 #endif
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
-#endif
-#ifndef DWMSBT_TRANSIENTWINDOW
-#define DWMSBT_TRANSIENTWINDOW 3
 #endif
 
 // ============================================================================
@@ -203,26 +200,43 @@ bool Flip3DPrototype::Create_Window()
     if (!RegisterClassExW(&windowClass)) return false;
 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
-    DWORD style = WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE;
+    DWORD style = WS_POPUP;
+
+    // Use work area (excludes taskbar) so taskbar stays visible on top
+    MONITORINFO mi = {};
+    mi.cbSize = sizeof(mi);
+    HMONITOR hMon = MonitorFromPoint({0,0}, MONITOR_DEFAULTTOPRIMARY);
+    GetMonitorInfoW(hMon, &mi);
+    RECT wa = mi.rcWork; // work area = screen minus taskbar
 
     m_hwnd = CreateWindowExW(
-        exStyle, 
-        kWindowClassName, 
+        exStyle,
+        kWindowClassName,
         kWindowTitle,
-        style, 
-        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+        style,
+        wa.left, wa.top,
+        wa.right - wa.left, wa.bottom - wa.top,
         nullptr, nullptr, m_instance, this
     );
 
     if (m_hwnd)
     {
+        // Enable Mica dark mode background
+        // Step 1: Force dark mode title bar / theme
         BOOL darkMode = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
             &darkMode, sizeof(darkMode));
 
+        // Step 2: Extend DWM frame into entire client area
+        // Required for Mica to render behind the window
         MARGINS margins = {-1, -1, -1, -1};
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
 
+        // Step 3: Set Acrylic backdrop (DWMSBT_TRANSIENTWINDOW = 3)
+        // Acrylic = blurred background, darker than Mica, better for overlays
+        #ifndef DWMSBT_TRANSIENTWINDOW
+        #define DWMSBT_TRANSIENTWINDOW 3
+        #endif
         DWORD backdropType = DWMSBT_TRANSIENTWINDOW;
         DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
             &backdropType, sizeof(backdropType));
