@@ -130,7 +130,8 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
     float lumaMax = max(lumaCenter, max(max(lumaDown, lumaUp), max(lumaLeft, lumaRight)));
     float lumaRange = lumaMax - lumaMin;
 
-    if (lumaRange < max(0.063f, lumaMax * 0.166f))
+    // Ignoriere komplett flache Areale
+    if (lumaRange < max(0.04f, lumaMax * 0.125f))
     {
         return colorCenter;
     }
@@ -146,7 +147,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
     float dirReduce = max((lumaLeftUp + lumaRightUp + lumaLeftDown + lumaRightDown) * 0.25f * 0.125f, 0.00001f);
     float rcpDirMin = 1.0f / (min(abs(dirX), abs(dirY)) + dirReduce);
 
-    float2 dir = min(float2(2.5f, 2.5f), max(float2(-2.5f, -2.5f), float2(dirX, dirY) * rcpDirMin)) * texelSize;
+    float2 dir = min(float2(6.0f, 6.0f), max(float2(-6.0f, -6.0f), float2(dirX, dirY) * rcpDirMin)) * texelSize;
 
     float4 rgbA = 0.5f * (
         sceneTexture.Sample(sceneSampler, uv + dir * (1.0f / 3.0f - 0.5f)) +
@@ -156,11 +157,17 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
         sceneTexture.Sample(sceneSampler, uv + dir * 0.5f));
 
     float lumaB = dot(rgbB.rgb, luma);
+    float blendWeight = saturate((lumaRange - 0.05f) / 0.2f);
+    
+    float lumaAvg = (lumaUp + lumaDown + lumaLeft + lumaRight) * 0.25f;
+    float subpixelDiff = abs(lumaAvg - lumaCenter);
+    float subpixelWeight = saturate(subpixelDiff / lumaRange);
+    blendWeight *= (1.0f - subpixelWeight * 0.6f); 
+
     if ((lumaB < lumaMin) || (lumaB > lumaMax))
     {
-        return lerp(colorCenter, rgbA, 0.4f);
+        return lerp(colorCenter, rgbA, blendWeight);
     }
-    
-    return lerp(colorCenter, rgbB, 0.4f);
+    return lerp(colorCenter, rgbB, blendWeight);
 }
 )";
