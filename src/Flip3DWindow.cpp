@@ -1749,7 +1749,7 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
         {
             KillTimer(m_hwnd, 1);
             BOOL cloak = FALSE;
-            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak))
+            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
         }
         return 0;
 
