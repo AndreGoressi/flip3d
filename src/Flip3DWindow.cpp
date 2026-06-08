@@ -1680,7 +1680,7 @@ void Flip3DPrototype::Render()
     m_context->PSSetShader(m_backgroundPixelShader.Get(), nullptr, 0);
     m_context->VSSetConstantBuffers(0, 1, frameBuffers);
     m_context->PSSetConstantBuffers(0, 1, frameBuffers);
-    //m_context->Draw(3, 0);
+    m_context->Draw(3, 0);
     m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     const UINT stride = sizeof(Vertex);
