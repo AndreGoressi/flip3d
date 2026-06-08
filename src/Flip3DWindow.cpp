@@ -234,28 +234,37 @@ bool Flip3DPrototype::Create_Window()
 
     if (m_hwnd)
     {
-        SetLayeredWindowAttributes(m_hwnd, 0, 0, LWA_ALPHA);
 
-        BOOL darkMode = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
-    
-        COLORREF flashFixColor = RGB(0, 0, 0);
-        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashFixColor, sizeof(flashFixColor));
-    
-        BOOL disableTransitions = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
-    
-        MARGINS margins = {-1, -1, -1, -1};
-        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
-    
-        DWORD backdropType = DWMSBT_TRANSIENTWINDOW;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
+    BOOL darkMode = TRUE;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
 
-        ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
-        UpdateWindow(m_hwnd);
-    
-        DwmFlush();
-        SetLayeredWindowAttributes(m_hwnd, 0, 255, LWA_ALPHA);
+    COLORREF flashFixColor = RGB(0, 0, 0);
+    DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashFixColor, sizeof(flashFixColor));
+
+    BOOL disableTransitions = TRUE;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
+
+    MARGINS margins = {-1, -1, -1, -1};
+    DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+
+    DWORD backdropType = DWMSBT_TRANSIENTWINDOW;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
+
+    #ifndef DWMWA_CLOAKED
+    #define DWMWA_CLOAKED 14
+    #endif
+    BOOL cloak = TRUE;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+
+    ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
+    UpdateWindow(m_hwnd);
+
+    DwmFlush();
+    DwmFlush();
+    DwmFlush();
+
+    cloak = FALSE;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
     }
     return m_hwnd != nullptr;
 }
