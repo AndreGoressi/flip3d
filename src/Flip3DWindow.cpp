@@ -225,8 +225,15 @@ bool Flip3DPrototype::Create_Window()
     {
         int backdropType = 3;
         DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
+
+        BOOL disableTransitions = TRUE;
+        DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
+        
+        BOOL useDarkMode = TRUE;
+        DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
     }
-    
+    // -------------------------------------------
+
     return m_hwnd != nullptr;
 }
 
