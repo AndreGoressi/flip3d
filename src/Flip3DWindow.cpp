@@ -1729,13 +1729,13 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
         return 0;
 
     case WM_NCCALCSIZE:
-        {
-            if (wParam == TRUE)
-            {
-                return 0;
-            }
-        }
+        if (wParam == TRUE) return 0;
         break;
+
+    case WM_ERASEBKGND:
+        {
+            return 1; 
+        }
 
     case WM_SIZE:
         {
@@ -1761,7 +1761,11 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
         break;
 
     case WM_CLOSE:
-        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) DestroyWindow(m_hwnd);
+        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) 
+        {
+            ShowWindow(m_hwnd, SW_HIDE);
+            DestroyWindow(m_hwnd);
+        }
         else BeginExitView();
         return 0;
 
