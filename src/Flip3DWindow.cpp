@@ -220,10 +220,14 @@ bool Flip3DPrototype::Create_Window()
         DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
             &darkMode, sizeof(darkMode));
 
+        BOOL disableTransitions = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED,
+            &disableTransitions, sizeof(disableTransitions));
+
         MARGINS margins = {-1, -1, -1, -1};
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
 
-        DWORD backdropType = DWMSBT_TRANSIENTWINDOW;
+        DWORD backdropType = DWMSBT_TRANSIENTWINDOW; // Acrylic
         DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
             &backdropType, sizeof(backdropType));
     }
