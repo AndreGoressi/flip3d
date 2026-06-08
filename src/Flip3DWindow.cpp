@@ -219,7 +219,7 @@ bool Flip3DPrototype::Create_Window()
     }
 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
-    DWORD style = WS_OVERLAPPEDWINDOW; 
+    DWORD style = WS_OVERLAPPEDWINDOW | WS_THICKFRAME; 
 
     m_hwnd = CreateWindowExW(
         exStyle, 
