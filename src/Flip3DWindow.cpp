@@ -1,34 +1,6 @@
 #include "Flip3DWindow.h"
 #include "Shaders.h"
 #include "Capture.h"
-#include <vector>
-
-enum WindowCompositionAttribute {
-    WCA_ACCENT_POLICY = 19
-};
-
-enum AccentState {
-    ACCENT_DISABLED = 0,
-    ACCENT_ENABLE_GRADIENT = 1,
-    ACCENT_ENABLE_TRANSPARENTBLUR = 2, 
-    ACCENT_ENABLE_BLURBEHIND = 3,        
-    ACCENT_ENABLE_ACRYLICBLUR = 4        
-};
-
-struct AccentPolicy {
-    AccentState accentState;
-    DWORD accentFlags;
-    DWORD gradientColor; 
-    DWORD animationId;
-};
-
-struct WindowCompositionAttributeData {
-    WindowCompositionAttribute attribute;
-    PVOID data;
-    ULONG sizeOfData;
-};
-
-typedef BOOL(WINAPI* PFN_SET_WINDOW_COMPOSITION_ATTRIBUTE)(HWND, WindowCompositionAttributeData*);
 
 #ifndef DWMWA_SYSTEMBACKDROP_TYPE
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
@@ -90,32 +62,10 @@ void CompleteDeferredSelectedWindowActivation(HWND selectedHwnd, bool activation
 // ============================================================================
 // Initialisation
 // ============================================================================
-/*bool Flip3DPrototype::Initialize(HINSTANCE instance)
-{
-    RoInitialize(RO_INIT_MULTITHREADED);
-    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-    m_instance = instance;
-    LoadFlip3DPreferences();
-    BuildCardModels();
-
-    if (!Create_Window()) return false;
-    m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
-
-    if (FAILED(InitializeD3D())) return false;
-    CreateWindowCaptures();
-
-    m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
-    m_state = ViewState::Enter;
-    m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
-    m_previousFrameTime = std::chrono::steady_clock::now();
-    return true;
-}*/
-
 bool Flip3DPrototype::Initialize(HINSTANCE instance)
 {
     RoInitialize(RO_INIT_MULTITHREADED);
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-
     m_instance = instance;
     LoadFlip3DPreferences();
     BuildCardModels();
@@ -126,16 +76,10 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     if (FAILED(InitializeD3D())) return false;
     CreateWindowCaptures();
 
-    m_previousFrameTime = std::chrono::steady_clock::now();
-    Update(0.0f);
-    Render(); 
-
-    ShowWindow(m_hwnd, SW_SHOW);
-    UpdateWindow(m_hwnd);
-
     m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
+    m_previousFrameTime = std::chrono::steady_clock::now();
     return true;
 }
 
@@ -251,35 +195,10 @@ void Flip3DPrototype::CreateWindowCaptures()
     }
 }
 
-void ApplyAccentBlur(HWND hwnd)
-{
-    HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
-    if (hUser32)
-    {
-        auto SetWindowCompositionAttribute = reinterpret_cast<PFN_SET_WINDOW_COMPOSITION_ATTRIBUTE>(
-            GetProcAddress(hUser32, "SetWindowCompositionAttribute"));
-        
-        if (SetWindowCompositionAttribute)
-        {
-            AccentPolicy policy = {};
-            policy.accentState = ACCENT_ENABLE_TRANSPARENTBLUR; 
-            policy.accentFlags = 2; 
-            policy.gradientColor = 0xAA202020; 
-
-            WindowCompositionAttributeData data = {};
-            data.attribute = WCA_ACCENT_POLICY;
-            data.data = &policy;
-            data.sizeOfData = sizeof(policy);
-
-            SetWindowCompositionAttribute(hwnd, &data);
-        }
-    }
-}
-
 // ============================================================================
 // Window creation
 // ============================================================================
-/*bool Flip3DPrototype::Create_Window()
+bool Flip3DPrototype::Create_Window()
 {
     WNDCLASSEXW windowClass = {};
     windowClass.cbSize = sizeof(windowClass);
@@ -335,41 +254,6 @@ void ApplyAccentBlur(HWND hwnd)
         DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
 
         PostMessageW(m_hwnd, WM_APP, 0, 0);
-    }
-
-    return m_hwnd != nullptr;
-}*/
-bool Flip3DPrototype::Create_Window()
-{
-    WNDCLASSEXW windowClass = {};
-    windowClass.cbSize = sizeof(windowClass);
-    windowClass.hInstance = m_instance;
-    windowClass.lpfnWndProc = &Flip3DPrototype::WndProc;
-    windowClass.lpszClassName = kWindowClassName;
-    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    windowClass.hbrBackground = nullptr; 
-    
-    if (!RegisterClassExW(&windowClass)) return false;
-    
-    m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP | WS_EX_LAYERED, 
-        kWindowClassName, 
-        L"Flip3D", 
-        WS_POPUP | WS_THICKFRAME, 
-        0, 0, 0, 0, 
-        nullptr, nullptr, m_instance, this
-    );
-
-    if (m_hwnd)
-    {
-        ApplyAccentBlur(m_hwnd);
-
-        MARGINS margins = { -1, -1, -1, -1 };
-        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
-
-        BOOL cloak = FALSE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
     }
 
     return m_hwnd != nullptr;
