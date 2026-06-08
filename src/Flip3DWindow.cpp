@@ -1,4 +1,4 @@
-#include "Flip3DApp.h"
+#include "Flip3DWindow.h"
 #include "Shaders.h"
 #include "Capture.h"
 
