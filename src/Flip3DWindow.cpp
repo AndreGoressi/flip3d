@@ -201,16 +201,16 @@ bool Flip3DPrototype::Create_Window()
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
-    
-    m_hOwnerWnd = CreateWindowExW(
+
+    HWND hOwnerWnd = CreateWindowExW(
         0, 
-        kWindowClassName, 
+        L"Static", 
         L"Flip3D_StealthParent", 
         0, 
         0, 0, 0, 0, 
         nullptr, nullptr, m_instance, nullptr
     );
-    if (!m_hOwnerWnd) return false;
+    if (!hOwnerWnd) return false;
 
     int x = 0, y = 0;
     int width = GetSystemMetrics(SM_CXSCREEN);
@@ -236,7 +236,7 @@ bool Flip3DPrototype::Create_Window()
         kWindowTitle,
         style, 
         x, y, width, height, 
-        m_hOwnerWnd, 
+        hOwnerWnd, 
         nullptr, m_instance, this
     );
 
