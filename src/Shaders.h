@@ -119,7 +119,7 @@ float RGBToLuma(float3 rgb)
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
 {
     float2 texelSize = 1.0f / viewport.xy;
-    float4 e = sceneTexture.Sample(sceneSampler, uv); // Zentrum
+    float4 e = sceneTexture.Sample(sceneSampler, uv);
     float4 b = sceneTexture.Sample(sceneSampler, uv + float2(0.0f, -texelSize.y));
     float4 d = sceneTexture.Sample(sceneSampler, uv + float2(-texelSize.x, 0.0f));
     float4 f = sceneTexture.Sample(sceneSampler, uv + float2(texelSize.x, 0.0f));
