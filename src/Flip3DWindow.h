@@ -106,6 +106,7 @@ private:
     // Member variables
     HINSTANCE m_instance = nullptr;
     HWND m_hwnd = nullptr;
+    HWND m_hOwnerWnd = nullptr;
     UINT m_width = kInitialWidth;
     UINT m_height = kInitialHeight;
     bool m_minimized = false;
