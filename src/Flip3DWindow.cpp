@@ -179,7 +179,7 @@ void Flip3DPrototype::CreateWindowCaptures()
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
 #endif
 #ifndef DWMSBT_MAINWINDOW
-#define DWMSBT_MAINWINDOW 2 // 2 steht für das klassische Mica-Material
+#define DWMSBT_MAINWINDOW 2 // 2 steht f r das klassische Mica-Material
 #endif
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
@@ -210,6 +210,20 @@ bool Flip3DPrototype::Create_Window()
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
         nullptr, nullptr, m_instance, this
     );
+
+    if (m_hwnd)
+    {
+        BOOL darkMode = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
+            &darkMode, sizeof(darkMode));
+
+        MARGINS margins = {-1, -1, -1, -1};
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+
+        DWORD backdropType = DWMSBT_MAINWINDOW;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE,
+            &backdropType, sizeof(backdropType));
+    }
 
     return m_hwnd != nullptr;
 }
@@ -505,7 +519,7 @@ void Flip3DPrototype::TickRepeatedRotate()
     {
         if (!m_cards.empty() && m_cards.front().hwnd != m_selectedHWND)
         {
-            // Old mapping: rate < 0 → passes -WHEEL_DELTA → rotationStep=+1 → front→back.
+            // Old mapping: rate < 0   passes -WHEEL_DELTA   rotationStep=+1   front back.
             constexpr bool backward = false;
             RotateListPhysically(backward);
             StartRotationStep(backward, RotationDurationForRotateList());
@@ -540,7 +554,7 @@ void Flip3DPrototype::TickRepeatedRotate()
         return;
     }
 
-    // Old mapping: rate > 0 → +WHEEL_DELTA → back→front;  rate < 0 → -WHEEL_DELTA → front→back
+    // Old mapping: rate > 0   +WHEEL_DELTA   back front;  rate < 0   -WHEEL_DELTA   front back
     const bool backward = (m_rRepeatedRotateRate > 0.0f);
     RotateListPhysically(backward);
     StartRotationStep(backward, RotationDurationForRotateList());
@@ -575,7 +589,7 @@ int Flip3DPrototype::DistanceBetween(size_t sourcePos, size_t targetPos, bool fo
     size_t cur = sourcePos;
     while (cur != targetPos)
     {
-        // Old semantics: forward=true → decrement → backward through list
+        // Old semantics: forward=true   decrement   backward through list
         if (forward)
             cur = (cur + count - 1) % count;
         else
@@ -764,7 +778,7 @@ void Flip3DPrototype::SelectWindow(HWND targetHwnd)
 
     if (frontHwnd != targetHwnd)
     {
-        // Old code: DistanceBetween(front, selected, true) where true→decrement→backward
+        // Old code: DistanceBetween(front, selected, true) where true decrement backward
         const int dist = DistanceBetween(0, targetPos, true);
         if (dist > 0)
         {
@@ -794,7 +808,7 @@ void Flip3DPrototype::RotateListByMouseWheelAmount(int mouseWheelAmount)
     if (wheelDirection == 0) return;
 
     m_cMouseWheelLeftOver -= wheelDirection * WHEEL_DELTA;
-    // Old mapping: rotationStep = -wheelDirection → positive wheel → backward
+    // Old mapping: rotationStep = -wheelDirection   positive wheel   backward
     const bool backward = (wheelDirection > 0);
     RotateListPhysically(backward);
     StartRotationStep(backward, RotationDurationForRotateList());
@@ -850,8 +864,8 @@ void Flip3DPrototype::BeginRotateToWindow(HWND targetHwnd)
         return;
     }
 
-    const int fwd = DistanceBetween(0, targetPos, true);   // true→decrement→backward distance
-    const int bwd = DistanceBetween(0, targetPos, false);  // false→increment→forward distance
+    const int fwd = DistanceBetween(0, targetPos, true);   // true decrement backward distance
+    const int bwd = DistanceBetween(0, targetPos, false);  // false increment forward distance
     int dist = fwd;
     int dir = 1;
     if (bwd <= fwd) { dist = bwd; dir = -1; }
@@ -1414,7 +1428,7 @@ CardAnimationState Flip3DPrototype::ResolveCardAnimationState(
     else
         state = ResolveSteadyCardAnimationState(entry, context, state);
 
-    // uDWM: zIndex lerps by ±1: v12 = (zIndex + adj)*(1-p) + zIndex*p.
+    // uDWM: zIndex lerps by  1: v12 = (zIndex + adj)*(1-p) + zIndex*p.
     // For the hidden-window outgoing card, the regular outgoing logical path
     // already matches the live direction; applying a count-sized override here
     // incorrectly throws the front fade-out card onto the tail path.
@@ -1432,7 +1446,7 @@ CardWorldState Flip3DPrototype::GetWorldFromParametric(
     const CardAnimationState &animationState, float enterProgress) const
 {
     const float zIndex = -animationState.pathRelative;
-    // uDWM passes t directly — negative for extreme zIndex, extrapolates past P0
+    // uDWM passes t directly   negative for extreme zIndex, extrapolates past P0
     float t = 1.0f - ((zIndex - 0.5f) / -context.maxWindows);
     XMFLOAT3 curvePosition = EvaluateBezier(t);
     curvePosition.x = (curvePosition.x * kProxyPathScale) + kProxySceneOffset.x;
@@ -1619,6 +1633,7 @@ void Flip3DPrototype::Render()
     frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
+    // Fully transparent clear - Mica backdrop shows through
     static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
     m_context->OMSetRenderTargets(1, m_msaaRTV.GetAddressOf(), m_depthStencilView.Get());
     m_context->RSSetViewports(1, &m_viewport);
