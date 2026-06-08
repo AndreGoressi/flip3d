@@ -100,8 +100,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color :
     float3 lit = windowColor.rgb * washParams.w;  // ambient light
     return float4(lit * alpha, alpha);
 }
-
-// Füge diesen Shader unten an deine Shaders.h an:
+)";
 
 inline constexpr const char *kPostProcessPixelShader = R"(
 Texture2D<float4> sceneTexture : register(t0);
