@@ -207,7 +207,7 @@ bool Flip3DPrototype::Create_Window()
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    windowClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    windowClass.hbrBackground = nullptr;
     
     if (!RegisterClassExW(&windowClass)) return false;
 
@@ -237,12 +237,6 @@ bool Flip3DPrototype::Create_Window()
     {
         BOOL cloak = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-
-        BOOL darkMode = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
-
-        COLORREF flashFixColor = RGB(0, 0, 0); 
-        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashFixColor, sizeof(flashFixColor));
 
         BOOL disableTransitions = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
