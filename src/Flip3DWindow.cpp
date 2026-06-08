@@ -61,6 +61,11 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
     m_previousFrameTime = std::chrono::steady_clock::now();
+
+    DwmFlush();
+    BOOL cloak = FALSE;
+    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+
     return true;
 }
 
