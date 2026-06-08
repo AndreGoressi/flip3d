@@ -200,7 +200,6 @@ bool Flip3DPrototype::Create_Window()
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
-
     windowClass.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
     
     if (!RegisterClassExW(&windowClass)) return false;
@@ -220,8 +219,7 @@ bool Flip3DPrototype::Create_Window()
     }
 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
-    
-    DWORD style = WS_POPUP | WS_THICKFRAME; 
+    DWORD style = WS_OVERLAPPEDWINDOW; 
 
     m_hwnd = CreateWindowExW(
         exStyle, 
