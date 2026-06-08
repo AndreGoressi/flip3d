@@ -1790,6 +1790,27 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
     {
         case WM_ERASEBKGND:
             return 1;
+        
+        case WM_ACTIVATE:
+        {
+            if (LOWORD(wParam) == WA_INACTIVE)
+            {
+                BeginExitView();
+                return 0;
+            }
+            return 0;
+        }
+
+        case WM_NCACTIVATE:
+        {
+            if (wParam == FALSE)
+            {
+                BeginExitView();
+                return 0;
+            }
+            return DefWindowProcW(m_hwnd, message, wParam, lParam);
+        }
+        // ------------------------------------------------
 
         case WM_SIZE:
         {
@@ -1838,4 +1859,5 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
 
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
+
 
