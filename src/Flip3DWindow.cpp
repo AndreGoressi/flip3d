@@ -202,7 +202,7 @@ bool Flip3DPrototype::Create_Window()
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_TOPMOST;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
     DWORD style = WS_POPUP | WS_MAXIMIZE;
 
     m_hwnd = CreateWindowExW(
