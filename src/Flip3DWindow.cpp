@@ -1,6 +1,34 @@
 #include "Flip3DWindow.h"
 #include "Shaders.h"
 #include "Capture.h"
+#include <vector>
+
+enum WindowCompositionAttribute {
+    WCA_ACCENT_POLICY = 19
+};
+
+enum AccentState {
+    ACCENT_DISABLED = 0,
+    ACCENT_ENABLE_GRADIENT = 1,
+    ACCENT_ENABLE_TRANSPARENTBLUR = 2, 
+    ACCENT_ENABLE_BLURBEHIND = 3,        
+    ACCENT_ENABLE_ACRYLICBLUR = 4        
+};
+
+struct AccentPolicy {
+    AccentState accentState;
+    DWORD accentFlags;
+    DWORD gradientColor; 
+    DWORD animationId;
+};
+
+struct WindowCompositionAttributeData {
+    WindowCompositionAttribute attribute;
+    PVOID data;
+    ULONG sizeOfData;
+};
+
+typedef BOOL(WINAPI* PFN_SET_WINDOW_COMPOSITION_ATTRIBUTE)(HWND, WindowCompositionAttributeData*);
 
 #ifndef DWMWA_SYSTEMBACKDROP_TYPE
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
@@ -62,43 +90,10 @@ void CompleteDeferredSelectedWindowActivation(HWND selectedHwnd, bool activation
 // ============================================================================
 // Initialisation
 // ============================================================================
-/*bool Flip3DPrototype::Initialize(HINSTANCE instance)
-{
-    RoInitialize(RO_INIT_MULTITHREADED);
-    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-    m_instance = instance;
-    LoadFlip3DPreferences();
-    BuildCardModels();
-
-    if (!Create_Window()) return false;
-    m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
-
-    if (FAILED(InitializeD3D())) return false;
-    CreateWindowCaptures();
-
-    m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
-    m_state = ViewState::Enter;
-    m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
-    m_previousFrameTime = std::chrono::steady_clock::now();
-    return true;
-}*/
-
 bool Flip3DPrototype::Initialize(HINSTANCE instance)
 {
     RoInitialize(RO_INIT_MULTITHREADED);
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-    
-    HMODULE hUxTheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (hUxTheme)
-    {
-        auto SetPreferredAppMode = reinterpret_cast<int(WINAPI*)(int)>(GetProcAddress(hUxTheme, MAKEINTRESOURCEA(135)));
-        if (SetPreferredAppMode) 
-        {
-            SetPreferredAppMode(2); 
-        }
-        FreeLibrary(hUxTheme);
-    }
-
     m_instance = instance;
     LoadFlip3DPreferences();
     BuildCardModels();
@@ -109,18 +104,13 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     if (FAILED(InitializeD3D())) return false;
     CreateWindowCaptures();
 
-    // 1. Erstes Frame vorbereiten
-    m_previousFrameTime = std::chrono::steady_clock::now();
-    Update(0.0f);
-    Render(); 
-    
-    PostMessageW(m_hwnd, WM_APP + 1, 0, 0); 
-
     m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
+    m_previousFrameTime = std::chrono::steady_clock::now();
     return true;
 }
+
 
 int Flip3DPrototype::Run()
 {
@@ -233,10 +223,35 @@ void Flip3DPrototype::CreateWindowCaptures()
     }
 }
 
+void ApplyAccentBlur(HWND hwnd)
+{
+    HMODULE hUser32 = GetModuleHandleW(L"user32.dll");
+    if (hUser32)
+    {
+        auto SetWindowCompositionAttribute = reinterpret_cast<PFN_SET_WINDOW_COMPOSITION_ATTRIBUTE>(
+            GetProcAddress(hUser32, "SetWindowCompositionAttribute"));
+        
+        if (SetWindowCompositionAttribute)
+        {
+            AccentPolicy policy = {};
+            policy.accentState = ACCENT_ENABLE_TRANSPARENTBLUR; 
+            policy.accentFlags = 2; 
+            policy.gradientColor = 0xAA202020; 
+
+            WindowCompositionAttributeData data = {};
+            data.attribute = WCA_ACCENT_POLICY;
+            data.data = &policy;
+            data.sizeOfData = sizeof(policy);
+
+            SetWindowCompositionAttribute(hwnd, &data);
+        }
+    }
+}
+
 // ============================================================================
 // Window creation
 // ============================================================================
-bool Flip3DPrototype::Create_Window()
+/*bool Flip3DPrototype::Create_Window()
 {
     WNDCLASSEXW windowClass = {};
     windowClass.cbSize = sizeof(windowClass);
@@ -292,6 +307,41 @@ bool Flip3DPrototype::Create_Window()
         DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
 
         PostMessageW(m_hwnd, WM_APP, 0, 0);
+    }
+
+    return m_hwnd != nullptr;
+}*/
+bool Flip3DPrototype::Create_Window()
+{
+    WNDCLASSEXW windowClass = {};
+    windowClass.cbSize = sizeof(windowClass);
+    windowClass.hInstance = m_instance;
+    windowClass.lpfnWndProc = &Flip3DPrototype::WndProc;
+    windowClass.lpszClassName = kWindowClassName;
+    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    windowClass.hbrBackground = nullptr; 
+    
+    if (!RegisterClassExW(&windowClass)) return false;
+    
+    m_hwnd = CreateWindowExW(
+        WS_EX_NOREDIRECTIONBITMAP | WS_EX_LAYERED, 
+        kWindowClassName, 
+        L"Flip3D", 
+        WS_POPUP | WS_THICKFRAME, 
+        0, 0, 0, 0, 
+        nullptr, nullptr, m_instance, this
+    );
+
+    if (m_hwnd)
+    {
+        ApplyAccentBlur(m_hwnd);
+
+        MARGINS margins = { -1, -1, -1, -1 };
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+
+        BOOL cloak = FALSE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
     }
 
     return m_hwnd != nullptr;
@@ -1774,7 +1824,7 @@ void Flip3DPrototype::Render()
 // ============================================================================
 // Window message handling
 // ============================================================================
-/*LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -1787,78 +1837,6 @@ void Flip3DPrototype::Render()
 
     case WM_NCACTIVATE:
         return DefWindowProcW(m_hwnd, WM_NCACTIVATE, TRUE, lParam);
-
-    case WM_ACTIVATE:
-        if (LOWORD(wParam) == WA_INACTIVE)
-        {
-            PostMessageW(m_hwnd, WM_CLOSE, 0, 0);
-        }
-        return 0;
-
-    case WM_NCCALCSIZE:
-        if (wParam == TRUE) return 0;
-        break;
-
-    case WM_ERASEBKGND:
-        return 1; 
-
-    case WM_SIZE:
-        {
-            if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
-            m_minimized = false;
-            m_width = std::max<UINT>(1, LOWORD(lParam));
-            m_height = std::max<UINT>(1, HIWORD(lParam));
-            if (m_swapChain) CreateWindowSizeResources(true);
-            return 0;
-        }
-
-    case WM_MOUSEWHEEL: case WM_MOUSEHWHEEL: case WM_LBUTTONDOWN: case WM_LBUTTONUP:
-        if (ProcessMouseInput(message, wParam, lParam)) return 0;
-        break;
-
-    case WM_KEYDOWN:
-        if (wParam == VK_SPACE) { if ((lParam & 0x40000000) == 0) ReplayEnterAnimation(); return 0; }
-        if (ProcessKeyboardInput(true, static_cast<UINT>(wParam), (lParam & 0x40000000) != 0)) return 0;
-        break;
-
-    case WM_KEYUP:
-        if (ProcessKeyboardInput(false, static_cast<UINT>(wParam), false)) return 0;
-        break;
-
-    case WM_CLOSE:
-        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) 
-        {
-            ShowWindow(m_hwnd, SW_HIDE);
-            DestroyWindow(m_hwnd);
-        }
-        else BeginExitView();
-        return 0;
-
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-    }
-    return DefWindowProcW(m_hwnd, message, wParam, lParam);
-}*/
-LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch (message)
-    {
-    case WM_APP + 1: 
-        {
-            BOOL cloak = FALSE;
-            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-            
-            UpdateWindow(m_hwnd);
-        }
-        return 0;
-
-    case WM_APP:
-        {
-            // BOOL cloak = FALSE;
-            // DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-        }
-        return 0;
 
     case WM_ACTIVATE:
         if (LOWORD(wParam) == WA_INACTIVE)
