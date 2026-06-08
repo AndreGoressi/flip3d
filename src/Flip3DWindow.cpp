@@ -240,9 +240,6 @@ bool Flip3DPrototype::Create_Window()
         BOOL darkMode = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
 
-        #ifndef DWMWA_BACKGROUND_COLOR
-        #define DWMWA_BACKGROUND_COLOR 37
-        #endif
         COLORREF flashFixColor = RGB(0, 0, 0); 
         DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashFixColor, sizeof(flashFixColor));
 
