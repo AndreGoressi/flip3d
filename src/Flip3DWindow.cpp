@@ -1744,17 +1744,20 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
 {
     switch (message)
     {
-    case WM_NCACTIVATE:
+    case WM_APP:
         {
-            return DefWindowProcW(m_hwnd, WM_NCACTIVATE, TRUE, lParam);
+            BOOL cloak = FALSE;
+            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
         }
+        return 0;
+
+    case WM_NCACTIVATE:
+        return DefWindowProcW(m_hwnd, WM_NCACTIVATE, TRUE, lParam);
 
     case WM_ACTIVATE:
+        if (LOWORD(wParam) == WA_INACTIVE)
         {
-            if (LOWORD(wParam) == WA_INACTIVE)
-            {
-                PostMessageW(m_hwnd, WM_CLOSE, 0, 0);
-            }
+            PostMessageW(m_hwnd, WM_CLOSE, 0, 0);
         }
         return 0;
 
