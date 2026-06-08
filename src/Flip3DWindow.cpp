@@ -203,32 +203,32 @@ void Flip3DPrototype::CreateWindowCaptures()
 bool Flip3DPrototype::Create_Window()
 {
     // --- Fensterklasse ---
-    WNDCLASSEXW windowClass = {};
-    windowClass.cbSize = sizeof(windowClass);
-    windowClass.hInstance = m_instance;
-    windowClass.lpfnWndProc = &Flip3DPrototype::WndProc;
-    windowClass.lpszClassName = kWindowClassName;
-    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    WNDCLASSEXW wc = {};
+    wc.cbSize = sizeof(wc);
+    wc.hInstance = m_instance;
+    wc.lpfnWndProc = &Flip3DPrototype::WndProc;
+    wc.lpszClassName = kWindowClassName;
+    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
 
-    if (!RegisterClassExW(&windowClass))
+    if (!RegisterClassExW(&wc))
         return false;
 
     // --- Monitorauflösung ---
     int screenW = GetSystemMetrics(SM_CXSCREEN);
     int screenH = GetSystemMetrics(SM_CYSCREEN);
 
-    // --- Fenster erstellen (mit normalem Style, damit Acrylic funktioniert) ---
+    // --- WICHTIG: OverlappedWindow für Acrylic ---
     DWORD style   = WS_OVERLAPPEDWINDOW;
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP;
 
+    // --- Fenster erstellen ---
     m_hwnd = CreateWindowExW(
         exStyle,
         kWindowClassName,
         kWindowTitle,
         style,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        screenW, screenH,
+        0, 0, screenW, screenH,
         nullptr, nullptr,
         m_instance,
         this
@@ -252,11 +252,12 @@ bool Flip3DPrototype::Create_Window()
         DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
     }
 
-    // --- Titelleiste UNSICHTBAR machen (aber Acrylic behalten) ---
+    // --- Titelleiste entfernen (aber Acrylic behalten!) ---
     style &= ~WS_CAPTION;
+    style &= ~WS_THICKFRAME; // Rand entfernen
     SetWindowLongW(m_hwnd, GWL_STYLE, style);
 
-    // --- Frame neu berechnen (wichtig!) ---
+    // --- Frame neu berechnen ---
     SetWindowPos(
         m_hwnd, nullptr,
         0, 0, screenW, screenH,
