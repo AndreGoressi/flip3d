@@ -191,53 +191,27 @@ struct WINDOWCOMPOSITIONATTRIBDATA
 // ============================================================================
 // Window creation
 // ============================================================================
-bool Flip3DPrototype::Create_Window()
+bool Flip3DPrototypeApp::CreateAppWindow()
 {
     WNDCLASSEXW windowClass = {};
     windowClass.cbSize = sizeof(windowClass);
     windowClass.hInstance = m_instance;
-    windowClass.lpfnWndProc = &Flip3DPrototype::WndProc;
+    windowClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&windowClass)) return false;
 
-    HWND hOwnerWnd = CreateWindowExW(
-        0, 
-        L"Static", 
-        L"Flip3D_StealthParent", 
-        0, 
-        0, 0, 0, 0, 
-        nullptr, nullptr, m_instance, nullptr
-    );
-    if (!hOwnerWnd) return false;
-
-    int x = 0, y = 0;
-    int width = GetSystemMetrics(SM_CXSCREEN);
-    int height = GetSystemMetrics(SM_CYSCREEN);
-
-    HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
-    MONITORINFO mi = { sizeof(mi) };
-    
-    if (GetMonitorInfoW(hMonitor, &mi))
-    {
-        x = mi.rcMonitor.left;
-        y = mi.rcMonitor.top;
-        width = mi.rcMonitor.right - mi.rcMonitor.left;
-        height = mi.rcMonitor.bottom - mi.rcMonitor.top;
-    }
-
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
-    DWORD style = WS_POPUP | WS_THICKFRAME; 
+    DWORD style = WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE;
 
     m_hwnd = CreateWindowExW(
         exStyle, 
         kWindowClassName, 
         kWindowTitle,
         style, 
-        x, y, width, height, 
-        hOwnerWnd, 
-        nullptr, m_instance, this
+        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+        nullptr, nullptr, m_instance, this
     );
 
     return m_hwnd != nullptr;
