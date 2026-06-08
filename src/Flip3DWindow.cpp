@@ -1,4 +1,4 @@
-#include "Flip3DWindow.h"
+#include "Flip3DApp.h"
 #include "Shaders.h"
 #include "Capture.h"
 
@@ -80,11 +80,6 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
     m_previousFrameTime = std::chrono::steady_clock::now();
-
-    DwmFlush();
-    BOOL cloak = FALSE;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
-
     return true;
 }
 
@@ -266,7 +261,6 @@ bool Flip3DPrototype::Create_Window()
     return m_hwnd != nullptr;
 }
 
-
 // ============================================================================
 // D3D initialisation
 // ============================================================================
@@ -347,7 +341,7 @@ HRESULT Flip3DPrototype::InitializeD3D()
 HRESULT Flip3DPrototype::CreateDeviceResources()
 {
     HRESULT hr = S_OK;
-    ComPtr<ID3DBlob> backgroundVS, backgroundPS, cardVS, cardPS, postProcessPS;
+    ComPtr<ID3DBlob> backgroundVS, backgroundPS, cardVS, cardPS;
     hr = CompileShader(kBackgroundVertexShader, "main", "vs_5_0", backgroundVS);
     if (FAILED(hr)) return hr;
     hr = CompileShader(kBackgroundPixelShader, "main", "ps_5_0", backgroundPS);
@@ -355,9 +349,6 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
     hr = CompileShader(kCardVertexShader, "main", "vs_5_0", cardVS);
     if (FAILED(hr)) return hr;
     hr = CompileShader(kCardPixelShader, "main", "ps_5_0", cardPS);
-    if (FAILED(hr)) return hr;
-    
-    hr = CompileShader(kPostProcessPixelShader, "main", "ps_5_0", postProcessPS);
     if (FAILED(hr)) return hr;
 
     hr = m_device->CreateVertexShader(backgroundVS->GetBufferPointer(), backgroundVS->GetBufferSize(), nullptr, &m_backgroundVertexShader);
@@ -367,9 +358,6 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
     hr = m_device->CreateVertexShader(cardVS->GetBufferPointer(), cardVS->GetBufferSize(), nullptr, &m_cardVertexShader);
     if (FAILED(hr)) return hr;
     hr = m_device->CreatePixelShader(cardPS->GetBufferPointer(), cardPS->GetBufferSize(), nullptr, &m_cardPixelShader);
-    if (FAILED(hr)) return hr;
-    
-    hr = m_device->CreatePixelShader(postProcessPS->GetBufferPointer(), postProcessPS->GetBufferSize(), nullptr, &m_postProcessPixelShader);
     if (FAILED(hr)) return hr;
 
     static constexpr D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] = {
@@ -419,7 +407,7 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
     rsDesc.DepthClipEnable = TRUE;
-    rsDesc.MultisampleEnable = FALSE; // MSAA DEAKTIVIERT!
+    rsDesc.MultisampleEnable = TRUE;
     hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
     if (FAILED(hr)) return hr;
 
@@ -455,10 +443,11 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
 HRESULT Flip3DPrototype::CreateWindowSizeResources(bool resizeBuffers)
 {
     if (!m_swapChain) return E_FAIL;
-    m_sceneRTV.Reset(); m_renderTargetView.Reset(); m_sceneRenderTarget.Reset(); m_sceneSRV.Reset();
+    m_msaaRTV.Reset(); m_renderTargetView.Reset(); m_msaaRenderTarget.Reset();
     m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
+    static constexpr UINT kSampleCount = 4;
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
@@ -471,27 +460,27 @@ HRESULT Flip3DPrototype::CreateWindowSizeResources(bool resizeBuffers)
     hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
     if (FAILED(hr)) return hr;
 
-    D3D11_TEXTURE2D_DESC sceneDesc = {};
-    sceneDesc.Width = m_width; sceneDesc.Height = m_height;
-    sceneDesc.MipLevels = 1; sceneDesc.ArraySize = 1;
-    sceneDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    sceneDesc.SampleDesc.Count = 1; // Unlit native Render
-    sceneDesc.Usage = D3D11_USAGE_DEFAULT;
-    sceneDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE; 
-    hr = m_device->CreateTexture2D(&sceneDesc, nullptr, &m_sceneRenderTarget);
+    D3D11_TEXTURE2D_DESC msaaDesc = {};
+    msaaDesc.Width = m_width; msaaDesc.Height = m_height;
+    msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
+    msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    msaaDesc.SampleDesc.Count = kSampleCount;
+    msaaDesc.Usage = D3D11_USAGE_DEFAULT;
+    msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
+    hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
     if (FAILED(hr)) return hr;
 
-    hr = m_device->CreateRenderTargetView(m_sceneRenderTarget.Get(), nullptr, &m_sceneRTV);
-    if (FAILED(hr)) return hr;
-
-    hr = m_device->CreateShaderResourceView(m_sceneRenderTarget.Get(), nullptr, &m_sceneSRV);
+    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+    rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+    hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
     if (FAILED(hr)) return hr;
 
     D3D11_TEXTURE2D_DESC depthDesc = {};
     depthDesc.Width = m_width; depthDesc.Height = m_height;
     depthDesc.MipLevels = 1; depthDesc.ArraySize = 1;
     depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = 1;
+    depthDesc.SampleDesc.Count = kSampleCount;
     depthDesc.Usage = D3D11_USAGE_DEFAULT;
     depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     hr = m_device->CreateTexture2D(&depthDesc, nullptr, &m_depthStencilTexture);
@@ -561,7 +550,7 @@ void Flip3DPrototype::TickRepeatedRotate()
     {
         if (!m_cards.empty() && m_cards.front().hwnd != m_selectedHWND)
         {
-            // Old mapping: rate < 0   passes -WHEEL_DELTA   rotationStep=+1   front back.
+            // Old mapping: rate < 0 → passes -WHEEL_DELTA → rotationStep=+1 → front→back.
             constexpr bool backward = false;
             RotateListPhysically(backward);
             StartRotationStep(backward, RotationDurationForRotateList());
@@ -596,7 +585,7 @@ void Flip3DPrototype::TickRepeatedRotate()
         return;
     }
 
-    // Old mapping: rate > 0   +WHEEL_DELTA   back front;  rate < 0   -WHEEL_DELTA   front back
+    // Old mapping: rate > 0 → +WHEEL_DELTA → back→front;  rate < 0 → -WHEEL_DELTA → front→back
     const bool backward = (m_rRepeatedRotateRate > 0.0f);
     RotateListPhysically(backward);
     StartRotationStep(backward, RotationDurationForRotateList());
@@ -631,7 +620,7 @@ int Flip3DPrototype::DistanceBetween(size_t sourcePos, size_t targetPos, bool fo
     size_t cur = sourcePos;
     while (cur != targetPos)
     {
-        // Old semantics: forward=true   decrement   backward through list
+        // Old semantics: forward=true → decrement → backward through list
         if (forward)
             cur = (cur + count - 1) % count;
         else
@@ -820,7 +809,7 @@ void Flip3DPrototype::SelectWindow(HWND targetHwnd)
 
     if (frontHwnd != targetHwnd)
     {
-        // Old code: DistanceBetween(front, selected, true) where true decrement backward
+        // Old code: DistanceBetween(front, selected, true) where true→decrement→backward
         const int dist = DistanceBetween(0, targetPos, true);
         if (dist > 0)
         {
@@ -850,7 +839,7 @@ void Flip3DPrototype::RotateListByMouseWheelAmount(int mouseWheelAmount)
     if (wheelDirection == 0) return;
 
     m_cMouseWheelLeftOver -= wheelDirection * WHEEL_DELTA;
-    // Old mapping: rotationStep = -wheelDirection   positive wheel   backward
+    // Old mapping: rotationStep = -wheelDirection → positive wheel → backward
     const bool backward = (wheelDirection > 0);
     RotateListPhysically(backward);
     StartRotationStep(backward, RotationDurationForRotateList());
@@ -906,8 +895,8 @@ void Flip3DPrototype::BeginRotateToWindow(HWND targetHwnd)
         return;
     }
 
-    const int fwd = DistanceBetween(0, targetPos, true);   // true decrement backward distance
-    const int bwd = DistanceBetween(0, targetPos, false);  // false increment forward distance
+    const int fwd = DistanceBetween(0, targetPos, true);   // true→decrement→backward distance
+    const int bwd = DistanceBetween(0, targetPos, false);  // false→increment→forward distance
     int dist = fwd;
     int dir = 1;
     if (bwd <= fwd) { dist = bwd; dir = -1; }
@@ -1470,7 +1459,7 @@ CardAnimationState Flip3DPrototype::ResolveCardAnimationState(
     else
         state = ResolveSteadyCardAnimationState(entry, context, state);
 
-    // uDWM: zIndex lerps by  1: v12 = (zIndex + adj)*(1-p) + zIndex*p.
+    // uDWM: zIndex lerps by ±1: v12 = (zIndex + adj)*(1-p) + zIndex*p.
     // For the hidden-window outgoing card, the regular outgoing logical path
     // already matches the live direction; applying a count-sized override here
     // incorrectly throws the front fade-out card onto the tail path.
@@ -1488,7 +1477,7 @@ CardWorldState Flip3DPrototype::GetWorldFromParametric(
     const CardAnimationState &animationState, float enterProgress) const
 {
     const float zIndex = -animationState.pathRelative;
-    // uDWM passes t directly   negative for extreme zIndex, extrapolates past P0
+    // uDWM passes t directly — negative for extreme zIndex, extrapolates past P0
     float t = 1.0f - ((zIndex - 0.5f) / -context.maxWindows);
     XMFLOAT3 curvePosition = EvaluateBezier(t);
     curvePosition.x = (curvePosition.x * kProxyPathScale) + kProxySceneOffset.x;
@@ -1676,13 +1665,12 @@ void Flip3DPrototype::Render()
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
     static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
-    
-    m_context->OMSetRenderTargets(1, m_sceneRTV.GetAddressOf(), m_depthStencilView.Get());
+    m_context->OMSetRenderTargets(1, m_msaaRTV.GetAddressOf(), m_depthStencilView.Get());
     m_context->RSSetViewports(1, &m_viewport);
     m_context->RSSetState(m_rasterizerState.Get());
     m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
-    m_context->ClearRenderTargetView(m_sceneRTV.Get(), clearColor);
+    m_context->ClearRenderTargetView(m_msaaRTV.Get(), clearColor);
     m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     ID3D11Buffer *frameBuffers[] = {m_frameConstantsBuffer.Get()};
@@ -1734,22 +1722,15 @@ void Flip3DPrototype::Render()
         m_context->DrawIndexed(6, 0, 0);
     }
 
-    m_context->OMSetRenderTargets(0, nullptr, nullptr);
-    m_context->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), nullptr);
-    m_context->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
-    m_context->IASetInputLayout(nullptr);
-    m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_context->VSSetShader(m_backgroundVertexShader.Get(), nullptr, 0);
-    m_context->PSSetShader(m_postProcessPixelShader.Get(), nullptr, 0);
-    m_context->VSSetConstantBuffers(0, 1, frameBuffers);
-    m_context->PSSetConstantBuffers(0, 1, frameBuffers);
-    m_context->PSSetShaderResources(0, 1, m_sceneSRV.GetAddressOf());
-    m_context->PSSetSamplers(0, 1, m_cardSampler.GetAddressOf()); 
-    m_context->Draw(3, 0);
-
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
+
+    {
+        ComPtr<ID3D11Texture2D> backBuffer;
+        if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
+            m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
+    }
 
     m_swapChain->Present(1, 0);
 }
