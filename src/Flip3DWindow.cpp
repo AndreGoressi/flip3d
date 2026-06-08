@@ -108,13 +108,13 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
 
     if (FAILED(InitializeD3D())) return false;
     CreateWindowCaptures();
-    
+
+    // 1. Erstes Frame vorbereiten
     m_previousFrameTime = std::chrono::steady_clock::now();
     Update(0.0f);
     Render(); 
-
-    BOOL cloak = FALSE;
-    DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+    
+    PostMessageW(m_hwnd, WM_APP + 1, 0, 0); 
 
     m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
     m_state = ViewState::Enter;
@@ -245,7 +245,7 @@ bool Flip3DPrototype::Create_Window()
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    windowClass.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+    windowClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     
     if (!RegisterClassExW(&windowClass)) return false;
 
@@ -1774,7 +1774,7 @@ void Flip3DPrototype::Render()
 // ============================================================================
 // Window message handling
 // ============================================================================
-LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
+/*LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -1787,6 +1787,78 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
 
     case WM_NCACTIVATE:
         return DefWindowProcW(m_hwnd, WM_NCACTIVATE, TRUE, lParam);
+
+    case WM_ACTIVATE:
+        if (LOWORD(wParam) == WA_INACTIVE)
+        {
+            PostMessageW(m_hwnd, WM_CLOSE, 0, 0);
+        }
+        return 0;
+
+    case WM_NCCALCSIZE:
+        if (wParam == TRUE) return 0;
+        break;
+
+    case WM_ERASEBKGND:
+        return 1; 
+
+    case WM_SIZE:
+        {
+            if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
+            m_minimized = false;
+            m_width = std::max<UINT>(1, LOWORD(lParam));
+            m_height = std::max<UINT>(1, HIWORD(lParam));
+            if (m_swapChain) CreateWindowSizeResources(true);
+            return 0;
+        }
+
+    case WM_MOUSEWHEEL: case WM_MOUSEHWHEEL: case WM_LBUTTONDOWN: case WM_LBUTTONUP:
+        if (ProcessMouseInput(message, wParam, lParam)) return 0;
+        break;
+
+    case WM_KEYDOWN:
+        if (wParam == VK_SPACE) { if ((lParam & 0x40000000) == 0) ReplayEnterAnimation(); return 0; }
+        if (ProcessKeyboardInput(true, static_cast<UINT>(wParam), (lParam & 0x40000000) != 0)) return 0;
+        break;
+
+    case WM_KEYUP:
+        if (ProcessKeyboardInput(false, static_cast<UINT>(wParam), false)) return 0;
+        break;
+
+    case WM_CLOSE:
+        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) 
+        {
+            ShowWindow(m_hwnd, SW_HIDE);
+            DestroyWindow(m_hwnd);
+        }
+        else BeginExitView();
+        return 0;
+
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    }
+    return DefWindowProcW(m_hwnd, message, wParam, lParam);
+}*/
+LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
+{
+    switch (message)
+    {
+    case WM_APP + 1: 
+        {
+            BOOL cloak = FALSE;
+            DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+            
+            UpdateWindow(m_hwnd);
+        }
+        return 0;
+
+    case WM_APP:
+        {
+            // BOOL cloak = FALSE;
+            // DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+        }
+        return 0;
 
     case WM_ACTIVATE:
         if (LOWORD(wParam) == WA_INACTIVE)
