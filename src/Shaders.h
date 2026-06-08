@@ -130,7 +130,6 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
     float lumaMax = max(lumaCenter, max(max(lumaDown, lumaUp), max(lumaLeft, lumaRight)));
     float lumaRange = lumaMax - lumaMin;
 
-    // Ignoriere komplett flache Areale
     if (lumaRange < max(0.04f, lumaMax * 0.125f))
     {
         return colorCenter;
