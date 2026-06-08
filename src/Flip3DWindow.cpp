@@ -1715,29 +1715,52 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
 {
     switch (message)
     {
-    case WM_SIZE:
-    {
-        if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
-        m_minimized = false;
-        m_width = std::max<UINT>(1, LOWORD(lParam));
-        m_height = std::max<UINT>(1, HIWORD(lParam));
-        if (m_swapChain) CreateWindowSizeResources(true);
+    case WM_ACTIVATE:
+        {
+            if (LOWORD(wParam) == WA_INACTIVE)
+            {
+                PostMessageW(m_hwnd, WM_CLOSE, 0, 0);
+            }
+        }
         return 0;
-    }
+
+    case WM_NCCALCSIZE:
+        {
+            if (wParam == TRUE)
+            {
+                return 0;
+            }
+        }
+        break;
+
+    case WM_SIZE:
+        {
+            if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
+            m_minimized = false;
+            m_width = std::max<UINT>(1, LOWORD(lParam));
+            m_height = std::max<UINT>(1, HIWORD(lParam));
+            if (m_swapChain) CreateWindowSizeResources(true);
+            return 0;
+        }
+
     case WM_MOUSEWHEEL: case WM_MOUSEHWHEEL: case WM_LBUTTONDOWN: case WM_LBUTTONUP:
         if (ProcessMouseInput(message, wParam, lParam)) return 0;
         break;
+
     case WM_KEYDOWN:
         if (wParam == VK_SPACE) { if ((lParam & 0x40000000) == 0) ReplayEnterAnimation(); return 0; }
         if (ProcessKeyboardInput(true, static_cast<UINT>(wParam), (lParam & 0x40000000) != 0)) return 0;
         break;
+
     case WM_KEYUP:
         if (ProcessKeyboardInput(false, static_cast<UINT>(wParam), false)) return 0;
         break;
+
     case WM_CLOSE:
         if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) DestroyWindow(m_hwnd);
         else BeginExitView();
         return 0;
+
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
