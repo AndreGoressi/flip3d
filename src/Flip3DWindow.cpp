@@ -97,15 +97,39 @@ int Flip3DPrototype::Run()
 // ============================================================================
 LRESULT CALLBACK Flip3DPrototype::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    if (message == WM_NCCREATE)
+    switch (message)
     {
-        auto *create = reinterpret_cast<CREATESTRUCTW *>(lParam);
-        auto *self = static_cast<Flip3DPrototype *>(create->lpCreateParams);
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
-        self->m_hwnd = hwnd;
+    case WM_GETMINMAXINFO:
+        {
+            MINMAXINFO* mmi = reinterpret_cast<MINMAXINFO*>(lParam);
+            
+            HMONITOR hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            MONITORINFO mi = { sizeof(mi) };
+            
+            if (GetMonitorInfoW(hMonitor, &mi))
+            {
+                mmi->ptMaxPosition.x = 0;
+                mmi->ptMaxPosition.y = 0;
+                mmi->ptMaxSize.x = mi.rcMonitor.right - mi.rcMonitor.left;
+                mmi->ptMaxSize.y = mi.rcMonitor.bottom - mi.rcMonitor.top;
+            }
+        }
+        return 0;
+
+    case WM_ACTIVATE:
+        {
+            if (LOWORD(wParam) == WA_INACTIVE)
+            {
+                SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+            }
+            else
+            {
+                SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+            }
+        }
+        return 0;
     }
-    auto *self = reinterpret_cast<Flip3DPrototype *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-    return self ? self->HandleMessage(message, wParam, lParam) : DefWindowProcW(hwnd, message, wParam, lParam);
+    return DefWindowProcW(hwnd, message, wParam, lParam);
 }
 
 // ============================================================================
