@@ -200,17 +200,35 @@ bool Flip3DPrototype::Create_Window()
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
+
+    windowClass.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
+    
     if (!RegisterClassExW(&windowClass)) return false;
 
+    int x = 0, y = 0;
+    int width = GetSystemMetrics(SM_CXSCREEN);
+    int height = GetSystemMetrics(SM_CYSCREEN);
+
+    HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+    MONITORINFO mi = { sizeof(mi) };
+    if (GetMonitorInfoW(hMonitor, &mi))
+    {
+        x = mi.rcMonitor.left;
+        y = mi.rcMonitor.top;
+        width = mi.rcMonitor.right - mi.rcMonitor.left;
+        height = mi.rcMonitor.bottom - mi.rcMonitor.top;
+    }
+
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
-    DWORD style = WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE;
+    
+    DWORD style = WS_POPUP | WS_THICKFRAME; 
 
     m_hwnd = CreateWindowExW(
         exStyle, 
         kWindowClassName, 
         kWindowTitle,
         style, 
-        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 
+        x, y, width, height, 
         nullptr, nullptr, m_instance, this
     );
 
@@ -234,7 +252,6 @@ bool Flip3DPrototype::Create_Window()
 
     return m_hwnd != nullptr;
 }
-
 
 
 // ============================================================================
