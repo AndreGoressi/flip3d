@@ -1721,7 +1721,7 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
     {
     case WM_NCACTIVATE:
         {
-            return TRUE;
+            return DefWindowProcW(m_hwnd, WM_NCACTIVATE, TRUE, lParam);
         }
 
     case WM_ACTIVATE:
