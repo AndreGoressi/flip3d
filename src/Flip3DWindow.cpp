@@ -243,7 +243,7 @@ bool Flip3DPrototype::Create_Window()
         DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
 
         COLORREF flashColor = RGB(0, 0, 0); 
-        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashColor, sizeof(flashFixColor));
+        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashColor, sizeof(flashColor));
 
         BOOL disableTransitions = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
