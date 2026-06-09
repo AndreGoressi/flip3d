@@ -215,6 +215,24 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
+    wchar_t cls[256];
+    GetClassNameW(hwnd, cls, 256);
+
+    if (wcscmp(cls, L"XamlWindow") == 0) 
+    {
+        return TRUE;
+    }
+
+    if (wcsstr(cls, L"DesktopWindowXamlSource")) 
+    {
+        return TRUE;
+    }
+
+    if (wcsstr(cls, L"CoreWindow")) 
+    {
+        return TRUE;
+    }
+
     const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
     const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
     if (!QualifiesForFlip3DProxyWindow(hwnd, style, exStyle))
