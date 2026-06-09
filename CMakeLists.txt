@@ -6,14 +6,32 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# ---------------------------------------------------------
+# Flip3D Executable
+# ---------------------------------------------------------
 add_executable(flip3d WIN32
     src/main.cpp
     src/Config.cpp
     src/Capture.cpp
     src/WindowCapture.cpp
-    src/Flip3DWindow.cpp  
+    src/Flip3DWindow.cpp
+    src/Shaders.h
+    src/DwmThumbApi.h
+
+    # FSR2 Core
+    src/ffx_fsr2.cpp
 )
 
+# ---------------------------------------------------------
+# Include directories
+# ---------------------------------------------------------
+target_include_directories(flip3d PRIVATE
+    src
+)
+
+# ---------------------------------------------------------
+# Compiler flags
+# ---------------------------------------------------------
 target_compile_definitions(flip3d PRIVATE
     UNICODE
     _UNICODE
@@ -28,9 +46,11 @@ if(MSVC)
         /permissive-
         /utf-8
     )
-    # (C++/WinRT bridge removed — CreateFromVisual is now pure ABI)
 endif()
 
+# ---------------------------------------------------------
+# Linker libraries
+# ---------------------------------------------------------
 target_link_libraries(flip3d PRIVATE
     d3d11
     d3dcompiler
@@ -39,7 +59,6 @@ target_link_libraries(flip3d PRIVATE
     dcomp
     d2d1
     runtimeobject
-    windowsapp
     windowsapp
     user32
     gdi32
