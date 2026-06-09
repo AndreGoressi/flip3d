@@ -10,8 +10,6 @@
 
 #include "ffx_fsr2.h"
 #include "ffx_fsr2_interface.h"
-#include "ffx_fsr2_private.h"
-#include "ffx_fsr2_maximum_bias.h"
 
 // === DIESE BEIDEN ZEILEN FEHLEN UND MÜSSEN HIER REIN: ===
 //#include "dx11/ffx_fsr2_dx11.h"           // Bringt die ganzen ffx...DX11 Funktionen mit!
@@ -432,29 +430,19 @@ HRESULT Flip3DPrototype::InitializeD3D()
     // ------------------------------------------------------------
     {
         FfxFsr2ContextDescription fsr2Desc = {};
-        fsr2Desc.flags              = FFX_FSR2_ENABLE_AUTO_EXPOSURE
-                                    | FFX_FSR2_ENABLE_DEPTH_INVERTED
-                                    | FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
+        fsr2Desc.flags = FFX_FSR2_ENABLE_AUTO_EXPOSURE
+                       | FFX_FSR2_ENABLE_DEPTH_INVERTED
+                       | FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
+
         fsr2Desc.maxRenderSize.width  = m_width;
         fsr2Desc.maxRenderSize.height = m_height;
         fsr2Desc.displaySize.width    = m_width;
         fsr2Desc.displaySize.height   = m_height;
-        fsr2Desc.device = ffxGetDeviceDX11(m_device.Get());
-
-        // DX11-Backend aus dem offiziellen ffx_fsr2_api_dx11 holen
-        size_t scratchSize = ffxFsr2GetScratchMemorySizeDX11();
-        m_fsr2Scratch.resize(scratchSize);
-        ffxFsr2GetInterfaceDX11(
-            &fsr2Desc.backendInterface,
-            m_device.Get(),
-            m_fsr2Scratch.data(),
-            scratchSize);
 
         FfxErrorCode err = ffxFsr2ContextCreate(&m_fsr2Context, &fsr2Desc);
         if (err != FFX_OK)
             OutputDebugStringA("FSR2: Context creation failed!\n");
     }
-
     return S_OK;
 }
 
