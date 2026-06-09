@@ -15,9 +15,6 @@ add_executable(flip3d WIN32
     src/Capture.cpp
     src/WindowCapture.cpp
     src/Flip3DWindow.cpp
-    src/Shaders.h
-    src/DwmThumbApi.h
-
     # FSR2 Core
     src/ffx_fsr2.cpp
 )
