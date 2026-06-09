@@ -41,6 +41,8 @@ private:
     int m_fsr2FrameIndex = 0;
     float m_fsr2JitterX = 0.0f;
     float m_fsr2JitterY = 0.0f;
+    void UpdateFSR2Jitter();
+
 
     // Render size
     uint32_t m_fsr2RenderWidth = 0;
