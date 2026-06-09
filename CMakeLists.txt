@@ -16,7 +16,7 @@ add_executable(flip3d WIN32
     src/WindowCapture.cpp
     src/Flip3DWindow.cpp
     # FSR2 Core
-    src/ffx_fsr2.cpp
+    src/ffx-fsr2-api/ffx_fsr2.cpp
 )
 
 # ---------------------------------------------------------
