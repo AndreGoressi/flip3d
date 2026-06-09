@@ -1,6 +1,8 @@
 #include "Flip3DWindow.h"
 #include "Shaders.h"
 #include "Capture.h"
+#include <Windows.h>
+#include <dwmapi.h>
 
 namespace
 {
@@ -257,7 +259,7 @@ bool Flip3DPrototype::Create_Window()
     int screenH = GetSystemMetrics(SM_CYSCREEN);
 
     DWORD style   = WS_OVERLAPPEDWINDOW;
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
+    DWORD exStyle = WS_EX_TOOLWINDOW;
 
     m_hwnd = CreateWindowExW(
         exStyle,
