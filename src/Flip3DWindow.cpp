@@ -420,96 +420,55 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
     return hr;
 }
 
-HRESULT Flip3DPrototype::CreateWindowSizeResources(bool resizeBuffers)
+HRESULT Flip3DPrototypeApp::CreateWindowSizeResources(bool resizeBuffers)
 {
     if (!m_swapChain) return E_FAIL;
-
-    // Alle RT-Ressourcen freigeben
-    m_renderTargetView.Reset();
-    m_depthStencilTexture.Reset();
-    m_depthStencilView.Reset();
-    m_fsr2InputColor.Reset();
-    m_fsr2InputColorSRV.Reset();
-    m_fsr2InputColorUAV.Reset();
-    m_fsr2Output.Reset();
-    m_fsr2OutputSRV.Reset();
-    m_fsr2OutputUAV.Reset();
-    m_fsr2MotionVectors.Reset();
-    m_fsr2MotionVectorsSRV.Reset();
+    m_msaaRTV.Reset(); m_renderTargetView.Reset(); m_msaaRenderTarget.Reset();
+    m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
+    static constexpr UINT kSampleCount = 4;
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
         if (FAILED(hr)) return hr;
     }
 
-    // Backbuffer RTV (1x, kein MSAA)
     ComPtr<ID3D11Texture2D> backBuffer;
     HRESULT hr = m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
     if (FAILED(hr)) return hr;
     hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
     if (FAILED(hr)) return hr;
 
-    // Depth-Buffer – SampleCount=1, kein MSAA
+    D3D11_TEXTURE2D_DESC msaaDesc = {};
+    msaaDesc.Width = m_width; msaaDesc.Height = m_height;
+    msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
+    msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    msaaDesc.SampleDesc.Count = kSampleCount;
+    msaaDesc.Usage = D3D11_USAGE_DEFAULT;
+    msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
+    hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
+    if (FAILED(hr)) return hr;
+
+    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+    rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
+    hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
+    if (FAILED(hr)) return hr;
+
     D3D11_TEXTURE2D_DESC depthDesc = {};
-    depthDesc.Width            = m_width;
-    depthDesc.Height           = m_height;
-    depthDesc.MipLevels        = 1;
-    depthDesc.ArraySize        = 1;
-    depthDesc.Format           = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = 1;
-    depthDesc.Usage            = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags        = D3D11_BIND_DEPTH_STENCIL;
+    depthDesc.Width = m_width; depthDesc.Height = m_height;
+    depthDesc.MipLevels = 1; depthDesc.ArraySize = 1;
+    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthDesc.SampleDesc.Count = kSampleCount;
+    depthDesc.Usage = D3D11_USAGE_DEFAULT;
+    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     hr = m_device->CreateTexture2D(&depthDesc, nullptr, &m_depthStencilTexture);
     if (FAILED(hr)) return hr;
     hr = m_device->CreateDepthStencilView(m_depthStencilTexture.Get(), nullptr, &m_depthStencilView);
     if (FAILED(hr)) return hr;
 
-    // ------------------------------------------------------------
-    // FSR2 Native AA – Eingabe-Farbtextur (RGBA16F, native Auflösung)
-    // Szene wird direkt in diese Textur gerendert (kein separates MSAA-RT).
-    // ------------------------------------------------------------
-    D3D11_TEXTURE2D_DESC colorDesc = {};
-    colorDesc.Width            = m_width;
-    colorDesc.Height           = m_height;
-    colorDesc.MipLevels        = 1;
-    colorDesc.ArraySize        = 1;
-    colorDesc.Format           = DXGI_FORMAT_R16G16B16A16_FLOAT;
-    colorDesc.SampleDesc.Count = 1;
-    colorDesc.Usage            = D3D11_USAGE_DEFAULT;
-    colorDesc.BindFlags        = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-
-    hr = m_device->CreateTexture2D(&colorDesc, nullptr, &m_fsr2InputColor);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreateRenderTargetView(m_fsr2InputColor.Get(), nullptr, &m_fsr2InputColorRTV);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreateShaderResourceView(m_fsr2InputColor.Get(), nullptr, &m_fsr2InputColorSRV);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreateUnorderedAccessView(m_fsr2InputColor.Get(), nullptr, &m_fsr2InputColorUAV);
-    if (FAILED(hr)) return hr;
-
-    // FSR2-Ausgabe (selbes Format, native Auflösung – Native AA skaliert nicht)
-    hr = m_device->CreateTexture2D(&colorDesc, nullptr, &m_fsr2Output);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreateShaderResourceView(m_fsr2Output.Get(), nullptr, &m_fsr2OutputSRV);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreateUnorderedAccessView(m_fsr2Output.Get(), nullptr, &m_fsr2OutputUAV);
-    if (FAILED(hr)) return hr;
-
-    // Motion Vectors – für statische Szene immer Null, aber FSR2 benötigt das Handle
-    D3D11_TEXTURE2D_DESC mvDesc = colorDesc;
-    mvDesc.Format     = DXGI_FORMAT_R16G16_FLOAT;
-    mvDesc.BindFlags  = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
-    hr = m_device->CreateTexture2D(&mvDesc, nullptr, &m_fsr2MotionVectors);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreateShaderResourceView(m_fsr2MotionVectors.Get(), nullptr, &m_fsr2MotionVectorsSRV);
-    if (FAILED(hr)) return hr;
-
-    // Viewport aktualisieren
-    m_viewport = {0.0f, 0.0f,
-        static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
-
+    m_viewport = {0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
     return S_OK;
 }
 
