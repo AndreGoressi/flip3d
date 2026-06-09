@@ -1,8 +1,6 @@
 #include "Flip3DWindow.h"
 #include "Shaders.h"
 #include "Capture.h"
-#include <Windows.h>
-#include <dwmapi.h>
 
 namespace
 {
@@ -259,7 +257,7 @@ bool Flip3DPrototype::Create_Window()
     int screenH = GetSystemMetrics(SM_CYSCREEN);
 
     DWORD style   = WS_OVERLAPPEDWINDOW;
-    DWORD exStyle = WS_EX_TOOLWINDOW;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
 
     m_hwnd = CreateWindowExW(
         exStyle,
@@ -272,35 +270,34 @@ bool Flip3DPrototype::Create_Window()
         this
     );
 
-    if (!m_hwnd) {
+    if (!m_hwnd)
         return false;
-    }
 
     BOOL transparencyDisabled = FALSE;
     SystemParametersInfoW(0x1042, 0, &transparencyDisabled, 0);
     bool transparencyEnabled = !transparencyDisabled;
 
-    if (transparencyEnabled)
     {
         MARGINS margins = { -1, -1, -1, -1 };
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
-
-        int backdropType = 3; // Acrylic
-        DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
-
-        BOOL disableTransitions = TRUE;
-        DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
-
-        BOOL useDarkMode = TRUE;
-        DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
     }
-    else
+
+    int backdropType = 3; // Acrylic
+    DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
+
+    BOOL disableTransitions = TRUE;
+    DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
+
+    BOOL useDarkMode = TRUE;
+    DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
+
+    if (!transparencyEnabled)
     {
+        int none = 0;
+        DwmSetWindowAttribute(m_hwnd, 38, &none, sizeof(none));
+
         MARGINS margins = { 0, 0, 0, 0 };
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
-
-        int backdropType = 0; // None
-        DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
     }
 
     style &= ~WS_CAPTION;
@@ -318,6 +315,7 @@ bool Flip3DPrototype::Create_Window()
 
     return true;
 }
+
 
 
 // ============================================================================
