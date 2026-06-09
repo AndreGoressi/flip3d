@@ -15,13 +15,16 @@
 
 void Flip3DPrototype::UpdateFSR2Jitter()
 {
-    // FSR2 Native AA: Halton-Jitter bei nativer Auflösung (kein Upscaling).
-    // ffxFsr2GetJitterPhaseCount gibt die korrekte Sequenzlänge zurück.
-    const int32_t jitterPhaseCount = ffxFsr2GetJitterPhaseCount(
-        static_cast<int32_t>(m_width), static_cast<int32_t>(m_width));
-    ffxFsr2GetJitterOffset(&m_fsr2JitterX, &m_fsr2JitterY,
-        m_fsr2FrameIndex++, jitterPhaseCount);
+    const int32_t jitterPhaseCount =
+        ffxFsr2GetJitterPhaseCount((int32_t)m_width, (int32_t)m_height);
+
+    ffxFsr2GetJitterOffset(
+        &m_fsr2JitterX,
+        &m_fsr2JitterY,
+        m_fsr2FrameIndex++,
+        jitterPhaseCount);
 }
+
 
 
 namespace
