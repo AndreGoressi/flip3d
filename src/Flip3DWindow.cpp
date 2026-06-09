@@ -1666,54 +1666,34 @@ std::vector<DrawItem> Flip3DPrototype::BuildDrawItems(float enterProgress) const
 
 void Flip3DPrototype::Render()
 {
-    if (!m_swapChain || !m_fsr2InputColorRTV || !m_depthStencilView) return;
-
-    // Jitter für FSR2 Native AA berechnen und auf Projektionsmatrix anwenden
-    UpdateFSR2Jitter();
+    if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
 
     const float enterProgress = EnterProgress();
-    const XMMATRIX view      = BuildViewMatrix(enterProgress);
-    XMMATRIX projection      = BuildProjectionMatrix(enterProgress);
-
-    // Halton-Jitter in NDC auf die Projektionsmatrix addieren
-    // (Verschiebung in Clip-Space: _31/_32 sind die Translation-Zeilen bei row-major)
-    XMFLOAT4X4 projF;
-    XMStoreFloat4x4(&projF, projection);
-    projF._31 += m_fsr2JitterX / static_cast<float>(m_width)  * 2.0f;
-    projF._32 += m_fsr2JitterY / static_cast<float>(m_height) * 2.0f;
-    projection = XMLoadFloat4x4(&projF);
-
+    const XMMATRIX view = BuildViewMatrix(enterProgress);
+    const XMMATRIX projection = BuildProjectionMatrix(enterProgress);
     const XMMATRIX viewProj = view * projection;
 
     XMVECTOR det = XMMatrixDeterminant(view);
     m_matHitTestInverse = XMMatrixInverse(&det, view);
     if (XMVectorGetX(det) < 0.000001f) m_matHitTestInverse = XMMatrixIdentity();
-    m_monitorWidth  = static_cast<int>(m_width);
+    m_monitorWidth = static_cast<int>(m_width);
     m_monitorHeight = static_cast<int>(m_height);
 
     FrameConstants frameConstants = {};
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
-    frameConstants.washParams = XMFLOAT4(enterProgress * 0.5f, m_totalTime,
-        static_cast<float>(m_cards.size()), 0.85f);
-    frameConstants.viewport = XMFLOAT4(
-        static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
+    frameConstants.washParams = XMFLOAT4(enterProgress * 0.5f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f);
+    frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
-    // ----------------------------------------------------------------
-    // Pass 1: Szene direkt in FSR2-Eingabetextur rendern (kein MSAA)
-    // ----------------------------------------------------------------
     static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
-    ID3D11RenderTargetView* rtvs[] = {m_fsr2InputColorRTV.Get()};
-    m_context->OMSetRenderTargets(1, rtvs, m_depthStencilView.Get());
+    m_context->OMSetRenderTargets(1, m_msaaRTV.GetAddressOf(), m_depthStencilView.Get());
     m_context->RSSetViewports(1, &m_viewport);
     m_context->RSSetState(m_rasterizerState.Get());
     m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
-    m_context->ClearRenderTargetView(m_fsr2InputColorRTV.Get(), clearColor);
-    m_context->ClearDepthStencilView(m_depthStencilView.Get(),
-        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    m_context->ClearRenderTargetView(m_msaaRTV.Get(), clearColor);
+    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-    // Hintergrund-Quad
     ID3D11Buffer *frameBuffers[] = {m_frameConstantsBuffer.Get()};
     m_context->IASetInputLayout(nullptr);
     m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -1722,10 +1702,8 @@ void Flip3DPrototype::Render()
     m_context->VSSetConstantBuffers(0, 1, frameBuffers);
     m_context->PSSetConstantBuffers(0, 1, frameBuffers);
     m_context->Draw(3, 0);
-    m_context->ClearDepthStencilView(m_depthStencilView.Get(),
-        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
-    // Karten
     const UINT stride = sizeof(Vertex);
     const UINT offset = 0;
     ID3D11Buffer *vertexBuffers[] = {m_vertexBuffer.Get()};
@@ -1742,29 +1720,20 @@ void Flip3DPrototype::Render()
     for (const auto &item : drawItems)
     {
         size_t pos = 0;
-        for (auto &card : m_cards)
-        {
-            if (pos == static_cast<size_t>(item.cardPosition) && card.capture)
-                { card.capture->PollFrame(); break; }
-            ++pos;
-        }
+        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
     }
 
     for (const DrawItem &item : drawItems)
     {
         ObjectConstants objectConstants = {};
-        objectConstants.world  = item.world;
-        objectConstants.color  = item.color;
+        objectConstants.world = item.world;
+        objectConstants.color = item.color;
         objectConstants.accent = item.accent;
         m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
 
         size_t pos = 0;
         ID3D11ShaderResourceView *srv = nullptr;
-        for (auto &card : m_cards)
-        {
-            if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; break; }
-            ++pos;
-        }
+        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; break; } ++pos; }
         if (!srv) continue;
 
         m_context->PSSetShaderResources(0, 1, &srv);
@@ -1774,50 +1743,14 @@ void Flip3DPrototype::Render()
         m_context->DrawIndexed(6, 0, 0);
     }
 
-    // RT und SRV-Slots freigeben, bevor FSR2 darauf liest
-    ID3D11RenderTargetView* nullRTV[1] = {nullptr};
-    m_context->OMSetRenderTargets(1, nullRTV, nullptr);
-    ID3D11ShaderResourceView* nullSRV[1] = {nullptr};
+    ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
 
-    // ----------------------------------------------------------------
-    // Pass 2: FSR2 Native AA – temporales Anti-Aliasing
-    // renderSize == displaySize: kein Upscaling, nur Kantenglättung
-    // ----------------------------------------------------------------
-    FfxFsr2DispatchDescription dispatch = {};
-    dispatch.commandList    = ffxGetCommandListDX11(m_context.Get());
-    dispatch.color          = ffxGetResourceDX11(m_fsr2InputColor.Get(),
-        ffxGetResourceDescriptionDX11(m_fsr2InputColor.Get()), nullptr,
-        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-    dispatch.motionVectors  = ffxGetResourceDX11(m_fsr2MotionVectors.Get(),
-        ffxGetResourceDescriptionDX11(m_fsr2MotionVectors.Get()), nullptr,
-        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-    dispatch.depth          = ffxGetResourceDX11(nullptr, {}, nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-    dispatch.exposure       = ffxGetResourceDX11(nullptr, {}, nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
-    dispatch.output         = ffxGetResourceDX11(m_fsr2Output.Get(),
-        ffxGetResourceDescriptionDX11(m_fsr2Output.Get()), nullptr,
-        FFX_RESOURCE_STATE_UNORDERED_ACCESS);
-
-    dispatch.jitterOffset.x         = m_fsr2JitterX;
-    dispatch.jitterOffset.y         = m_fsr2JitterY;
-    dispatch.motionVectorScale.x    = static_cast<float>(m_width);
-    dispatch.motionVectorScale.y    = static_cast<float>(m_height);
-    dispatch.renderSize.width       = m_width;
-    dispatch.renderSize.height      = m_height;
-    dispatch.frameTimeDelta         = 16.67f; // ~60 fps nominal; für AA ausreichend
-    dispatch.preExposure            = 1.0f;
-    dispatch.reset                  = (m_fsr2FrameIndex == 1); // ersten Frame resetten
-
-    ffxFsr2ContextDispatch(&m_fsr2Context, &dispatch);
-
-    // ----------------------------------------------------------------
-    // Pass 3: FSR2-Ausgabe in den Backbuffer kopieren und präsentieren
-    // ----------------------------------------------------------------
     {
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-            m_context->CopyResource(backBuffer.Get(), m_fsr2Output.Get());
+            m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
     }
 
     m_swapChain->Present(1, 0);
