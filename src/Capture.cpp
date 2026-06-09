@@ -221,13 +221,6 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     {   
         return TRUE;
     }
-
-    // 3. No DWM thumbnail → ignore
-    BOOL hasThumb = FALSE;
-    if (FAILED(DwmGetWindowAttribute(hwnd, DWMWA_HAS_ICONIC_BITMAP, &hasThumb, sizeof(hasThumb))) || !hasThumb)
-    {
-        return TRUE;
-    }
     
     const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
     const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
