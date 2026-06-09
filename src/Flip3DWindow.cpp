@@ -40,6 +40,30 @@ void CompleteDeferredSelectedWindowActivation(HWND selectedHwnd, bool activation
 }
 }
 
+static bool AreTransparencyEffectsEnabled()
+{
+    DWORD value = 1; // Default: assume enabled
+    DWORD size  = sizeof(value);
+
+    const wchar_t* subKey =
+        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+
+    LONG res = RegGetValueW(
+        HKEY_CURRENT_USER,
+        subKey,
+        L"EnableTransparency",
+        RRF_RT_REG_DWORD,
+        nullptr,
+        &value,
+        &size
+    );
+
+    if (res != ERROR_SUCCESS)
+        return true; // fallback: assume enabled
+
+    return value != 0;
+}
+
 // ============================================================================
 // Initialisation
 // ============================================================================
@@ -179,91 +203,6 @@ void Flip3DPrototype::CreateWindowCaptures()
 // ============================================================================
 // Window creation
 // ============================================================================
-/*bool Flip3DPrototype::Create_Window()
-{
-    WNDCLASSEXW wc = {};
-    wc.cbSize = sizeof(wc);
-    wc.hInstance = m_instance;
-    wc.lpfnWndProc = &Flip3DPrototype::WndProc;
-    wc.lpszClassName = kWindowClassName;
-    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    wc.style = CS_HREDRAW | CS_VREDRAW;
-
-    if (!RegisterClassExW(&wc))
-        return false;
-
-    int screenW = GetSystemMetrics(SM_CXSCREEN);
-    int screenH = GetSystemMetrics(SM_CYSCREEN);
-
-    DWORD style   = WS_OVERLAPPEDWINDOW;
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
-
-    m_hwnd = CreateWindowExW(
-        exStyle,
-        kWindowClassName,
-        kWindowTitle,
-        style,
-        0, 0, screenW, screenH,
-        nullptr, nullptr,
-        m_instance,
-        this
-    );
-
-    if (!m_hwnd)
-        return false;
-    {
-        MARGINS margins = { -1, -1, -1, -1 };
-        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
-
-        int backdropType = 3;
-        DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
-        
-        BOOL disableTransitions = TRUE;
-        DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
-
-        BOOL useDarkMode = TRUE;
-        DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
-    }
-
-    style &= ~WS_CAPTION;
-    style &= ~WS_THICKFRAME; 
-    SetWindowLongW(m_hwnd, GWL_STYLE, style);
-
-    SetWindowPos(
-        m_hwnd, nullptr,
-        0, 0, screenW, screenH,
-        SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOOWNERZORDER
-    );
-
-    ShowWindow(m_hwnd, SW_SHOW);
-    UpdateWindow(m_hwnd);
-
-    return true;
-}*/
-
-static bool AreTransparencyEffectsEnabled()
-{
-    DWORD value = 1; // Default: assume enabled
-    DWORD size  = sizeof(value);
-
-    const wchar_t* subKey =
-        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-
-    LONG res = RegGetValueW(
-        HKEY_CURRENT_USER,
-        subKey,
-        L"EnableTransparency",
-        RRF_RT_REG_DWORD,
-        nullptr,
-        &value,
-        &size
-    );
-
-    if (res != ERROR_SUCCESS)
-        return true; // fallback: assume enabled
-
-    return value != 0;
-}
 
 bool Flip3DPrototype::Create_Window()
 {
@@ -295,16 +234,15 @@ bool Flip3DPrototype::Create_Window()
         this
     );
 
-    if (!m_hwnd)
+    if (!m_hwnd){
         return false;
-
-    bool transparencyEnabled = AreTransparencyEffectsEnabled();
-
-    {
-        MARGINS margins = { -1, -1, -1, -1 };
-        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
     }
 
+    bool transparencyEnabled = AreTransparencyEffectsEnabled();
+    //
+    MARGINS margins = { -1, -1, -1, -1 };
+    DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+    
     int backdropType = 3; // Acrylic
     DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
 
@@ -338,7 +276,6 @@ bool Flip3DPrototype::Create_Window()
 
     return true;
 }
-
 
 // ============================================================================
 // D3D initialisation
