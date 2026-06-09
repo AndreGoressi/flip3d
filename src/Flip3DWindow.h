@@ -2,6 +2,8 @@
 
 #include "Config.h"
 #include "WindowCapture.h"
+#include "ffx_fsr2.h"
+#include "ffx_fsr2_interface.h"
 
 // ============================================================================
 // Main Flip3D D3D11 prototype application class
@@ -26,6 +28,7 @@ private:
     ComPtr<ID3D11Texture2D> m_fsr2InputColor;
     ComPtr<ID3D11ShaderResourceView> m_fsr2InputColorSRV;
     ComPtr<ID3D11UnorderedAccessView> m_fsr2InputColorUAV;
+    ComPtr<ID3D11RenderTargetView> m_fsr2InputColorRTV;
 
     ComPtr<ID3D11Texture2D> m_fsr2Output;
     ComPtr<ID3D11UnorderedAccessView> m_fsr2OutputUAV;
@@ -169,11 +172,6 @@ private:
     ComPtr<IDCompositionVisual> m_dcompVisual;
 
     ComPtr<ID3D11RenderTargetView> m_renderTargetView;
-    // FSR2 input/output textures
-    ComPtr<ID3D11Texture2D> m_fsr2InputColor;
-    ComPtr<ID3D11ShaderResourceView> m_fsr2InputColorSRV;
-    ComPtr<ID3D11UnorderedAccessView> m_fsr2InputColorUAV;
-    ComPtr<ID3D11RenderTargetView> m_fsr2InputColorRTV;
     ComPtr<ID3D11Texture2D> m_depthStencilTexture;
     ComPtr<ID3D11DepthStencilView> m_depthStencilView;
 
