@@ -1,39 +1,6 @@
 #include "Flip3DWindow.h"
 #include "Shaders.h"
 #include "Capture.h"
-// ------------------------------------------------------------
-// FSR2 Includes
-// ------------------------------------------------------------
-#include <d3d11.h>
-#include <d3dcompiler.h>
-#include <dxgi.h>
-
-#include "ffx_fsr2.h"
-#include "ffx_fsr2_interface.h"
-
-// === DIESE BEIDEN ZEILEN FEHLEN UND MÜSSEN HIER REIN: ===
-//#include "dx11/ffx_fsr2_dx11.h"           // Bringt die ganzen ffx...DX11 Funktionen mit!
-#include "ffx-fsr2-api/shaders/ffx_fsr2_resources.h"           // Definiert Ressourcen-Zustände wie FFX_RESOURCE_STATE_...
-// ========================================================
-
-#include "ffx_types.h"
-#include "ffx_util.h"
-#include "ffx_assert.h"
-#include "ffx_error.h"
-
-void Flip3DPrototype::UpdateFSR2Jitter()
-{
-    const int32_t jitterPhaseCount =
-        ffxFsr2GetJitterPhaseCount((int32_t)m_width, (int32_t)m_height);
-
-    ffxFsr2GetJitterOffset(
-        &m_fsr2JitterX,
-        &m_fsr2JitterY,
-        m_fsr2FrameIndex++,
-        jitterPhaseCount);
-}
-
-
 
 namespace
 {
@@ -276,80 +243,6 @@ bool Flip3DPrototype::Create_Window()
 // ============================================================================
 // D3D initialisation
 // ============================================================================
-/*HRESULT Flip3DPrototype::InitializeD3D()
-{
-    UINT creationFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-#if defined(_DEBUG)
-    creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-    static constexpr D3D_FEATURE_LEVEL requestedLevels[] = {
-        D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1,
-    };
-    HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, creationFlags,
-        requestedLevels, static_cast<UINT>(std::size(requestedLevels)), D3D11_SDK_VERSION,
-        &m_device, nullptr, &m_context);
-#if defined(_DEBUG)
-    if (FAILED(hr))
-    {
-        creationFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
-        hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, creationFlags,
-            requestedLevels, static_cast<UINT>(std::size(requestedLevels)), D3D11_SDK_VERSION,
-            &m_device, nullptr, &m_context);
-    }
-#endif
-    if (FAILED(hr))
-        hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-            requestedLevels, static_cast<UINT>(std::size(requestedLevels)), D3D11_SDK_VERSION,
-            &m_device, nullptr, &m_context);
-    if (FAILED(hr)) return hr;
-
-    ComPtr<IDXGIDevice> dxgiDevice;
-    hr = m_device.As(&dxgiDevice);
-    if (FAILED(hr)) return hr;
-
-    hr = DCompositionCreateDevice(dxgiDevice.Get(), IID_PPV_ARGS(&m_dcompDevice));
-    if (FAILED(hr)) return hr;
-    hr = m_dcompDevice->CreateTargetForHwnd(m_hwnd, TRUE, &m_dcompTarget);
-    if (FAILED(hr)) return hr;
-    hr = m_dcompDevice->CreateVisual(&m_dcompVisual);
-    if (FAILED(hr)) return hr;
-    hr = m_dcompTarget->SetRoot(m_dcompVisual.Get());
-    if (FAILED(hr)) return hr;
-
-    ComPtr<IDXGIAdapter> adapter;
-    hr = dxgiDevice->GetAdapter(&adapter);
-    if (FAILED(hr)) return hr;
-    ComPtr<IDXGIFactory2> factory;
-    hr = adapter->GetParent(IID_PPV_ARGS(&factory));
-    if (FAILED(hr)) return hr;
-
-    RECT clientRect = {};
-    GetClientRect(m_hwnd, &clientRect);
-    m_width = std::max<UINT>(1, clientRect.right - clientRect.left);
-    m_height = std::max<UINT>(1, clientRect.bottom - clientRect.top);
-
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-    swapChainDesc.Width = m_width;
-    swapChainDesc.Height = m_height;
-    swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    swapChainDesc.SampleDesc.Count = 1;
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferCount = 2;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-    swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
-    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED;
-    hr = factory->CreateSwapChainForComposition(m_device.Get(), &swapChainDesc, nullptr, &m_swapChain);
-    if (FAILED(hr)) return hr;
-
-    hr = m_dcompVisual->SetContent(m_swapChain.Get());
-    if (FAILED(hr)) return hr;
-    hr = m_dcompDevice->Commit();
-    if (FAILED(hr)) return hr;
-    hr = CreateDeviceResources();
-    if (FAILED(hr)) return hr;
-    return CreateWindowSizeResources(false);
-}*/
-
 HRESULT Flip3DPrototype::InitializeD3D()
 {
     UINT creationFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
@@ -421,29 +314,7 @@ HRESULT Flip3DPrototype::InitializeD3D()
     if (FAILED(hr)) return hr;
     hr = CreateDeviceResources();
     if (FAILED(hr)) return hr;
-    hr = CreateWindowSizeResources(false);
-    if (FAILED(hr)) return hr;
-
-    // ------------------------------------------------------------
-    // FSR2 Native AA Kontext initialisieren
-    // renderSize == displaySize  →  kein Upscaling, nur temporales AA
-    // ------------------------------------------------------------
-    {
-        FfxFsr2ContextDescription fsr2Desc = {};
-        fsr2Desc.flags = FFX_FSR2_ENABLE_AUTO_EXPOSURE
-                       | FFX_FSR2_ENABLE_DEPTH_INVERTED
-                       | FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
-
-        fsr2Desc.maxRenderSize.width  = m_width;
-        fsr2Desc.maxRenderSize.height = m_height;
-        fsr2Desc.displaySize.width    = m_width;
-        fsr2Desc.displaySize.height   = m_height;
-
-        FfxErrorCode err = ffxFsr2ContextCreate(&m_fsr2Context, &fsr2Desc);
-        if (err != FFX_OK)
-            OutputDebugStringA("FSR2: Context creation failed!\n");
-    }
-    return S_OK;
+    return CreateWindowSizeResources(false);
 }
 
 
