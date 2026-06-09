@@ -2,8 +2,6 @@
 
 #include "Config.h"
 #include "WindowCapture.h"
-#include "ffx_fsr2.h"
-#include "ffx_fsr2_interface.h"
 
 // ============================================================================
 // Main Flip3D D3D11 prototype application class
@@ -20,37 +18,6 @@ public:
 
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-    // FSR2 Context
-    FfxFsr2Context m_fsr2Context = {};
-
-    // FSR2 extra resources
-    ComPtr<ID3D11ShaderResourceView> m_fsr2OutputSRV;
-    std::vector<uint8_t> m_fsr2Scratch;
-
-    // FSR2 input/output textures
-    ComPtr<ID3D11Texture2D> m_fsr2InputColor;
-    ComPtr<ID3D11ShaderResourceView> m_fsr2InputColorSRV;
-    ComPtr<ID3D11UnorderedAccessView> m_fsr2InputColorUAV;
-    ComPtr<ID3D11RenderTargetView> m_fsr2InputColorRTV;
-
-    ComPtr<ID3D11Texture2D> m_fsr2Output;
-    ComPtr<ID3D11UnorderedAccessView> m_fsr2OutputUAV;
-
-    // Fake motion vectors (always zero)
-    ComPtr<ID3D11Texture2D> m_fsr2MotionVectors;
-    ComPtr<ID3D11ShaderResourceView> m_fsr2MotionVectorsSRV;
-
-    // Jitter
-    int m_fsr2FrameIndex = 0;
-    float m_fsr2JitterX = 0.0f;
-    float m_fsr2JitterY = 0.0f;
-    void UpdateFSR2Jitter();
-
-
-    // Render size
-    uint32_t m_fsr2RenderWidth = 0;
-    uint32_t m_fsr2RenderHeight = 0;
 
     // Card / window model — uses std::list matching uDWM's linked-list architecture
     void BuildCardModels();
@@ -178,6 +145,8 @@ private:
     ComPtr<IDCompositionVisual> m_dcompVisual;
 
     ComPtr<ID3D11RenderTargetView> m_renderTargetView;
+    ComPtr<ID3D11Texture2D> m_msaaRenderTarget;     // MSAA color buffer
+    ComPtr<ID3D11RenderTargetView> m_msaaRTV;       // persistent MSAA RTV
     ComPtr<ID3D11Texture2D> m_depthStencilTexture;
     ComPtr<ID3D11DepthStencilView> m_depthStencilView;
 
