@@ -277,10 +277,8 @@ bool Flip3DPrototype::Create_Window()
     SystemParametersInfoW(0x1042, 0, &transparencyDisabled, 0);
     bool transparencyEnabled = !transparencyDisabled;
 
-    {
-        MARGINS margins = { -1, -1, -1, -1 };
-        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
-    }
+    MARGINS margins = { -1, -1, -1, -1 };
+    DwmExtendFrameIntoClientArea(m_hwnd, &margins);
 
     int backdropType = 3; // Acrylic
     DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
