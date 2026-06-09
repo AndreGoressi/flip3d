@@ -240,6 +240,31 @@ void Flip3DPrototype::CreateWindowCaptures()
 
     return true;
 }*/
+
+static bool AreTransparencyEffectsEnabled()
+{
+    DWORD value = 1; // Default: assume enabled
+    DWORD size  = sizeof(value);
+
+    const wchar_t* subKey =
+        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
+
+    LONG res = RegGetValueW(
+        HKEY_CURRENT_USER,
+        subKey,
+        L"EnableTransparency",
+        RRF_RT_REG_DWORD,
+        nullptr,
+        &value,
+        &size
+    );
+
+    if (res != ERROR_SUCCESS)
+        return true; // fallback: assume enabled
+
+    return value != 0;
+}
+
 bool Flip3DPrototype::Create_Window()
 {
     WNDCLASSEXW wc = {};
@@ -273,12 +298,12 @@ bool Flip3DPrototype::Create_Window()
     if (!m_hwnd)
         return false;
 
-    BOOL transparencyDisabled = FALSE;
-    SystemParametersInfoW(0x1042, 0, &transparencyDisabled, 0);
-    bool transparencyEnabled = !transparencyDisabled;
+    bool transparencyEnabled = AreTransparencyEffectsEnabled();
 
-    MARGINS margins = { -1, -1, -1, -1 };
-    DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+    {
+        MARGINS margins = { -1, -1, -1, -1 };
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+    }
 
     int backdropType = 3; // Acrylic
     DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
@@ -313,7 +338,6 @@ bool Flip3DPrototype::Create_Window()
 
     return true;
 }
-
 
 
 // ============================================================================
