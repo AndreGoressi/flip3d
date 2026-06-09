@@ -108,6 +108,7 @@ LRESULT CALLBACK Flip3DPrototype::WndProc(HWND hwnd, UINT message, WPARAM wParam
     return self ? self->HandleMessage(message, wParam, lParam) : DefWindowProcW(hwnd, message, wParam, lParam);
 }
 
+
 // ============================================================================
 // Card model building
 // ============================================================================
@@ -317,7 +318,6 @@ HRESULT Flip3DPrototype::InitializeD3D()
     return CreateWindowSizeResources(false);
 }
 
-
 HRESULT Flip3DPrototype::CreateDeviceResources()
 {
     HRESULT hr = S_OK;
@@ -387,7 +387,7 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
     rsDesc.DepthClipEnable = TRUE;
-    rsDesc.MultisampleEnable = FALSE; // Kein MSAA – FSR2 Native AA übernimmt die Kantenglättung
+    rsDesc.MultisampleEnable = TRUE;
     hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
     if (FAILED(hr)) return hr;
 
@@ -420,7 +420,7 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
     return hr;
 }
 
-HRESULT Flip3DPrototypeApp::CreateWindowSizeResources(bool resizeBuffers)
+HRESULT Flip3DPrototype::CreateWindowSizeResources(bool resizeBuffers)
 {
     if (!m_swapChain) return E_FAIL;
     m_msaaRTV.Reset(); m_renderTargetView.Reset(); m_msaaRenderTarget.Reset();
@@ -1792,3 +1792,4 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
     }
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
+
