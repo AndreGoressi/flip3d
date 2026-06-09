@@ -215,13 +215,6 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
-    // 2. NOREDIRECTIONBITMAP (HUDs, ScreenRecorder, SnippingTool)
-    LONG ex = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-    if (ex & WS_EX_NOREDIRECTIONBITMAP)
-    {   
-        return TRUE;
-    }
-    
     const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
     const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
     if (!QualifiesForFlip3DProxyWindow(hwnd, style, exStyle))
