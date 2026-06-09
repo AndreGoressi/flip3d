@@ -19,6 +19,30 @@ public:
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+    // FSR2 Context
+    FfxFsr2Context m_fsr2Context = {};
+
+    // FSR2 input/output textures
+    ComPtr<ID3D11Texture2D> m_fsr2InputColor;
+    ComPtr<ID3D11ShaderResourceView> m_fsr2InputColorSRV;
+    ComPtr<ID3D11UnorderedAccessView> m_fsr2InputColorUAV;
+
+    ComPtr<ID3D11Texture2D> m_fsr2Output;
+    ComPtr<ID3D11UnorderedAccessView> m_fsr2OutputUAV;
+
+    // Fake motion vectors (always zero)
+    ComPtr<ID3D11Texture2D> m_fsr2MotionVectors;
+    ComPtr<ID3D11ShaderResourceView> m_fsr2MotionVectorsSRV;
+
+    // Jitter
+    int m_fsr2FrameIndex = 0;
+    float m_fsr2JitterX = 0.0f;
+    float m_fsr2JitterY = 0.0f;
+
+    // Render size
+    uint32_t m_fsr2RenderWidth = 0;
+    uint32_t m_fsr2RenderHeight = 0;
+
     // Card / window model — uses std::list matching uDWM's linked-list architecture
     void BuildCardModels();
     void CreateWindowCaptures();
