@@ -275,7 +275,7 @@ bool Flip3DPrototype::Create_Window()
     }
 
     BOOL transparencyDisabled = FALSE;
-    SystemParametersInfoW(SPI_GETDISABLETRANSPARENCY, 0, &transparencyDisabled, 0);
+    SystemParametersInfoW(0x1042, 0, &transparencyDisabled, 0);
     bool transparencyEnabled = !transparencyDisabled;
 
     if (transparencyEnabled)
