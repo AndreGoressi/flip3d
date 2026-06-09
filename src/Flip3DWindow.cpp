@@ -216,16 +216,7 @@ bool Flip3DPrototype::Create_Window()
 
         int backdropType = 3;
         DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
-
-        DWORD tintColor = 0xFF00FF00;
-        DwmSetWindowAttribute(m_hwnd, 34, &tintColor, sizeof(tintColor));
-
-        DWORD tintOpacity = 255; 
-        DwmSetWindowAttribute(m_hwnd, 35, &tintOpacity, sizeof(tintOpacity));
-
-        DWORD captionColor = 0xFF00FF00;
-        DwmSetWindowAttribute(m_hwnd, 36, &captionColor, sizeof(captionColor));
-
+        
         BOOL disableTransitions = TRUE;
         DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
 
@@ -1668,7 +1659,7 @@ void Flip3DPrototype::Render()
     m_context->PSSetShader(m_backgroundPixelShader.Get(), nullptr, 0);
     m_context->VSSetConstantBuffers(0, 1, frameBuffers);
     m_context->PSSetConstantBuffers(0, 1, frameBuffers);
-    //m_context->Draw(3, 0);
+    m_context->Draw(3, 0);
     m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     const UINT stride = sizeof(Vertex);
