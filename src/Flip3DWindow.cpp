@@ -224,7 +224,7 @@ bool Flip3DPrototype::Create_Window()
         DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
     }
 
-    //style &= ~WS_CAPTION;
+    style &= ~WS_CAPTION;
     style &= ~WS_THICKFRAME; 
     SetWindowLongW(m_hwnd, GWL_STYLE, style);
 
