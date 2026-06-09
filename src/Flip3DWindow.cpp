@@ -304,7 +304,8 @@ bool Flip3DPrototype::Create_Window()
         nullptr, nullptr, 
         m_instance, this);
     
-    return m_hwnd != nullptr;
+    //return m_hwnd != nullptr;
+    return true;
 }
 
 // ============================================================================
