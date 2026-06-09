@@ -1,6 +1,28 @@
 #include "Flip3DWindow.h"
 #include "Shaders.h"
 #include "Capture.h"
+// ------------------------------------------------------------
+// FSR2 Native AA Includes
+// ------------------------------------------------------------
+#include <d3d11.h>
+#include <d3dcompiler.h>
+#include <dxgi.h>
+
+#include "ffx_fsr2.h"
+#include "ffx_fsr2_interface.h"
+
+#include <wrl/client.h> // Microsoft::WRL::ComPtr
+
+void Flip3DPrototype::UpdateFSR2Jitter()
+{
+    // FSR2 Native AA: Halton-Jitter bei nativer Auflösung (kein Upscaling).
+    // ffxFsr2GetJitterPhaseCount gibt die korrekte Sequenzlänge zurück.
+    const int32_t jitterPhaseCount = ffxFsr2GetJitterPhaseCount(
+        static_cast<int32_t>(m_width), static_cast<int32_t>(m_width));
+    ffxFsr2GetJitterOffset(&m_fsr2JitterX, &m_fsr2JitterY,
+        m_fsr2FrameIndex++, jitterPhaseCount);
+}
+
 
 namespace
 {
@@ -243,7 +265,7 @@ bool Flip3DPrototype::Create_Window()
 // ============================================================================
 // D3D initialisation
 // ============================================================================
-HRESULT Flip3DPrototype::InitializeD3D()
+/*HRESULT Flip3DPrototype::InitializeD3D()
 {
     UINT creationFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #if defined(_DEBUG)
@@ -315,7 +337,114 @@ HRESULT Flip3DPrototype::InitializeD3D()
     hr = CreateDeviceResources();
     if (FAILED(hr)) return hr;
     return CreateWindowSizeResources(false);
+}*/
+
+HRESULT Flip3DPrototype::InitializeD3D()
+{
+    UINT creationFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+#if defined(_DEBUG)
+    creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+    static constexpr D3D_FEATURE_LEVEL requestedLevels[] = {
+        D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1,
+    };
+    HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, creationFlags,
+        requestedLevels, static_cast<UINT>(std::size(requestedLevels)), D3D11_SDK_VERSION,
+        &m_device, nullptr, &m_context);
+#if defined(_DEBUG)
+    if (FAILED(hr))
+    {
+        creationFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
+        hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, creationFlags,
+            requestedLevels, static_cast<UINT>(std::size(requestedLevels)), D3D11_SDK_VERSION,
+            &m_device, nullptr, &m_context);
+    }
+#endif
+    if (FAILED(hr))
+        hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+            requestedLevels, static_cast<UINT>(std::size(requestedLevels)), D3D11_SDK_VERSION,
+            &m_device, nullptr, &m_context);
+    if (FAILED(hr)) return hr;
+
+    ComPtr<IDXGIDevice> dxgiDevice;
+    hr = m_device.As(&dxgiDevice);
+    if (FAILED(hr)) return hr;
+
+    hr = DCompositionCreateDevice(dxgiDevice.Get(), IID_PPV_ARGS(&m_dcompDevice));
+    if (FAILED(hr)) return hr;
+    hr = m_dcompDevice->CreateTargetForHwnd(m_hwnd, TRUE, &m_dcompTarget);
+    if (FAILED(hr)) return hr;
+    hr = m_dcompDevice->CreateVisual(&m_dcompVisual);
+    if (FAILED(hr)) return hr;
+    hr = m_dcompTarget->SetRoot(m_dcompVisual.Get());
+    if (FAILED(hr)) return hr;
+
+    ComPtr<IDXGIAdapter> adapter;
+    hr = dxgiDevice->GetAdapter(&adapter);
+    if (FAILED(hr)) return hr;
+    ComPtr<IDXGIFactory2> factory;
+    hr = adapter->GetParent(IID_PPV_ARGS(&factory));
+    if (FAILED(hr)) return hr;
+
+    RECT clientRect = {};
+    GetClientRect(m_hwnd, &clientRect);
+    m_width = std::max<UINT>(1, clientRect.right - clientRect.left);
+    m_height = std::max<UINT>(1, clientRect.bottom - clientRect.top);
+
+    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
+    swapChainDesc.Width = m_width;
+    swapChainDesc.Height = m_height;
+    swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    swapChainDesc.SampleDesc.Count = 1;
+    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+    swapChainDesc.BufferCount = 2;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+    swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
+    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED;
+    hr = factory->CreateSwapChainForComposition(m_device.Get(), &swapChainDesc, nullptr, &m_swapChain);
+    if (FAILED(hr)) return hr;
+
+    hr = m_dcompVisual->SetContent(m_swapChain.Get());
+    if (FAILED(hr)) return hr;
+    hr = m_dcompDevice->Commit();
+    if (FAILED(hr)) return hr;
+    hr = CreateDeviceResources();
+    if (FAILED(hr)) return hr;
+    hr = CreateWindowSizeResources(false);
+    if (FAILED(hr)) return hr;
+
+    // ------------------------------------------------------------
+    // FSR2 Native AA Kontext initialisieren
+    // renderSize == displaySize  →  kein Upscaling, nur temporales AA
+    // ------------------------------------------------------------
+    {
+        FfxFsr2ContextDescription fsr2Desc = {};
+        fsr2Desc.flags              = FFX_FSR2_ENABLE_AUTO_EXPOSURE
+                                    | FFX_FSR2_ENABLE_DEPTH_INVERTED
+                                    | FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
+        fsr2Desc.maxRenderSize.width  = m_width;
+        fsr2Desc.maxRenderSize.height = m_height;
+        fsr2Desc.displaySize.width    = m_width;
+        fsr2Desc.displaySize.height   = m_height;
+        fsr2Desc.device = ffxGetDeviceDX11(m_device.Get());
+
+        // DX11-Backend aus dem offiziellen ffx_fsr2_api_dx11 holen
+        size_t scratchSize = ffxFsr2GetScratchMemorySizeDX11();
+        m_fsr2Scratch.resize(scratchSize);
+        ffxFsr2GetInterfaceDX11(
+            &fsr2Desc.backendInterface,
+            m_device.Get(),
+            m_fsr2Scratch.data(),
+            scratchSize);
+
+        FfxErrorCode err = ffxFsr2ContextCreate(&m_fsr2Context, &fsr2Desc);
+        if (err != FFX_OK)
+            OutputDebugStringA("FSR2: Context creation failed!\n");
+    }
+
+    return S_OK;
 }
+
 
 HRESULT Flip3DPrototype::CreateDeviceResources()
 {
@@ -386,7 +515,7 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
     rsDesc.DepthClipEnable = TRUE;
-    rsDesc.MultisampleEnable = TRUE;
+    rsDesc.MultisampleEnable = FALSE; // Kein MSAA – FSR2 Native AA übernimmt die Kantenglättung
     hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
     if (FAILED(hr)) return hr;
 
@@ -422,52 +551,93 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
 HRESULT Flip3DPrototype::CreateWindowSizeResources(bool resizeBuffers)
 {
     if (!m_swapChain) return E_FAIL;
-    m_msaaRTV.Reset(); m_renderTargetView.Reset(); m_msaaRenderTarget.Reset();
-    m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
+
+    // Alle RT-Ressourcen freigeben
+    m_renderTargetView.Reset();
+    m_depthStencilTexture.Reset();
+    m_depthStencilView.Reset();
+    m_fsr2InputColor.Reset();
+    m_fsr2InputColorSRV.Reset();
+    m_fsr2InputColorUAV.Reset();
+    m_fsr2Output.Reset();
+    m_fsr2OutputSRV.Reset();
+    m_fsr2OutputUAV.Reset();
+    m_fsr2MotionVectors.Reset();
+    m_fsr2MotionVectorsSRV.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
-    static constexpr UINT kSampleCount = 4;
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
         if (FAILED(hr)) return hr;
     }
 
+    // Backbuffer RTV (1x, kein MSAA)
     ComPtr<ID3D11Texture2D> backBuffer;
     HRESULT hr = m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
     if (FAILED(hr)) return hr;
     hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
     if (FAILED(hr)) return hr;
 
-    D3D11_TEXTURE2D_DESC msaaDesc = {};
-    msaaDesc.Width = m_width; msaaDesc.Height = m_height;
-    msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
-    msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    msaaDesc.SampleDesc.Count = kSampleCount;
-    msaaDesc.Usage = D3D11_USAGE_DEFAULT;
-    msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
-    hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
-    if (FAILED(hr)) return hr;
-
-    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-    rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
-    hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
-    if (FAILED(hr)) return hr;
-
+    // Depth-Buffer – SampleCount=1, kein MSAA
     D3D11_TEXTURE2D_DESC depthDesc = {};
-    depthDesc.Width = m_width; depthDesc.Height = m_height;
-    depthDesc.MipLevels = 1; depthDesc.ArraySize = 1;
-    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = kSampleCount;
-    depthDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    depthDesc.Width            = m_width;
+    depthDesc.Height           = m_height;
+    depthDesc.MipLevels        = 1;
+    depthDesc.ArraySize        = 1;
+    depthDesc.Format           = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthDesc.SampleDesc.Count = 1;
+    depthDesc.Usage            = D3D11_USAGE_DEFAULT;
+    depthDesc.BindFlags        = D3D11_BIND_DEPTH_STENCIL;
     hr = m_device->CreateTexture2D(&depthDesc, nullptr, &m_depthStencilTexture);
     if (FAILED(hr)) return hr;
     hr = m_device->CreateDepthStencilView(m_depthStencilTexture.Get(), nullptr, &m_depthStencilView);
     if (FAILED(hr)) return hr;
 
-    m_viewport = {0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
+    // ------------------------------------------------------------
+    // FSR2 Native AA – Eingabe-Farbtextur (RGBA16F, native Auflösung)
+    // Szene wird direkt in diese Textur gerendert (kein separates MSAA-RT).
+    // ------------------------------------------------------------
+    D3D11_TEXTURE2D_DESC colorDesc = {};
+    colorDesc.Width            = m_width;
+    colorDesc.Height           = m_height;
+    colorDesc.MipLevels        = 1;
+    colorDesc.ArraySize        = 1;
+    colorDesc.Format           = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    colorDesc.SampleDesc.Count = 1;
+    colorDesc.Usage            = D3D11_USAGE_DEFAULT;
+    colorDesc.BindFlags        = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+
+    hr = m_device->CreateTexture2D(&colorDesc, nullptr, &m_fsr2InputColor);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateRenderTargetView(m_fsr2InputColor.Get(), nullptr, &m_fsr2InputColorRTV);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateShaderResourceView(m_fsr2InputColor.Get(), nullptr, &m_fsr2InputColorSRV);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateUnorderedAccessView(m_fsr2InputColor.Get(), nullptr, &m_fsr2InputColorUAV);
+    if (FAILED(hr)) return hr;
+
+    // FSR2-Ausgabe (selbes Format, native Auflösung – Native AA skaliert nicht)
+    hr = m_device->CreateTexture2D(&colorDesc, nullptr, &m_fsr2Output);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateShaderResourceView(m_fsr2Output.Get(), nullptr, &m_fsr2OutputSRV);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateUnorderedAccessView(m_fsr2Output.Get(), nullptr, &m_fsr2OutputUAV);
+    if (FAILED(hr)) return hr;
+
+    // Motion Vectors – für statische Szene immer Null, aber FSR2 benötigt das Handle
+    D3D11_TEXTURE2D_DESC mvDesc = colorDesc;
+    mvDesc.Format     = DXGI_FORMAT_R16G16_FLOAT;
+    mvDesc.BindFlags  = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+    hr = m_device->CreateTexture2D(&mvDesc, nullptr, &m_fsr2MotionVectors);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateShaderResourceView(m_fsr2MotionVectors.Get(), nullptr, &m_fsr2MotionVectorsSRV);
+    if (FAILED(hr)) return hr;
+
+    // Viewport aktualisieren
+    m_viewport = {0.0f, 0.0f,
+        static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
+
     return S_OK;
 }
 
@@ -1624,34 +1794,54 @@ std::vector<DrawItem> Flip3DPrototype::BuildDrawItems(float enterProgress) const
 
 void Flip3DPrototype::Render()
 {
-    if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
+    if (!m_swapChain || !m_fsr2InputColorRTV || !m_depthStencilView) return;
+
+    // Jitter für FSR2 Native AA berechnen und auf Projektionsmatrix anwenden
+    UpdateFSR2Jitter();
 
     const float enterProgress = EnterProgress();
-    const XMMATRIX view = BuildViewMatrix(enterProgress);
-    const XMMATRIX projection = BuildProjectionMatrix(enterProgress);
+    const XMMATRIX view      = BuildViewMatrix(enterProgress);
+    XMMATRIX projection      = BuildProjectionMatrix(enterProgress);
+
+    // Halton-Jitter in NDC auf die Projektionsmatrix addieren
+    // (Verschiebung in Clip-Space: _31/_32 sind die Translation-Zeilen bei row-major)
+    XMFLOAT4X4 projF;
+    XMStoreFloat4x4(&projF, projection);
+    projF._31 += m_fsr2JitterX / static_cast<float>(m_width)  * 2.0f;
+    projF._32 += m_fsr2JitterY / static_cast<float>(m_height) * 2.0f;
+    projection = XMLoadFloat4x4(&projF);
+
     const XMMATRIX viewProj = view * projection;
 
     XMVECTOR det = XMMatrixDeterminant(view);
     m_matHitTestInverse = XMMatrixInverse(&det, view);
     if (XMVectorGetX(det) < 0.000001f) m_matHitTestInverse = XMMatrixIdentity();
-    m_monitorWidth = static_cast<int>(m_width);
+    m_monitorWidth  = static_cast<int>(m_width);
     m_monitorHeight = static_cast<int>(m_height);
 
     FrameConstants frameConstants = {};
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
-    frameConstants.washParams = XMFLOAT4(enterProgress * 0.5f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f);
-    frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
+    frameConstants.washParams = XMFLOAT4(enterProgress * 0.5f, m_totalTime,
+        static_cast<float>(m_cards.size()), 0.85f);
+    frameConstants.viewport = XMFLOAT4(
+        static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
+    // ----------------------------------------------------------------
+    // Pass 1: Szene direkt in FSR2-Eingabetextur rendern (kein MSAA)
+    // ----------------------------------------------------------------
     static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
-    m_context->OMSetRenderTargets(1, m_msaaRTV.GetAddressOf(), m_depthStencilView.Get());
+    ID3D11RenderTargetView* rtvs[] = {m_fsr2InputColorRTV.Get()};
+    m_context->OMSetRenderTargets(1, rtvs, m_depthStencilView.Get());
     m_context->RSSetViewports(1, &m_viewport);
     m_context->RSSetState(m_rasterizerState.Get());
     m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
-    m_context->ClearRenderTargetView(m_msaaRTV.Get(), clearColor);
-    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    m_context->ClearRenderTargetView(m_fsr2InputColorRTV.Get(), clearColor);
+    m_context->ClearDepthStencilView(m_depthStencilView.Get(),
+        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
+    // Hintergrund-Quad
     ID3D11Buffer *frameBuffers[] = {m_frameConstantsBuffer.Get()};
     m_context->IASetInputLayout(nullptr);
     m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -1660,8 +1850,10 @@ void Flip3DPrototype::Render()
     m_context->VSSetConstantBuffers(0, 1, frameBuffers);
     m_context->PSSetConstantBuffers(0, 1, frameBuffers);
     m_context->Draw(3, 0);
-    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+    m_context->ClearDepthStencilView(m_depthStencilView.Get(),
+        D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
+    // Karten
     const UINT stride = sizeof(Vertex);
     const UINT offset = 0;
     ID3D11Buffer *vertexBuffers[] = {m_vertexBuffer.Get()};
@@ -1678,20 +1870,29 @@ void Flip3DPrototype::Render()
     for (const auto &item : drawItems)
     {
         size_t pos = 0;
-        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
+        for (auto &card : m_cards)
+        {
+            if (pos == static_cast<size_t>(item.cardPosition) && card.capture)
+                { card.capture->PollFrame(); break; }
+            ++pos;
+        }
     }
 
     for (const DrawItem &item : drawItems)
     {
         ObjectConstants objectConstants = {};
-        objectConstants.world = item.world;
-        objectConstants.color = item.color;
+        objectConstants.world  = item.world;
+        objectConstants.color  = item.color;
         objectConstants.accent = item.accent;
         m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
 
         size_t pos = 0;
         ID3D11ShaderResourceView *srv = nullptr;
-        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; break; } ++pos; }
+        for (auto &card : m_cards)
+        {
+            if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; break; }
+            ++pos;
+        }
         if (!srv) continue;
 
         m_context->PSSetShaderResources(0, 1, &srv);
@@ -1701,14 +1902,50 @@ void Flip3DPrototype::Render()
         m_context->DrawIndexed(6, 0, 0);
     }
 
-    ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
+    // RT und SRV-Slots freigeben, bevor FSR2 darauf liest
+    ID3D11RenderTargetView* nullRTV[1] = {nullptr};
+    m_context->OMSetRenderTargets(1, nullRTV, nullptr);
+    ID3D11ShaderResourceView* nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
 
+    // ----------------------------------------------------------------
+    // Pass 2: FSR2 Native AA – temporales Anti-Aliasing
+    // renderSize == displaySize: kein Upscaling, nur Kantenglättung
+    // ----------------------------------------------------------------
+    FfxFsr2DispatchDescription dispatch = {};
+    dispatch.commandList    = ffxGetCommandListDX11(m_context.Get());
+    dispatch.color          = ffxGetResourceDX11(m_fsr2InputColor.Get(),
+        ffxGetResourceDescriptionDX11(m_fsr2InputColor.Get()), nullptr,
+        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+    dispatch.motionVectors  = ffxGetResourceDX11(m_fsr2MotionVectors.Get(),
+        ffxGetResourceDescriptionDX11(m_fsr2MotionVectors.Get()), nullptr,
+        FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+    dispatch.depth          = ffxGetResourceDX11(nullptr, {}, nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+    dispatch.exposure       = ffxGetResourceDX11(nullptr, {}, nullptr, FFX_RESOURCE_STATE_PIXEL_COMPUTE_READ);
+    dispatch.output         = ffxGetResourceDX11(m_fsr2Output.Get(),
+        ffxGetResourceDescriptionDX11(m_fsr2Output.Get()), nullptr,
+        FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+
+    dispatch.jitterOffset.x         = m_fsr2JitterX;
+    dispatch.jitterOffset.y         = m_fsr2JitterY;
+    dispatch.motionVectorScale.x    = static_cast<float>(m_width);
+    dispatch.motionVectorScale.y    = static_cast<float>(m_height);
+    dispatch.renderSize.width       = m_width;
+    dispatch.renderSize.height      = m_height;
+    dispatch.frameTimeDelta         = 16.67f; // ~60 fps nominal; für AA ausreichend
+    dispatch.preExposure            = 1.0f;
+    dispatch.reset                  = (m_fsr2FrameIndex == 1); // ersten Frame resetten
+
+    ffxFsr2ContextDispatch(&m_fsr2Context, &dispatch);
+
+    // ----------------------------------------------------------------
+    // Pass 3: FSR2-Ausgabe in den Backbuffer kopieren und präsentieren
+    // ----------------------------------------------------------------
     {
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-            m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
+            m_context->CopyResource(backBuffer.Get(), m_fsr2Output.Get());
     }
 
     m_swapChain->Present(1, 0);
@@ -1791,5 +2028,3 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
     }
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
-
-
