@@ -24,6 +24,10 @@ private:
     // FSR2 Context
     FfxFsr2Context m_fsr2Context = {};
 
+    // FSR2 extra resources
+    ComPtr<ID3D11ShaderResourceView> m_fsr2OutputSRV;
+    std::vector<uint8_t> m_fsr2Scratch;
+
     // FSR2 input/output textures
     ComPtr<ID3D11Texture2D> m_fsr2InputColor;
     ComPtr<ID3D11ShaderResourceView> m_fsr2InputColorSRV;
