@@ -2,7 +2,7 @@
 #include "Shaders.h"
 #include "Capture.h"
 // ------------------------------------------------------------
-// FSR2 Native AA Includes
+// FSR2 Includes
 // ------------------------------------------------------------
 #include <d3d11.h>
 #include <d3dcompiler.h>
@@ -10,8 +10,18 @@
 
 #include "ffx_fsr2.h"
 #include "ffx_fsr2_interface.h"
+#include "ffx_fsr2_private.h"
+#include "ffx_fsr2_maximum_bias.h"
 
-#include <wrl/client.h> // Microsoft::WRL::ComPtr
+// === DIESE BEIDEN ZEILEN FEHLEN UND MÜSSEN HIER REIN: ===
+//#include "dx11/ffx_fsr2_dx11.h"           // Bringt die ganzen ffx...DX11 Funktionen mit!
+#include "ffx-fsr2-api/shaders/ffx_fsr2_resources.h"           // Definiert Ressourcen-Zustände wie FFX_RESOURCE_STATE_...
+// ========================================================
+
+#include "ffx_types.h"
+#include "ffx_util.h"
+#include "ffx_assert.h"
+#include "ffx_error.h"
 
 void Flip3DPrototype::UpdateFSR2Jitter()
 {
