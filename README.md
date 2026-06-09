@@ -26,7 +26,8 @@ Launch `build/Release/flip3d.exe` or the equivalent output path for your generat
 The app enumerates eligible top-level windows, captures them through DWM thumbnail plus Windows.Graphics.Capture interop, and renders the card stack with Direct3D 11.
 
 ## Controls
-
+- `Win+Tab`, to open/start: Flip3d :) but only when you have installed it right "flip3d.ahk" and the Windhawk mod...!
+//
 - `Tab` / `Shift+Tab`, arrow keys, mouse wheel: rotate the stack
 - `Enter`, release `Win`, or left click a card: activate the selected window
 - `Home`: rotate back to the original front window
