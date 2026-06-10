@@ -346,7 +346,7 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
 // ---------------------------------------------------------------------------
 // Per-frame capture polling
 // ---------------------------------------------------------------------------
-void WindowCapture::PollFrame()
+/*void WindowCapture::PollFrame()
 {
     if (!m_framePool || !m_srv || !m_context)
         return;
@@ -375,4 +375,45 @@ void WindowCapture::PollFrame()
 
     // GPU-side copy to our managed texture
     m_context->CopyResource(m_captureTexture.Get(), capturedTexture.Get());
+}*/
+
+void WindowCapture::PollFrame()
+{
+    if (!m_framePool || !m_srv || !m_context)
+        return;
+
+    using namespace ABI::Windows::Graphics::Capture;
+
+    ComPtr<IDirect3D11CaptureFrame> frame;
+    ComPtr<IDirect3D11CaptureFrame> latestFrame;
+
+    while (true)
+    {
+        frame.Reset();
+        HRESULT hr = m_framePool->TryGetNextFrame(&frame);
+        if (FAILED(hr) || !frame)
+            break;
+        latestFrame = frame; 
+    }
+
+    if (!latestFrame)
+        return;
+
+    ComPtr<ABI::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface> surface;
+    HRESULT hr = latestFrame->get_Surface(&surface);
+    if (FAILED(hr) || !surface)
+        return;
+
+    ComPtr<IDirect3DDxgiInterfaceAccess> dxgiAccess;
+    hr = surface.As(&dxgiAccess);
+    if (FAILED(hr))
+        return;
+
+    ComPtr<ID3D11Texture2D> capturedTexture;
+    hr = dxgiAccess->GetInterface(IID_PPV_ARGS(&capturedTexture));
+    if (FAILED(hr) || !capturedTexture)
+        return;
+
+    m_context->CopyResource(m_captureTexture.Get(), capturedTexture.Get());
+    m_hasFirstFrame = true; 
 }
