@@ -2,7 +2,7 @@
 
 # flip3d
 
-`flip3d` is a Windows-only Direct3D 11 prototype that recreates the classic Flip3D-style window switcher.
+`flip3d` is a Windows-only Direct3D 11 project that recreates the classic Flip3D-style window switcher.
 
 The app enumerates eligible top-level windows, captures them through DWM thumbnail plus Windows.Graphics.Capture interop, and renders the card stack with Direct3D 11.
 
