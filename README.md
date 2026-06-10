@@ -1,7 +1,4 @@
 <img width="3840" height="2160" alt="Screenshot (154)" src="https://github.com/user-attachments/assets/19079bfc-47a2-4d61-9e6f-8cfbe4b51909" />
-<img width="256" height="256" alt="fliip3d_light (Benutzerdefiniert)" src="https://github.com/user-attachments/assets/3204d3d5-41c6-47ca-916b-b3e64ed8324b" />
-<img width="256" height="256" alt="flip3d_dark (Benutzerdefiniert)" src="https://github.com/user-attachments/assets/d3a3fa09-cda9-44ef-a194-b19eba0c4b3e" />
-
 
 # flip3d
 
