@@ -298,6 +298,8 @@ bool Flip3DPrototype::Create_Window()
     if (!RegisterClassExW(&wc))
         return false;
 
+    HWND hTaskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
+
     RECT workArea = {};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0);
     int screenW = workArea.right - workArea.left;
@@ -306,7 +308,7 @@ bool Flip3DPrototype::Create_Window()
     int posY = workArea.top;
 
     DWORD style   = WS_POPUP | WS_VISIBLE; 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
 
     m_hwnd = CreateWindowExW(
         exStyle,
@@ -314,7 +316,8 @@ bool Flip3DPrototype::Create_Window()
         kWindowTitle,
         style,
         posX, posY, screenW, screenH,
-        nullptr, nullptr,
+        hTaskbar, 
+        nullptr,
         m_instance,
         this
     );
@@ -349,9 +352,9 @@ bool Flip3DPrototype::Create_Window()
     DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
 
     SetWindowPos(
-        m_hwnd, HWND_TOPMOST,
+        m_hwnd, nullptr,
         posX, posY, screenW, screenH,
-        SWP_FRAMECHANGED | SWP_SHOWWINDOW
+        SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOZORDER
     );
 
     return m_hwnd != nullptr;
@@ -1835,7 +1838,7 @@ void Flip3DPrototype::Render()
 // ============================================================================
 // Window message handling
 // ============================================================================
-/*LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -1860,82 +1863,6 @@ void Flip3DPrototype::Render()
                 return 0;
             }
             return DefWindowProcW(m_hwnd, message, wParam, lParam);
-        }
-        // ------------------------------------------------
-
-        case WM_SIZE:
-        {
-            if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
-            m_minimized = false;
-            m_width = std::max<UINT>(1, LOWORD(lParam));
-            m_height = std::max<UINT>(1, HIWORD(lParam));
-            if (m_swapChain) CreateWindowSizeResources(true);
-            return 0;
-        }
-
-        case WM_MOUSEWHEEL:
-        case WM_MOUSEHWHEEL:
-        case WM_LBUTTONDOWN:
-        case WM_LBUTTONUP:
-            if (ProcessMouseInput(message, wParam, lParam)) return 0;
-            break;
-
-        case WM_KEYDOWN:
-            if (wParam == VK_SPACE)
-            {
-                if ((lParam & 0x40000000) == 0)
-                    ReplayEnterAnimation();
-                return 0;
-            }
-            if (ProcessKeyboardInput(true, static_cast<UINT>(wParam), (lParam & 0x40000000) != 0))
-                return 0;
-            break;
-
-        case WM_KEYUP:
-            if (ProcessKeyboardInput(false, static_cast<UINT>(wParam), false))
-                return 0;
-            break;
-
-        case WM_CLOSE:
-            if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
-                DestroyWindow(m_hwnd);
-            else
-                BeginExitView();
-            return 0;
-
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            return 0;
-    }
-    return DefWindowProcW(m_hwnd, message, wParam, lParam);
-}*/
-LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch (message)
-    {
-        case WM_ERASEBKGND:
-            return 1;
-        
-        case WM_ACTIVATE:
-        {
-            if (LOWORD(wParam) == WA_INACTIVE)
-            {
-                ShowWindow(m_hwnd, SW_HIDE);
-                BeginExitView();
-                return 0;
-            }
-            return 0;
-        }
-
-        case WM_NCACTIVATE:
-        {
-            if (wParam == FALSE)
-            {
-                ShowWindow(m_hwnd, SW_HIDE);
-                BeginExitView();
-                return 0;
-            }
-            return DefWindowProcW(m_hwnd, message, TRUE, lParam);
         }
         // ------------------------------------------------
 
