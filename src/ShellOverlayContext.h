@@ -19,11 +19,13 @@ private:
     bool ApplyAcrylic();
     bool IsStartMenuOpen() const;
 
-    static constexpr UINT_PTR TIMER_STARTMENU = 1;
+    static constexpr UINT_PTR TIMER_STARTMENU  = 1;
+    static constexpr UINT_PTR TIMER_GRACE      = 2;  // Anlaufschutz
 
     HINSTANCE m_instance;
     HWND      m_hwnd;
     UINT      m_shellHookMsg;
+    bool      m_graceActive = true;  // true = Timer-Check noch gesperrt
 
     Microsoft::WRL::ComPtr<IAppVisibility> m_appVisibility;
 
