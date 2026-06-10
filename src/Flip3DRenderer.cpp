@@ -64,6 +64,36 @@ static bool AreTransparencyEffectsEnabled()
     return value != 0;
 }
 
+bool IsStartMenuOpen()
+{
+    HWND hwnd = FindWindow(L"Windows.UI.Core.CoreWindow", nullptr);
+    if (hwnd) return true;
+
+    hwnd = FindWindow(L"ImmersiveLauncher", nullptr);
+    if (hwnd) return true;
+
+    hwnd = FindWindow(L"SearchPane", nullptr);
+    if (hwnd) return true;
+
+    return false;
+}
+
+void CloseStartMenu()
+{
+    HWND hwnd = FindWindow(L"Windows.UI.Core.CoreWindow", nullptr);
+    if (hwnd) PostMessage(hwnd, WM_SYSCOMMAND, SC_CLOSE, 0);
+
+    hwnd = FindWindow(L"ImmersiveLauncher", nullptr);
+    if (hwnd) PostMessage(hwnd, WM_SYSCOMMAND, SC_CLOSE, 0);
+
+    hwnd = FindWindow(L"SearchPane", nullptr);
+    if (hwnd) PostMessage(hwnd, WM_SYSCOMMAND, SC_CLOSE, 0);
+
+    keybd_event(VK_ESCAPE, 0, 0, 0);
+    keybd_event(VK_ESCAPE, 0, KEYEVENTF_KEYUP, 0);
+}
+
+
 // ============================================================================
 // Initialisation
 // ============================================================================
@@ -265,6 +295,12 @@ bool Flip3DRenderer::Render_Window()
 
     DWORD style   = WS_POPUP | WS_VISIBLE; 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
+
+    if (IsStartMenuOpen())
+    {
+        CloseStartMenu();
+        //Sleep(50); // kurz warten
+    }
 
     m_hwnd = CreateWindowExW(
         exStyle,
