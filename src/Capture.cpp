@@ -152,7 +152,7 @@ bool TryGetFlip3DWindowPolicy(HWND hwnd, DWORD &policy)
         sizeof(policy)));
 }
 
-bool QualifiesForFlip3DProxyWindow(HWND hwnd, LONG_PTR style, LONG_PTR exStyle)
+/*bool QualifiesForFlip3DProxyWindow(HWND hwnd, LONG_PTR style, LONG_PTR exStyle)
 {
     if (hwnd == nullptr || hwnd == GetDesktopWindow())
     {
@@ -187,6 +187,45 @@ bool QualifiesForFlip3DProxyWindow(HWND hwnd, LONG_PTR style, LONG_PTR exStyle)
     {
         return false;
     }
+
+    return true;
+}*/ 
+
+bool QualifiesForFlip3DProxyWindow(HWND hwnd, LONG_PTR style, LONG_PTR exStyle)
+{
+    if (hwnd == nullptr || hwnd == GetDesktopWindow())
+        return false;
+
+    if ((style & WS_CHILD) != 0 || (style & WS_VISIBLE) == 0)
+        return false;
+
+    bool isShellDesktop = (hwnd == GetShellWindow());
+
+    bool isGdiWindow = false;
+    {
+        wchar_t cls[256] = {};
+        GetClassNameW(hwnd, cls, 256);
+        if (wcsstr(cls, L"GDI+ Hook Window Class") || wcsstr(cls, L"IME"))
+            isGdiWindow = true;
+    }
+
+    if (!isShellDesktop && !isGdiWindow
+        && (exStyle & kFlip3DDisqualifyExStyleMask) != 0
+        && (exStyle & WS_EX_APPWINDOW) == 0)
+    {
+        return false;
+    }
+
+    if (!isShellDesktop && !isGdiWindow
+        && (exStyle & WS_EX_APPWINDOW) == 0
+        && GetWindow(hwnd, GW_OWNER) != nullptr)
+    {
+        return false;
+    }
+
+    DWORD flip3DPolicy = kFlip3DPolicyDefault;
+    if (TryGetFlip3DWindowPolicy(hwnd, flip3DPolicy) && flip3DPolicy != kFlip3DPolicyDefault)
+        return false;
 
     return true;
 }
