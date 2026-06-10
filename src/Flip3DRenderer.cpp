@@ -327,8 +327,7 @@ bool Flip3DRenderer::Render_Window()
     windowClass.style         = CS_HREDRAW | CS_VREDRAW;
     windowClass.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
 
-    if (!RegisterClassExW(&windowClass))
-        return false;
+    RegisterClassExW(&windowClass);
 
     int x      = 0;
     int y      = 0;
@@ -337,6 +336,7 @@ bool Flip3DRenderer::Render_Window()
 
     HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
     MONITORINFO mi    = { sizeof(mi) };
+
     if (GetMonitorInfoW(hMonitor, &mi))
     {
         x      = mi.rcMonitor.left;
@@ -345,16 +345,21 @@ bool Flip3DRenderer::Render_Window()
         height = mi.rcMonitor.bottom - mi.rcMonitor.top;
     }
 
-    // Erstmal "roh" erstellen – ohne sichtbares Flag, ohne Topmost
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
-    DWORD style   = WS_POPUP; // WS_VISIBLE kommt später
+    DWORD exStyle =
+        WS_EX_NOREDIRECTIONBITMAP |
+        WS_EX_TOOLWINDOW;
+
+    DWORD style = WS_POPUP;
 
     m_hwnd = CreateWindowExW(
         exStyle,
         kWindowClassName,
         kWindowTitle,
         style,
-        x, y, width, height,
+        x,
+        y,
+        width,
+        height,
         nullptr,
         nullptr,
         m_instance,
@@ -364,55 +369,96 @@ bool Flip3DRenderer::Render_Window()
     if (!m_hwnd)
         return false;
 
-    // DWM / Visual Setup
-    {
-        BOOL cloak = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+    // -----------------------------
+    // DWM Setup
+    // -----------------------------
 
-        BOOL darkMode = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+    BOOL darkMode = TRUE;
+    DwmSetWindowAttribute(
+        m_hwnd,
+        DWMWA_USE_IMMERSIVE_DARK_MODE,
+        &darkMode,
+        sizeof(darkMode));
 
-        #ifndef DWMWA_BACKGROUND_COLOR
-        #define DWMWA_BACKGROUND_COLOR 37
-        #endif
-        COLORREF flashFixColor = RGB(0, 0, 0);
-        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashFixColor, sizeof(flashFixColor));
+#ifndef DWMWA_BACKGROUND_COLOR
+#define DWMWA_BACKGROUND_COLOR 37
+#endif
 
-        BOOL disableTransitions = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
+    COLORREF flashFixColor = RGB(0, 0, 0);
 
-        MARGINS margins = { -1, -1, -1, -1 };
-        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+    DwmSetWindowAttribute(
+        m_hwnd,
+        DWMWA_BACKGROUND_COLOR,
+        &flashFixColor,
+        sizeof(flashFixColor));
 
-        DWORD backdropType = DWMSBT_TRANSIENTWINDOW; // Acrylic
-        DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
-    }
+    BOOL disableTransitions = TRUE;
 
-    // Jetzt FINAL: Topmost + sichtbar + Vollbild
-    {
-        // ExStyle um TOPMOST erweitern
-        LONG_PTR ex = GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE);
-        ex |= WS_EX_TOPMOST;
-        SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, ex);
+    DwmSetWindowAttribute(
+        m_hwnd,
+        DWMWA_TRANSITIONS_FORCEDISABLED,
+        &disableTransitions,
+        sizeof(disableTransitions));
 
-        // Style um WS_VISIBLE erweitern
-        LONG_PTR st = GetWindowLongPtrW(m_hwnd, GWL_STYLE);
-        st |= WS_POPUP | WS_VISIBLE;
-        SetWindowLongPtrW(m_hwnd, GWL_STYLE, st);
+    MARGINS margins = { -1, -1, -1, -1 };
+    DwmExtendFrameIntoClientArea(m_hwnd, &margins);
 
-        SetWindowPos(
-            m_hwnd,
-            HWND_TOPMOST,
-            x, y, width, height,
-            SWP_FRAMECHANGED | SWP_SHOWWINDOW
-        );
-    }
+#ifdef DWMWA_SYSTEMBACKDROP_TYPE
+    DWORD backdropType = DWMSBT_TRANSIENTWINDOW;
+    DwmSetWindowAttribute(
+        m_hwnd,
+        DWMWA_SYSTEMBACKDROP_TYPE,
+        &backdropType,
+        sizeof(backdropType));
+#endif
+
+    // Sicherstellen dass das Fenster NICHT gecloakt ist
+    BOOL cloak = FALSE;
+    DwmSetWindowAttribute(
+        m_hwnd,
+        DWMWA_CLOAKED,
+        &cloak,
+        sizeof(cloak));
+
+    // -----------------------------
+    // Vollbild + TopMost
+    // -----------------------------
+
+    LONG_PTR ex = GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE);
+    ex |= WS_EX_TOPMOST;
+    SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, ex);
+
+    LONG_PTR st = GetWindowLongPtrW(m_hwnd, GWL_STYLE);
+    st |= WS_VISIBLE;
+    SetWindowLongPtrW(m_hwnd, GWL_STYLE, st);
+
+    SetWindowPos(
+        m_hwnd,
+        HWND_TOPMOST,
+        x,
+        y,
+        width,
+        height,
+        SWP_SHOWWINDOW |
+        SWP_FRAMECHANGED);
+
+    // -----------------------------
+    // Fokus erzwingen
+    // -----------------------------
+
+    ShowWindow(m_hwnd, SW_SHOW);
+    UpdateWindow(m_hwnd);
+
+    BringWindowToTop(m_hwnd);
+
+    SetForegroundWindow(m_hwnd);
+    SetActiveWindow(m_hwnd);
+    SetFocus(m_hwnd);
 
     PostMessageW(m_hwnd, WM_APP, 0, 0);
 
-    return m_hwnd != nullptr;
+    return true;
 }
-
 
 
 
