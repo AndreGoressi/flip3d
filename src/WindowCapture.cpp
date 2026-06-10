@@ -183,17 +183,38 @@ HRESULT WindowCapture::InitViaThumbnail(HWND hwndCapture, HWND hwndDestination)
     }
 
     // --- Query source size ---
-    SIZE srcSize = {};
+    /*SIZE srcSize = {};
     if (FAILED(s_api.QueryWindowThumbnailSourceSize(hwndCapture, FALSE, &srcSize))
         || srcSize.cx <= 0 || srcSize.cy <= 0)
     {
         return E_FAIL;
+    }*/
+
+    SIZE srcSize = {};
+    if (FAILED(s_api.QueryWindowThumbnailSourceSize(hwndCapture, FALSE, &srcSize))
+        || srcSize.cx <= 0 || srcSize.cy <= 0)
+    {
+
+        if (FAILED(s_api.QueryWindowThumbnailSourceSize(hwndCapture, TRUE, &srcSize))
+            || srcSize.cx <= 0 || srcSize.cy <= 0)
+        {
+            RECT wr = {};
+            if (!GetWindowRect(hwndCapture, &wr))
+                return E_FAIL;
+            srcSize.cx = wr.right - wr.left;
+            srcSize.cy = wr.bottom - wr.top;
+            if (srcSize.cx <= 0 || srcSize.cy <= 0)
+                return E_FAIL;
+        }
     }
 
     // --- Create DWM thumbnail visual ---
     DWM_THUMBNAIL_PROPERTIES thumbProps = {};
     thumbProps.dwFlags        = DWM_TNP_VISIBLE
-                                | DWM_TNP_RECTDESTINATION | DWM_TNP_ENABLE3D | DWM_TNP_DISABLEFORCECVI;
+                                | DWM_TNP_RECTDESTINATION 
+                                | DWM_TNP_ENABLE3D 
+                                | DWM_TNP_DISABLEFORCECVI
+                                | DWM_TNP_SOURCECLIENTAREAONLY;
     thumbProps.fVisible       = TRUE;
     thumbProps.rcDestination  = { 0, 0, srcSize.cx, srcSize.cy };
 
