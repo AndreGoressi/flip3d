@@ -21,8 +21,6 @@ public:
     WindowCapture() = default;
     ~WindowCapture() { Release(); }
 
-    bool HasFirstFrame() const { return m_hasFirstFrame; }
-
     WindowCapture(WindowCapture &&other) noexcept;
     WindowCapture &operator=(WindowCapture &&other) noexcept;
 
@@ -42,7 +40,6 @@ public:
 private:
     // DWM thumbnail visual → InteropCompositor → WGC(CreateFromVisual)
     HRESULT InitViaThumbnail(HWND hwndCapture, HWND hwndDestination);
-    bool m_hasFirstFrame = false;
 
     // Shared helpers
     HRESULT CreateTextureAndSRV(UINT width, UINT height);
