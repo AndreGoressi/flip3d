@@ -316,12 +316,12 @@ void Flip3DRenderer::CreateWindowCaptures()
     return m_hwnd != nullptr;
 }*/
 
-bool Flip3DPrototype::Render_Window()
+bool Flip3DRenderer::Render_Window()
 {
     WNDCLASSEXW windowClass = {};
     windowClass.cbSize        = sizeof(windowClass);
     windowClass.hInstance     = m_instance;
-    windowClass.lpfnWndProc   = &Flip3DPrototype::WndProc;
+    windowClass.lpfnWndProc   = &Flip3DRenderer::WndProc;
     windowClass.lpszClassName = kWindowClassName;
     windowClass.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style         = CS_HREDRAW | CS_VREDRAW;
