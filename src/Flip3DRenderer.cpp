@@ -316,44 +316,46 @@ void Flip3DRenderer::CreateWindowCaptures()
     return m_hwnd != nullptr;
 }*/
 
-bool Flip3DRenderer::Render_Window()
+bool Flip3DPrototype::Render_Window()
 {
-    WNDCLASSEXW wc = {};
-    wc.cbSize        = sizeof(wc);
-    wc.hInstance     = m_instance;
-    wc.lpfnWndProc   = &Flip3DRenderer::WndProc;
-    wc.lpszClassName = kWindowClassName;
-    wc.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
-    wc.style         = CS_HREDRAW | CS_VREDRAW;
+    WNDCLASSEXW windowClass = {};
+    windowClass.cbSize        = sizeof(windowClass);
+    windowClass.hInstance     = m_instance;
+    windowClass.lpfnWndProc   = &Flip3DPrototype::WndProc;
+    windowClass.lpszClassName = kWindowClassName;
+    windowClass.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
+    windowClass.style         = CS_HREDRAW | CS_VREDRAW;
+    windowClass.hbrBackground = (HBRUSH)GetStockObject(NULL_BRUSH);
 
-    if (!RegisterClassExW(&wc))
+    if (!RegisterClassExW(&windowClass))
         return false;
 
-    HWND hActiveWnd = GetForegroundWindow();
-    if (!hActiveWnd)
-        hActiveWnd = GetDesktopWindow();
+    int x      = 0;
+    int y      = 0;
+    int width  = GetSystemMetrics(SM_CXSCREEN);
+    int height = GetSystemMetrics(SM_CYSCREEN);
 
-    HMONITOR hMonitor = MonitorFromWindow(hActiveWnd, MONITOR_DEFAULTTONEAREST);
+    HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
+    MONITORINFO mi    = { sizeof(mi) };
+    if (GetMonitorInfoW(hMonitor, &mi))
+    {
+        x      = mi.rcMonitor.left;
+        y      = mi.rcMonitor.top;
+        width  = mi.rcMonitor.right  - mi.rcMonitor.left;
+        height = mi.rcMonitor.bottom - mi.rcMonitor.top;
+    }
 
-    MONITORINFO monitorInfo = {};
-    monitorInfo.cbSize = sizeof(MONITORINFO);
-    GetMonitorInfoW(hMonitor, &monitorInfo);
-
-    int screenW = monitorInfo.rcMonitor.right  - monitorInfo.rcMonitor.left;
-    int screenH = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
-    int posX    = monitorInfo.rcMonitor.left;
-    int posY    = monitorInfo.rcMonitor.top;
-
-    DWORD style   = WS_POPUP | WS_VISIBLE;
+    // Erstmal "roh" erstellen – ohne sichtbares Flag, ohne Topmost
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
+    DWORD style   = WS_POPUP; // WS_VISIBLE kommt später
 
     m_hwnd = CreateWindowExW(
         exStyle,
         kWindowClassName,
         kWindowTitle,
         style,
-        posX, posY, screenW, screenH,
-        nullptr,        
+        x, y, width, height,
+        nullptr,
         nullptr,
         m_instance,
         this
@@ -362,40 +364,55 @@ bool Flip3DRenderer::Render_Window()
     if (!m_hwnd)
         return false;
 
-    bool transparencyEnabled = AreTransparencyEffectsEnabled();
-    MARGINS margins = {};
-
-    if (transparencyEnabled)
+    // DWM / Visual Setup
     {
-        margins = { -1, -1, -1, -1 };
+        BOOL cloak = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAKED, &cloak, sizeof(cloak));
+
+        BOOL darkMode = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+
+        #ifndef DWMWA_BACKGROUND_COLOR
+        #define DWMWA_BACKGROUND_COLOR 37
+        #endif
+        COLORREF flashFixColor = RGB(0, 0, 0);
+        DwmSetWindowAttribute(m_hwnd, DWMWA_BACKGROUND_COLOR, &flashFixColor, sizeof(flashFixColor));
+
+        BOOL disableTransitions = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disableTransitions, sizeof(disableTransitions));
+
+        MARGINS margins = { -1, -1, -1, -1 };
         DwmExtendFrameIntoClientArea(m_hwnd, &margins);
 
-        int backdropType = 3; // Acrylic
-        DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
+        DWORD backdropType = DWMSBT_TRANSIENTWINDOW; // Acrylic
+        DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdropType, sizeof(backdropType));
     }
-    else
+
+    // Jetzt FINAL: Topmost + sichtbar + Vollbild
     {
-        int none = 0;
-        DwmSetWindowAttribute(m_hwnd, 38, &none, sizeof(none));
+        // ExStyle um TOPMOST erweitern
+        LONG_PTR ex = GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE);
+        ex |= WS_EX_TOPMOST;
+        SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, ex);
 
-        margins = { 0, 0, 0, 0 };
-        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+        // Style um WS_VISIBLE erweitern
+        LONG_PTR st = GetWindowLongPtrW(m_hwnd, GWL_STYLE);
+        st |= WS_POPUP | WS_VISIBLE;
+        SetWindowLongPtrW(m_hwnd, GWL_STYLE, st);
+
+        SetWindowPos(
+            m_hwnd,
+            HWND_TOPMOST,
+            x, y, width, height,
+            SWP_FRAMECHANGED | SWP_SHOWWINDOW
+        );
     }
 
-    BOOL disableTransitions = TRUE;
-    DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
-
-    BOOL useDarkMode = TRUE;
-    DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
-
-    SetWindowPos(
-        m_hwnd, HWND_TOPMOST,
-        posX, posY, screenW, screenH,
-        SWP_FRAMECHANGED | SWP_SHOWWINDOW
-    );
+    PostMessageW(m_hwnd, WM_APP, 0, 0);
 
     return m_hwnd != nullptr;
 }
+
 
 
 
