@@ -2,27 +2,6 @@
 
 `flip3d` is a Windows-only Direct3D 11 prototype that recreates the classic Flip3D-style window switcher.
 
-## Demo
-
-Demo video: https://github.com/user-attachments/assets/5f059435-07cb-4d0c-aa6d-bc8f456b3c35
-
-## Requirements
-
-- Windows with DWM, DirectComposition, and Windows.Graphics.Capture support
-- CMake 3.20+
-- Visual Studio / MSVC with the Windows SDK
-
-## Build
-
-```powershell
-cmake -S . -B build
-cmake --build build --config Release
-```
-
-## Run
-
-Launch `build/Release/flip3d.exe` or the equivalent output path for your generator.
-
 The app enumerates eligible top-level windows, captures them through DWM thumbnail plus Windows.Graphics.Capture interop, and renders the card stack with Direct3D 11.
 
 ## Controls
