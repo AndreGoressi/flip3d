@@ -1,4 +1,4 @@
-#include "Flip3DWindow.h"
+#include "Flip3DRenderer.h"
 #include "Shaders.h"
 #include "Capture.h"
 
@@ -67,7 +67,7 @@ static bool AreTransparencyEffectsEnabled()
 // ============================================================================
 // Initialisation
 // ============================================================================
-bool Flip3DPrototype::Initialize(HINSTANCE instance)
+bool Flip3DRenderer::Initialize(HINSTANCE instance)
 {
     RoInitialize(RO_INIT_MULTITHREADED);
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -75,7 +75,7 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     LoadFlip3DPreferences();
     BuildCardModels();
 
-    if (!Create_Window()) return false;
+    if (!Render_Window()) return false;
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 
     if (FAILED(InitializeD3D())) return false;
@@ -88,7 +88,7 @@ bool Flip3DPrototype::Initialize(HINSTANCE instance)
     return true;
 }
 
-int Flip3DPrototype::Run()
+int Flip3DRenderer::Run()
 {
     MSG msg = {};
     while (msg.message != WM_QUIT)
@@ -119,16 +119,16 @@ int Flip3DPrototype::Run()
 // ============================================================================
 // Window procedure
 // ============================================================================
-LRESULT CALLBACK Flip3DPrototype::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK Flip3DRenderer::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if (message == WM_NCCREATE)
     {
         auto *create = reinterpret_cast<CREATESTRUCTW *>(lParam);
-        auto *self = static_cast<Flip3DPrototype *>(create->lpCreateParams);
+        auto *self = static_cast<Flip3DRenderer *>(create->lpCreateParams);
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
         self->m_hwnd = hwnd;
     }
-    auto *self = reinterpret_cast<Flip3DPrototype *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+    auto *self = reinterpret_cast<Flip3DRenderer *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
     return self ? self->HandleMessage(message, wParam, lParam) : DefWindowProcW(hwnd, message, wParam, lParam);
 }
 
@@ -136,7 +136,7 @@ LRESULT CALLBACK Flip3DPrototype::WndProc(HWND hwnd, UINT message, WPARAM wParam
 // ============================================================================
 // Card model building
 // ============================================================================
-void Flip3DPrototype::BuildCardModels()
+void Flip3DRenderer::BuildCardModels()
 {
     m_cards.clear();
     const auto windowLayouts = CapturePrimaryMonitorWindowRects(kMaxProxyCards, m_hwnd);
@@ -182,7 +182,7 @@ void Flip3DPrototype::BuildCardModels()
 // ============================================================================
 // Create per-window captures
 // ============================================================================
-void Flip3DPrototype::CreateWindowCaptures()
+void Flip3DRenderer::CreateWindowCaptures()
 {
     if (!m_device) return;
     ComPtr<IDXGIDevice> dxgiDevice;
@@ -203,12 +203,12 @@ void Flip3DPrototype::CreateWindowCaptures()
 // ============================================================================
 // Window creation
 // ============================================================================
-bool Flip3DPrototype::Create_Window()
+bool Flip3DRenderer::Render_Window()
 {
     WNDCLASSEXW wc = {};
     wc.cbSize        = sizeof(wc);
     wc.hInstance     = m_instance;
-    wc.lpfnWndProc   = &Flip3DPrototype::WndProc;
+    wc.lpfnWndProc   = &Flip3DRenderer::WndProc;
     wc.lpszClassName = kWindowClassName;
     wc.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
     wc.style         = CS_HREDRAW | CS_VREDRAW;
@@ -321,7 +321,7 @@ bool Flip3DPrototype::Create_Window()
 // ============================================================================
 // D3D initialisation
 // ============================================================================
-HRESULT Flip3DPrototype::InitializeD3D()
+HRESULT Flip3DRenderer::InitializeD3D()
 {
     UINT creationFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #if defined(_DEBUG)
@@ -395,7 +395,7 @@ HRESULT Flip3DPrototype::InitializeD3D()
     return CreateWindowSizeResources(false);
 }
 
-HRESULT Flip3DPrototype::CreateDeviceResources()
+HRESULT Flip3DRenderer::CreateDeviceResources()
 {
     HRESULT hr = S_OK;
     ComPtr<ID3DBlob> backgroundVS, backgroundPS, cardVS, cardPS;
@@ -497,7 +497,7 @@ HRESULT Flip3DPrototype::CreateDeviceResources()
     return hr;
 }
 
-HRESULT Flip3DPrototype::CreateWindowSizeResources(bool resizeBuffers)
+HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
 {
     if (!m_swapChain) return E_FAIL;
     m_msaaRTV.Reset(); m_renderTargetView.Reset(); m_msaaRenderTarget.Reset();
@@ -552,7 +552,7 @@ HRESULT Flip3DPrototype::CreateWindowSizeResources(bool resizeBuffers)
 // ============================================================================
 // Per-frame update
 // ============================================================================
-void Flip3DPrototype::Update(float deltaSeconds)
+void Flip3DRenderer::Update(float deltaSeconds)
 {
     if ((GetKeyState(VK_SHIFT) & 0x8000) != 0) deltaSeconds *= 0.05f;
     m_totalTime += deltaSeconds;
@@ -592,14 +592,14 @@ void Flip3DPrototype::Update(float deltaSeconds)
     ContinueKeyboardRepeatIfNeeded();
 }
 
-void Flip3DPrototype::OnGlobalTimeUpdated()
+void Flip3DRenderer::OnGlobalTimeUpdated()
 {
     if (m_showOutgoingDuringRotation && m_rotateTimeline.active
         && m_rotateTimeline.RawValue() > 0.5f)
         m_showOutgoingDuringRotation = false;
 }
 
-void Flip3DPrototype::TickRepeatedRotate()
+void Flip3DRenderer::TickRepeatedRotate()
 {
     if (m_rotateTimeline.active || m_cards.empty()) return;
 
@@ -651,13 +651,13 @@ void Flip3DPrototype::TickRepeatedRotate()
 // ============================================================================
 // View state / rotation helpers
 // ============================================================================
-int Flip3DPrototype::FrontCardIndex() const
+int Flip3DRenderer::FrontCardIndex() const
 {
     if (m_cards.empty()) return -1;
     return 0;
 }
 
-int Flip3DPrototype::ResolveOriginalFrontIndex() const
+int Flip3DRenderer::ResolveOriginalFrontIndex() const
 {
     if (m_originalFrontHWND == nullptr) return FrontCardIndex();
     size_t pos = 0;
@@ -669,7 +669,7 @@ int Flip3DPrototype::ResolveOriginalFrontIndex() const
     return FrontCardIndex();
 }
 
-int Flip3DPrototype::DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const
+int Flip3DRenderer::DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const
 {
     const size_t count = m_cards.size();
     if (count <= 1) return 0;
@@ -687,7 +687,7 @@ int Flip3DPrototype::DistanceBetween(size_t sourcePos, size_t targetPos, bool fo
     return static_cast<int>(dist);
 }
 
-void Flip3DPrototype::RotateListPhysically(bool backward)
+void Flip3DRenderer::RotateListPhysically(bool backward)
 {
     if (m_cards.size() <= 1) return;
     if (backward)
@@ -701,42 +701,42 @@ void Flip3DPrototype::RotateListPhysically(bool backward)
     }
 }
 
-void Flip3DPrototype::StartRotationStep(bool backward, float duration)
+void Flip3DRenderer::StartRotationStep(bool backward, float duration)
 {
     m_rotateBackward = backward;
     m_showOutgoingDuringRotation = true;
     m_rotateTimeline.Restart(0.0f, 1.0f, duration, InterpolationMode::Linear);
 }
 
-bool Flip3DPrototype::IsInteractiveKeyboardState() const
+bool Flip3DRenderer::IsInteractiveKeyboardState() const
 {
     return m_state == ViewState::Enter || m_state == ViewState::Interactive
         || m_state == ViewState::InteractiveRepeatedRotate;
 }
 
-bool Flip3DPrototype::IsSelectionKeyboardState() const
+bool Flip3DRenderer::IsSelectionKeyboardState() const
 {
     return m_state == ViewState::Interactive || m_state == ViewState::InteractiveRepeatedRotate;
 }
 
-bool Flip3DPrototype::IsSelectionInputState() const
+bool Flip3DRenderer::IsSelectionInputState() const
 {
     return IsSelectionKeyboardState();
 }
 
-float Flip3DPrototype::RotationDurationForRotateList() const
+float Flip3DRenderer::RotationDurationForRotateList() const
 {
     if (m_state == ViewState::InteractiveRepeatedRotate || m_state == ViewState::ExitRepeatedRotate)
         return std::max(std::abs(m_rRepeatedRotateRate), 0.005f);
     return gRotateListDurationSec;
 }
 
-bool Flip3DPrototype::ShouldReverseHorizontalWheel() const
+bool Flip3DRenderer::ShouldReverseHorizontalWheel() const
 {
     return m_hwnd != nullptr && (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 }
 
-void Flip3DPrototype::ReplayEnterAnimation()
+void Flip3DRenderer::ReplayEnterAnimation()
 {
     BuildCardModels();
     CreateWindowCaptures();
@@ -760,7 +760,7 @@ void Flip3DPrototype::ReplayEnterAnimation()
         InterpolationMode::Cubic);
 }
 
-void Flip3DPrototype::BeginExitView()
+void Flip3DRenderer::BeginExitView()
 {
     if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) return;
     if (m_minimized)
@@ -782,12 +782,12 @@ void Flip3DPrototype::BeginExitView()
     m_enterTimeline.Restart(1.0f, 0.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
 }
 
-void Flip3DPrototype::BeginExitAnimation() { BeginExitView(); }
+void Flip3DRenderer::BeginExitAnimation() { BeginExitView(); }
 
 // ============================================================================
 // Selection
 // ============================================================================
-void Flip3DPrototype::SelectWindow(HWND targetHwnd)
+void Flip3DRenderer::SelectWindow(HWND targetHwnd)
 {
     if (m_cards.empty() || !targetHwnd) return;
 
@@ -878,7 +878,7 @@ void Flip3DPrototype::SelectWindow(HWND targetHwnd)
     }
 }
 
-void Flip3DPrototype::SelectFrontWindow()
+void Flip3DRenderer::SelectFrontWindow()
 {
     if (!m_cards.empty()) SelectWindow(m_cards.front().hwnd);
 }
@@ -886,7 +886,7 @@ void Flip3DPrototype::SelectFrontWindow()
 // ============================================================================
 // Rotation input
 // ============================================================================
-void Flip3DPrototype::RotateListByMouseWheelAmount(int mouseWheelAmount)
+void Flip3DRenderer::RotateListByMouseWheelAmount(int mouseWheelAmount)
 {
     m_cMouseWheelLeftOver += mouseWheelAmount;
     if (m_rotateTimeline.active || m_cards.size() <= 1 || m_state == ViewState::Exit) return;
@@ -902,13 +902,13 @@ void Flip3DPrototype::RotateListByMouseWheelAmount(int mouseWheelAmount)
     StartRotationStep(backward, RotationDurationForRotateList());
 }
 
-void Flip3DPrototype::ContinueMouseWheelIfNeeded()
+void Flip3DRenderer::ContinueMouseWheelIfNeeded()
 {
     if (m_state == ViewState::InteractiveRepeatedRotate || m_state == ViewState::ExitRepeatedRotate) return;
     RotateListByMouseWheelAmount(0);
 }
 
-void Flip3DPrototype::ContinueKeyboardRepeatIfNeeded()
+void Flip3DRenderer::ContinueKeyboardRepeatIfNeeded()
 {
     if (m_rotateTimeline.active) return;
     if (m_bufferedRotateDelta != 0 && m_cMouseWheelLeftOver == 0)
@@ -921,7 +921,7 @@ void Flip3DPrototype::ContinueKeyboardRepeatIfNeeded()
     ProcessKeyboardInput(true, m_vkLastRepeatingKey, false);
 }
 
-void Flip3DPrototype::RotateBy(int delta)
+void Flip3DRenderer::RotateBy(int delta)
 {
     if (delta == 0 || m_cards.empty() || m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) return;
     if (m_state == ViewState::InteractiveRepeatedRotate)
@@ -934,9 +934,9 @@ void Flip3DPrototype::RotateBy(int delta)
     RotateListByMouseWheelAmount(rawWheel);
 }
 
-void Flip3DPrototype::RotateTo(int /*targetIndex*/) { BeginRotateToWindow(nullptr); }
+void Flip3DRenderer::RotateTo(int /*targetIndex*/) { BeginRotateToWindow(nullptr); }
 
-void Flip3DPrototype::BeginRotateToWindow(HWND targetHwnd)
+void Flip3DRenderer::BeginRotateToWindow(HWND targetHwnd)
 {
     const size_t count = m_cards.size();
     if (count <= 1 || m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) return;
@@ -969,7 +969,7 @@ void Flip3DPrototype::BeginRotateToWindow(HWND targetHwnd)
 // ============================================================================
 // Hit testing
 // ============================================================================
-bool Flip3DPrototype::IntersectRayTriangle(
+bool Flip3DRenderer::IntersectRayTriangle(
     const XMFLOAT3 &origin, const XMFLOAT3 &dir,
     const XMFLOAT3 &v0, const XMFLOAT3 &v1, const XMFLOAT3 &v2,
     float &t, float &u) const
@@ -989,7 +989,7 @@ bool Flip3DPrototype::IntersectRayTriangle(
     return u >= 0.0f && v >= 0.0f && (u + v) <= 1.0f && t > EPSILON;
 }
 
-int Flip3DPrototype::HitTest3DScene(LONG x, LONG y) const
+int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
 {
     if (!IsSelectionInputState() || m_cards.empty()) return -1;
     if (m_monitorWidth <= 0 || m_monitorHeight <= 0) return -1;
@@ -1048,7 +1048,7 @@ int Flip3DPrototype::HitTest3DScene(LONG x, LONG y) const
     return -1;
 }
 
-bool Flip3DPrototype::SelectWindowAtPoint(LONG x, LONG y)
+bool Flip3DRenderer::SelectWindowAtPoint(LONG x, LONG y)
 {
     const int pos = HitTest3DScene(x, y);
     if (pos < 0) return false;
@@ -1060,7 +1060,7 @@ bool Flip3DPrototype::SelectWindowAtPoint(LONG x, LONG y)
 // ============================================================================
 // Mouse / keyboard input
 // ============================================================================
-bool Flip3DPrototype::ProcessMouseWheelInput(int mouseWheelAmount, bool horizontalWheel)
+bool Flip3DRenderer::ProcessMouseWheelInput(int mouseWheelAmount, bool horizontalWheel)
 {
     if (!IsInteractiveKeyboardState()) return false;
     int effective = mouseWheelAmount;
@@ -1070,7 +1070,7 @@ bool Flip3DPrototype::ProcessMouseWheelInput(int mouseWheelAmount, bool horizont
     return true;
 }
 
-bool Flip3DPrototype::ProcessMouseButtonInput(LONG x, LONG y, bool pressed)
+bool Flip3DRenderer::ProcessMouseButtonInput(LONG x, LONG y, bool pressed)
 {
     if (!IsSelectionInputState()) return false;
     if (pressed)
@@ -1093,7 +1093,7 @@ bool Flip3DPrototype::ProcessMouseButtonInput(LONG x, LONG y, bool pressed)
     return true;
 }
 
-bool Flip3DPrototype::ProcessMouseInput(UINT message, WPARAM wParam, LPARAM lParam)
+bool Flip3DRenderer::ProcessMouseInput(UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -1109,7 +1109,7 @@ bool Flip3DPrototype::ProcessMouseInput(UINT message, WPARAM wParam, LPARAM lPar
     return false;
 }
 
-bool Flip3DPrototype::ProcessKeyboardInput(bool isKeyDown, UINT vkCode, bool isRepeat)
+bool Flip3DRenderer::ProcessKeyboardInput(bool isKeyDown, UINT vkCode, bool isRepeat)
 {
     if (isKeyDown)
     {
@@ -1164,12 +1164,12 @@ bool Flip3DPrototype::ProcessKeyboardInput(bool isKeyDown, UINT vkCode, bool isR
 // ============================================================================
 // Drawing / Rendering pipeline
 // ============================================================================
-float Flip3DPrototype::EnterProgress() const
+float Flip3DRenderer::EnterProgress() const
 {
     return std::clamp(m_enterTimeline.Value(), 0.0f, 1.0f);
 }
 
-XMMATRIX Flip3DPrototype::BuildViewMatrix(float enterProgress) const
+XMMATRIX Flip3DRenderer::BuildViewMatrix(float enterProgress) const
 {
     const XMVECTOR eyeV = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
     const XMVECTOR atV  = XMVectorZero();
@@ -1189,13 +1189,13 @@ XMMATRIX Flip3DPrototype::BuildViewMatrix(float enterProgress) const
     return view;
 }
 
-XMMATRIX Flip3DPrototype::BuildProjectionMatrix(float enterProgress) const
+XMMATRIX Flip3DRenderer::BuildProjectionMatrix(float enterProgress) const
 {
     const float nearPlaneExtent = (enterProgress * gNearPlaneEdgeSize) + (1.0f - enterProgress);
     return XMMatrixPerspectiveRH(nearPlaneExtent, nearPlaneExtent, kNearPlaneDistance, 50.0f);
 }
 
-DrawBuildContext Flip3DPrototype::CreateDrawBuildContext() const
+DrawBuildContext Flip3DRenderer::CreateDrawBuildContext() const
 {
     DrawBuildContext context = {};
     context.countInt = static_cast<int>(m_cards.size());
@@ -1247,7 +1247,7 @@ DrawBuildContext Flip3DPrototype::CreateDrawBuildContext() const
     return context;
 }
 
-float Flip3DPrototype::SteadyOpacityForRelative(const DrawBuildContext &context, float relative) const
+float Flip3DRenderer::SteadyOpacityForRelative(const DrawBuildContext &context, float relative) const
 {
     if (!context.hasHiddenQualifiedWindows) return 1.0f;
     if (relative < 0.0f) return 1.0f;
@@ -1255,7 +1255,7 @@ float Flip3DPrototype::SteadyOpacityForRelative(const DrawBuildContext &context,
     return (relative >= static_cast<float>(context.visibleCount - 1)) ? 0.5f : 1.0f;
 }
 
-bool Flip3DPrototype::IsVisibleInView(
+bool Flip3DRenderer::IsVisibleInView(
     size_t position, bool isVisibleInFinalView,
     size_t rotatingInPos, size_t rotatingOutPos) const
 {
@@ -1281,7 +1281,7 @@ bool Flip3DPrototype::IsVisibleInView(
     return false;
 }
 
-std::vector<VisibleCardStructure> Flip3DPrototype::BuildVisibleCardStructure(const DrawBuildContext &context) const
+std::vector<VisibleCardStructure> Flip3DRenderer::BuildVisibleCardStructure(const DrawBuildContext &context) const
 {
     std::vector<VisibleCardStructure> result;
     result.reserve(m_cards.size());
@@ -1365,7 +1365,7 @@ std::vector<VisibleCardStructure> Flip3DPrototype::BuildVisibleCardStructure(con
     return result;
 }
 
-CardAnimationState Flip3DPrototype::CreateBaseCardAnimationState(
+CardAnimationState Flip3DRenderer::CreateBaseCardAnimationState(
     size_t position, const DrawBuildContext & /*context*/) const
 {
     CardAnimationState state = {};
@@ -1376,7 +1376,7 @@ CardAnimationState Flip3DPrototype::CreateBaseCardAnimationState(
     return state;
 }
 
-CardAnimationState Flip3DPrototype::ResolveOutgoingCardAnimationState(
+CardAnimationState Flip3DRenderer::ResolveOutgoingCardAnimationState(
     const DrawBuildContext &context, CardAnimationState state) const
 {
     const float startRelative = (context.rotationSteps > 0) ? 0.0f : static_cast<float>(context.visibleCount - 1);
@@ -1397,7 +1397,7 @@ CardAnimationState Flip3DPrototype::ResolveOutgoingCardAnimationState(
     return state;
 }
 
-CardAnimationState Flip3DPrototype::ResolveIncomingCardAnimationState(
+CardAnimationState Flip3DRenderer::ResolveIncomingCardAnimationState(
     const VisibleCardStructure &entry, const DrawBuildContext &context,
     CardAnimationState state) const
 {
@@ -1419,7 +1419,7 @@ CardAnimationState Flip3DPrototype::ResolveIncomingCardAnimationState(
     return state;
 }
 
-CardAnimationState Flip3DPrototype::ResolveSteadyCardAnimationState(
+CardAnimationState Flip3DRenderer::ResolveSteadyCardAnimationState(
     const VisibleCardStructure &entry, const DrawBuildContext &context,
     CardAnimationState state) const
 {
@@ -1461,7 +1461,7 @@ CardAnimationState Flip3DPrototype::ResolveSteadyCardAnimationState(
     return state;
 }
 
-CardAnimationState Flip3DPrototype::ResolveCycleCardAnimationState(
+CardAnimationState Flip3DRenderer::ResolveCycleCardAnimationState(
     const DrawBuildContext &context, CardAnimationState state) const
 {
     if (context.rotationSteps > 0)
@@ -1501,7 +1501,7 @@ CardAnimationState Flip3DPrototype::ResolveCycleCardAnimationState(
     return state;
 }
 
-CardAnimationState Flip3DPrototype::ResolveCardAnimationState(
+CardAnimationState Flip3DRenderer::ResolveCardAnimationState(
     const VisibleCardStructure &entry, const DrawBuildContext &context) const
 {
     CardAnimationState state = CreateBaseCardAnimationState(entry.cardPosition, context);
@@ -1529,7 +1529,7 @@ CardAnimationState Flip3DPrototype::ResolveCardAnimationState(
     return state;
 }
 
-CardWorldState Flip3DPrototype::GetWorldFromParametric(
+CardWorldState Flip3DRenderer::GetWorldFromParametric(
     const DrawBuildContext &context, const CardModel &card, size_t position,
     const CardAnimationState &animationState, float enterProgress) const
 {
@@ -1583,7 +1583,7 @@ CardWorldState Flip3DPrototype::GetWorldFromParametric(
     return worldState;
 }
 
-float Flip3DPrototype::ResolveDrawItemWindowOpacity(
+float Flip3DRenderer::ResolveDrawItemWindowOpacity(
     const VisibleCardStructure &entry, const DrawBuildContext &context,
     const CardAnimationState &animationState) const
 {
@@ -1603,14 +1603,14 @@ float Flip3DPrototype::ResolveDrawItemWindowOpacity(
     return 1.0f;
 }
 
-float Flip3DPrototype::ApplyEnterProgressToWindowOpacity(float windowOpacity, float enterProgress) const
+float Flip3DRenderer::ApplyEnterProgressToWindowOpacity(float windowOpacity, float enterProgress) const
 {
     if (std::abs(enterProgress - 1.0f) >= 0.0000012f && std::abs(windowOpacity - 1.0f) >= 0.0000012f)
         return (enterProgress * windowOpacity) + (1.0f - enterProgress);
     return windowOpacity;
 }
 
-float Flip3DPrototype::ResolveDrawItemStateOpacity(const CardModel &card, float enterProgress) const
+float Flip3DRenderer::ResolveDrawItemStateOpacity(const CardModel &card, float enterProgress) const
 {
     if (card.isMinimized && card.hwnd != m_selectedHWND
         && std::abs(enterProgress - 1.0f) >= 0.0000012f)
@@ -1619,25 +1619,25 @@ float Flip3DPrototype::ResolveDrawItemStateOpacity(const CardModel &card, float 
     return 1.0f;
 }
 
-float Flip3DPrototype::ResolveOutgoingTransitionOpacity(const DrawBuildContext &context) const
+float Flip3DRenderer::ResolveOutgoingTransitionOpacity(const DrawBuildContext &context) const
 {
     if (context.useOriginalHiddenWindowRotation) return 1.0f - context.hiddenWindowFlipOutProgress;
     return 1.0f - (2.0f * std::min(context.rotationProgress, 0.5f));
 }
 
-float Flip3DPrototype::ResolveIncomingTransitionOpacity(const DrawBuildContext &context) const
+float Flip3DRenderer::ResolveIncomingTransitionOpacity(const DrawBuildContext &context) const
 {
     if (context.useOriginalHiddenWindowRotation) return context.hiddenWindowFlipInProgress;
     return std::clamp((context.rotationProgress - 0.5f) * 2.0f, 0.0f, 1.0f);
 }
 
-float Flip3DPrototype::ResolveCycleTransitionOpacity(const DrawBuildContext &context) const
+float Flip3DRenderer::ResolveCycleTransitionOpacity(const DrawBuildContext &context) const
 {
     if (context.rotationProgress < 0.5f) { const float phase = context.rotationProgress * 2.0f; return 1.0f - phase; }
     const float phase = (context.rotationProgress - 0.5f) * 2.0f; return phase;
 }
 
-float Flip3DPrototype::ResolveDrawItemTransitionOpacity(
+float Flip3DRenderer::ResolveDrawItemTransitionOpacity(
     const VisibleCardStructure &entry, const DrawBuildContext &context) const
 {
     if (context.rotationSteps == 0) return 1.0f;
@@ -1647,7 +1647,7 @@ float Flip3DPrototype::ResolveDrawItemTransitionOpacity(
     return 1.0f;
 }
 
-float Flip3DPrototype::UpdateDrawItemAlpha(
+float Flip3DRenderer::UpdateDrawItemAlpha(
     const VisibleCardStructure &entry, const DrawBuildContext &context,
     const CardModel &card, const CardAnimationState &animationState,
     float enterProgress) const
@@ -1659,7 +1659,7 @@ float Flip3DPrototype::UpdateDrawItemAlpha(
     return transitionOpacity * windowOpacity * stateOpacity;
 }
 
-bool Flip3DPrototype::TryBuildDrawItemForStructure(
+bool Flip3DRenderer::TryBuildDrawItemForStructure(
     const VisibleCardStructure &entry, const DrawBuildContext &context,
     float enterProgress, DrawItem &item) const
 {
@@ -1683,7 +1683,7 @@ bool Flip3DPrototype::TryBuildDrawItemForStructure(
     return true;
 }
 
-std::vector<DrawItem> Flip3DPrototype::BuildDrawItems(float enterProgress) const
+std::vector<DrawItem> Flip3DRenderer::BuildDrawItems(float enterProgress) const
 {
     const DrawBuildContext context = CreateDrawBuildContext();
     std::vector<DrawItem> items;
@@ -1700,7 +1700,7 @@ std::vector<DrawItem> Flip3DPrototype::BuildDrawItems(float enterProgress) const
     return items;
 }
 
-void Flip3DPrototype::Render()
+void Flip3DRenderer::Render()
 {
     if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
 
@@ -1795,7 +1795,7 @@ void Flip3DPrototype::Render()
 // ============================================================================
 // Window message handling
 // ============================================================================
-LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
