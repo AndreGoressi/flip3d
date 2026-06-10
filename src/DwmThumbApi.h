@@ -9,6 +9,7 @@
 #define DWM_TNP_DISABLE3D         0x8000000
 #define DWM_TNP_FORCECVI          0x40000000
 #define DWM_TNP_DISABLEFORCECVI   0x80000000
+#define DWM_TNP_SOURCECLIENTAREAONLY   0x00000010
 
 // ============================================================================
 // Private DWM thumbnail API types (loaded by ordinal from dwmapi.dll)
