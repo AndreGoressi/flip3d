@@ -298,10 +298,14 @@ bool Flip3DPrototype::Create_Window()
     if (!RegisterClassExW(&wc))
         return false;
 
-    int screenW = GetSystemMetrics(SM_CXSCREEN);
-    int screenH = GetSystemMetrics(SM_CYSCREEN);
+    RECT workArea = {};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0);
+    int screenW = workArea.right - workArea.left;
+    int screenH = workArea.bottom - workArea.top;
+    int posX = workArea.left;
+    int posY = workArea.top;
 
-    DWORD style   = WS_OVERLAPPEDWINDOW;
+    DWORD style   = WS_POPUP | WS_VISIBLE; 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
 
     m_hwnd = CreateWindowExW(
@@ -309,7 +313,7 @@ bool Flip3DPrototype::Create_Window()
         kWindowClassName,
         kWindowTitle,
         style,
-        0, 0, screenW, screenH,
+        posX, posY, screenW, screenH,
         nullptr, nullptr,
         m_instance,
         this
@@ -344,25 +348,11 @@ bool Flip3DPrototype::Create_Window()
     BOOL useDarkMode = TRUE;
     DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
 
-    style &= ~WS_CAPTION;
-    style &= ~WS_THICKFRAME;
-    SetWindowLongW(m_hwnd, GWL_STYLE, style);
-
-    RECT workArea = {};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0);
-    int workW = workArea.right - workArea.left;
-    int workH = workArea.bottom - workArea.top;
-    int posX = workArea.left;
-    int posY = workArea.top;
-
     SetWindowPos(
         m_hwnd, HWND_TOPMOST,
-        posX, posY, workW, workH,
-        SWP_FRAMECHANGED | SWP_NOACTIVATE
+        posX, posY, screenW, screenH,
+        SWP_FRAMECHANGED | SWP_SHOWWINDOW
     );
-
-    ShowWindow(m_hwnd, SW_SHOW);
-    UpdateWindow(m_hwnd);
 
     return m_hwnd != nullptr;
 }
