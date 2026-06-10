@@ -337,12 +337,15 @@ bool Flip3DPrototype::Create_Window()
                 break;
             }
         }
+
         if (!hTaskbar) {
             hTaskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
         }
     }
 
-    DWORD style   = WS_POPUP; 
+    // ============================================================================
+
+    DWORD style   = WS_POPUP | WS_VISIBLE; 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
 
     m_hwnd = CreateWindowExW(
@@ -385,7 +388,7 @@ bool Flip3DPrototype::Create_Window()
 
     BOOL useDarkMode = TRUE;
     DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
-    
+
     SetWindowPos(
         m_hwnd, nullptr,
         posX, posY, screenW, screenH,
