@@ -4,9 +4,9 @@
 #include "WindowCapture.h"
 
 // ============================================================================
-// Main Flip3D D3D11 prototype application class
+// Main Flip3D D3D11 Renderer application class
 // ============================================================================
-class Flip3DPrototype
+class Flip3DRenderer
 {
 public:
     bool Initialize(HINSTANCE instance);
@@ -27,7 +27,7 @@ private:
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
 
     // Window creation
-    bool Create_Window();
+    bool Render_Window();
 
     // D3D initialization
     HRESULT InitializeD3D();
