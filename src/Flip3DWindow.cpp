@@ -1842,8 +1842,8 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
     switch (message)
     {
         case WM_ERASEBKGND:
-            return 1; 
-        
+            return 1;
+
         case WM_ACTIVATE:
         {
             if (LOWORD(wParam) == WA_INACTIVE)
@@ -1873,7 +1873,7 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
                 EndPaint(m_hwnd, &ps);
                 return 0; 
             }
-            break; 
+            break;
         }
         // ------------------------------------------------
 
