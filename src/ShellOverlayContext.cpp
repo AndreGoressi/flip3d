@@ -106,7 +106,7 @@ bool ShellOverlayContext::CreateD3DAndComposition()
             // Wenn wir nullptr als Source und DCOMP_SOURCE_MODIFIER_BACKGROUND (Wert 1) übergeben:
             //blurEffect->SetInput(0, nullptr, static_cast<DCOMP_SOURCE_MODIFIER>(1));
             // NEU UND UNKAPUTTBAR:
-            blurEffect->SetInput(0, nullptr, static_cast<decltype(DCOMP_SOURCE_MODIFIER_COMPOSITION)>(1));
+            blurEffect->SetInput(0, nullptr, static_cast<UINT>(1));
             
             // Dem Visual den DWM-System-Blur aufzwingen
             m_rootVisual->SetEffect(blurEffect.Get());
