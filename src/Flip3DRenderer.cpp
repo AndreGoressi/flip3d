@@ -1897,24 +1897,11 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         case WM_ERASEBKGND:
             return 1;
 
+        // Fokus weg → sofort schließen
         case WM_ACTIVATE:
         {
             if (LOWORD(wParam) == WA_INACTIVE)
             {
-                HWND fg = GetForegroundWindow();
-
-                if (fg == nullptr || fg == GetDesktopWindow())
-                    return 0;
-
-                wchar_t cls[256] = {};
-                GetClassNameW(fg, cls, 256);
-
-                if (wcscmp(cls, L"Windows.UI.Core.CoreWindow") == 0 ||
-                    wcscmp(cls, L"Windows.Internal.Experience.CompositionWindow") == 0)
-                {
-                    return 0;
-                }
-
                 ShowWindow(m_hwnd, SW_HIDE);
                 BeginExitView();
                 return 0;
@@ -1926,25 +1913,10 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         {
             if (wParam == FALSE)
             {
-                HWND fg = GetForegroundWindow();
-
-                if (fg == nullptr || fg == GetDesktopWindow())
-                    return 0;
-
-                wchar_t cls[256] = {};
-                GetClassNameW(fg, cls, 256);
-
-                if (wcscmp(cls, L"Windows.UI.Core.CoreWindow") == 0 ||
-                    wcscmp(cls, L"Windows.Internal.Experience.CompositionWindow") == 0)
-                {
-                    return 0;
-                }
-
                 ShowWindow(m_hwnd, SW_HIDE);
                 BeginExitView();
                 return 0;
             }
-
             return DefWindowProcW(m_hwnd, message, wParam, lParam);
         }
 
