@@ -1,122 +1,159 @@
 #include "ShellOverlayContext.h"
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
 
-ShellOverlayContext::ShellOverlayContext() 
-    : m_dummyHwnd(nullptr), m_shellHookMsg(0) 
+ShellOverlayContext::ShellOverlayContext()
+    : m_instance(nullptr), m_hwnd(nullptr), m_shellHookMsg(0),
+      m_screenW(0), m_screenH(0)
 {
 }
 
-ShellOverlayContext::~ShellOverlayContext() 
-{ 
-    Cleanup(); 
+ShellOverlayContext::~ShellOverlayContext()
+{
+    Cleanup();
 }
 
 bool ShellOverlayContext::Initialize(HINSTANCE instance)
 {
-    // 1. Das unsichtbare Dummy-Fenster registrieren
-    WNDCLASSEXW wc = { sizeof(WNDCLASSEXW) };
-    wc.lpfnWndProc   = ShellOverlayContext::DummyWndProc;
-    wc.hInstance     = instance;
-    wc.lpszClassName = L"ShellOverlayDummyClass";
-    RegisterClassExW(&wc);
+    m_instance = instance;
+    m_screenW  = GetSystemMetrics(SM_CXSCREEN);
+    m_screenH  = GetSystemMetrics(SM_CYSCREEN);
 
-    // 0x0 Pixel, kein WS_VISIBLE. Es blockiert physisch gar nichts, fängt nur Hooks!
-    m_dummyHwnd = CreateWindowExW(
-        WS_EX_TOOLWINDOW, 
-        wc.lpszClassName, nullptr, 
-        WS_POPUP, 
-        0, 0, 0, 0, 
+    // ---------------------------------------------------------------------------
+    // 1. Fensterklasse registrieren
+    // ---------------------------------------------------------------------------
+    WNDCLASSEXW wc    = { sizeof(WNDCLASSEXW) };
+    wc.lpfnWndProc    = ShellOverlayContext::OverlayWndProc;
+    wc.hInstance      = instance;
+    wc.lpszClassName  = L"ShellOverlayClass";
+    wc.hCursor        = LoadCursor(nullptr, IDC_ARROW);
+    if (!RegisterClassExW(&wc)) return false;
+
+    // ---------------------------------------------------------------------------
+    // 2. Das Ankerfenster anlegen
+    //
+    //    Warum diese Flags?
+    //    WS_EX_LAYERED       -> DWM behandelt das Fenster als composited surface,
+    //                           nur so kann DComp darueber rendern
+    //    WS_EX_TRANSPARENT   -> Mausklicks fallen durch das Fenster hindurch
+    //    WS_EX_TOPMOST       -> Liegt ueber allem ausser dem eigentlichen DComp-Visual
+    //    WS_EX_TOOLWINDOW    -> Taucht nicht in der Taskleiste auf
+    //    WS_EX_NOACTIVATE    -> Stiehlt keinen Fokus beim Erscheinen
+    //
+    //    Das Fenster bekommt VOLLE Bildschirmgroesse, damit DComp den
+    //    CompleteTarget korrekt berechnen kann. Es ist trotzdem unsichtbar
+    //    weil wir SetLayeredWindowAttributes mit Alpha=0 setzen, BEVOR
+    //    WS_VISIBLE aktiv wird.  DComp rendert dann darueber.
+    // ---------------------------------------------------------------------------
+    m_hwnd = CreateWindowExW(
+        WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOPMOST |
+        WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+        wc.lpszClassName,
+        nullptr,
+        WS_POPUP,
+        0, 0, m_screenW, m_screenH,
         nullptr, nullptr, instance, this
     );
+    if (!m_hwnd) return false;
 
-    if (!m_dummyHwnd) return false;
+    // Fenster komplett durchsichtig machen (DComp-Visual laeuft darueber)
+    SetLayeredWindowAttributes(m_hwnd, 0, 0, LWA_ALPHA);
 
-    // 2. Den System-Hook scharfschalten (Überwacht globale Fensterwechsel der Shell)
-    RegisterShellHookWindow(m_dummyHwnd);
+    // Fenster sichtbar schalten (noetig damit DComp ein gueltiges Target bekommt)
+    ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
+    UpdateWindow(m_hwnd);
+
+    // ---------------------------------------------------------------------------
+    // 3. Shell-Hook fuer Fokus-Erkennung registrieren
+    // ---------------------------------------------------------------------------
+    RegisterShellHookWindow(m_hwnd);
     m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
-    // 3. DirectX, DirectComposition und das Acrylic-Effekt-Netzwerk hochfahren
+    // ---------------------------------------------------------------------------
+    // 4. DirectX + DirectComposition + Acrylic-Effekt-Graph hochfahren
+    // ---------------------------------------------------------------------------
     return CreateD3DAndComposition();
 }
 
 bool ShellOverlayContext::CreateD3DAndComposition()
 {
-    // Direct3D 11 Device mit BGRA-Support zwingend erforderlich für DirectComposition
+    // --- D3D11 Device ---
     D3D_FEATURE_LEVEL featureLevel;
-    HRESULT hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 
-                                   D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0, 
-                                   D3D11_SDK_VERSION, &m_d3dDevice, &featureLevel, &m_d3dContext);
+    HRESULT hr = D3D11CreateDevice(
+        nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr,
+        D3D11_CREATE_DEVICE_BGRA_SUPPORT,   // Pflicht fuer DComp
+        nullptr, 0, D3D11_SDK_VERSION,
+        &m_d3dDevice, &featureLevel, &m_d3dContext
+    );
     if (FAILED(hr)) return false;
 
-    // DXGI Interfaces für die Brücke zur Swapchain holen
-    ComPtr<IDXGIDevice> dxgiDevice;
-    m_d3dDevice.As(&dxgiDevice);
-    ComPtr<IDXGIAdapter> dxgiAdapter;
-    dxgiDevice->GetAdapter(&dxgiAdapter);
+    // --- DXGI Interfaces ---
+    ComPtr<IDXGIDevice>   dxgiDevice;
+    ComPtr<IDXGIAdapter>  dxgiAdapter;
     ComPtr<IDXGIFactory2> dxgiFactory;
+
+    m_d3dDevice.As(&dxgiDevice);
+    dxgiDevice->GetAdapter(&dxgiAdapter);
     dxgiAdapter->GetParent(__uuidof(IDXGIFactory2), (void**)&dxgiFactory);
 
-    // Gesamte Monitor-Auflösung abgreifen
-    int screenW = GetSystemMetrics(SM_CXSCREEN);
-    int screenH = GetSystemMetrics(SM_CYSCREEN);
-
-    // Die fensterlose (Composition-) Swapchain beschreiben
+    // --- Composition-Swapchain (fensterlos, lebt im DComp-Visual-Tree) ---
     DXGI_SWAP_CHAIN_DESC1 desc = {};
-    desc.Width = screenW;
-    desc.Height = screenH;
-    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.Width       = (UINT)m_screenW;
+    desc.Height      = (UINT)m_screenH;
+    desc.Format      = DXGI_FORMAT_B8G8R8A8_UNORM; // BGRA ist Standard fuer DComp
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     desc.BufferCount = 2;
-    desc.Scaling = DXGI_SCALING_STRETCH; // Zwingend für DComp
-    desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL; // Modernes Flip-Modell
-    desc.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED; // Essentiell für saubere Transparenz-Blends
+    desc.Scaling     = DXGI_SCALING_STRETCH;
+    desc.SwapEffect  = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+    desc.AlphaMode   = DXGI_ALPHA_MODE_PREMULTIPLIED; // Pflicht fuer Alpha-Blending mit DWM
     desc.SampleDesc.Count = 1;
 
-    hr = dxgiFactory->CreateSwapChainForComposition(m_d3dDevice.Get(), &desc, nullptr, &m_swapChain);
+    hr = dxgiFactory->CreateSwapChainForComposition(
+        m_d3dDevice.Get(), &desc, nullptr, &m_swapChain
+    );
     if (FAILED(hr)) return false;
 
-    // Das Haupt-DirectComposition-Device starten
-    hr = DCompositionCreateDevice(dxgiDevice.Get(), __uuidof(IDCompositionDevice), (void**)&m_dcompDevice);
+    // --- DComp Device ---
+    hr = DCompositionCreateDevice(
+        dxgiDevice.Get(), __uuidof(IDCompositionDevice), (void**)&m_dcompDevice
+    );
     if (FAILED(hr)) return false;
 
-    // Das Visual-Target an unser unsichtbares Fenster ketten (TRUE = Oben drüber rendern)
-    hr = m_dcompDevice->CreateTargetForHwnd(m_dummyHwnd, TRUE, &m_dcompTarget);
+    // --- Target an das SICHTBARE, bildschirmgrosse Fenster haengen ---
+    //     TRUE = topmost in der Visual-Tree Reihenfolge
+    hr = m_dcompDevice->CreateTargetForHwnd(m_hwnd, TRUE, &m_dcompTarget);
     if (FAILED(hr)) return false;
 
-    // Das Root-Visual erstellen (Unsere fensterlose Zeichenleinwand)
+    // --- Root-Visual erstellen und Swapchain als Inhalt setzen ---
     hr = m_dcompDevice->CreateVisual(&m_rootVisual);
     if (FAILED(hr)) return false;
 
-    // Die Swapchain als Inhalt des Visuals festlegen
     m_rootVisual->SetContent(m_swapChain.Get());
     m_dcompTarget->SetRoot(m_rootVisual.Get());
 
-    // ========================================================================
-    // DER MAGISCHE ACRYLIC EFFECT GRAPH
-    // ========================================================================
+    // -----------------------------------------------------------------------
+    // ACRYLIC EFFECT GRAPH
+    // IDCompositionDevice3 ist noetig fuer Blur-Effekte
+    // -----------------------------------------------------------------------
     ComPtr<IDCompositionDevice3> dcompDevice3;
     if (SUCCEEDED(m_dcompDevice.As(&dcompDevice3)))
     {
         ComPtr<IDCompositionGaussianBlurEffect> blurEffect;
         if (SUCCEEDED(dcompDevice3->CreateGaussianBlurEffect(&blurEffect)))
         {
-            // 30.0f Deviation entspricht dem originalen Windows 11 Task View Blur!
             blurEffect->SetStandardDeviation(30.0f);
-            
-            // NEU UND KOMPATIBEL:
-            // Wenn wir nullptr als Source und DCOMP_SOURCE_MODIFIER_BACKGROUND (Wert 1) übergeben:
-            //blurEffect->SetInput(0, nullptr, static_cast<DCOMP_SOURCE_MODIFIER>(1));
-            // NEU UND UNKAPUTTBAR:
+
+            // Input-Index 0, nullptr als Source = Desktop-Hintergrund (Wert 1 = backdrop)
             blurEffect->SetInput(0, nullptr, static_cast<UINT>(1));
-            
-            // Dem Visual den DWM-System-Blur aufzwingen
+
             m_rootVisual->SetEffect(blurEffect.Get());
         }
     }
 
-    // Die Swapchain mit dem farbigen Acrylic-Wash tönen
+    // Den Acrylic-Farb-Wash rendern (dunkles Anthrazit mit 40% Deckkraft)
     RenderAcrylicWash();
 
-    // Alles an den Desktop-Manager (DWM) übermitteln
+    // Alles an DWM uebergeben
     m_dcompDevice->Commit();
 
     return true;
@@ -124,40 +161,43 @@ bool ShellOverlayContext::CreateD3DAndComposition()
 
 void ShellOverlayContext::RenderAcrylicWash()
 {
-    // Backbuffer holen
     ComPtr<ID3D11Texture2D> backBuffer;
     m_swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backBuffer);
 
-    // Render Target erstellen
     ComPtr<ID3D11RenderTargetView> rtv;
     m_d3dDevice->CreateRenderTargetView(backBuffer.Get(), nullptr, &rtv);
 
-    // Der originale "Acrylic Slate Wash": Tiefes Anthrazit mit 40% Deckkraft.
-    // Wegen PREMULTIPLIED ALPHA müssen die RGB-Kanäle mit dem Alpha-Wert multipliziert sein!
-    // 0.1f (RGB) * 0.4f (Alpha) = 0.04f
-    float clearColor[4] = { 0.04f, 0.04f, 0.04f, 0.4f };
-    
+    // Premultiplied Alpha: RGB = 0.06 * 0.4 (alpha) = 0.024
+    // Leicht blaustichiges Anthrazit, angelehnt an Win11 Task View
+    float clearColor[4] = { 0.024f, 0.024f, 0.040f, 0.4f };
     m_d3dContext->ClearRenderTargetView(rtv.Get(), clearColor);
 
-    // Bild an den DWM übergeben
     m_swapChain->Present(1, 0);
 }
 
-LRESULT CALLBACK ShellOverlayContext::DummyWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
-    ShellOverlayContext* ctx = reinterpret_cast<ShellOverlayContext*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-    
+    ShellOverlayContext* ctx = reinterpret_cast<ShellOverlayContext*>(
+        GetWindowLongPtrW(hwnd, GWLP_USERDATA)
+    );
+
     if (msg == WM_NCCREATE) {
-        CREATESTRUCTW* cs = reinterpret_cast<CREATESTRUCTW*>(lp);
+        auto* cs = reinterpret_cast<CREATESTRUCTW*>(lp);
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
+        return DefWindowProcW(hwnd, msg, wp, lp);
     }
 
     if (ctx) {
-        // Das Gesetzbuch schlägt zu: Sobald im Windows-System irgendwo hingeklickt wird
-        // (Taskleiste, Startmenü, andere App) und ein Fenster aktiv wird...
+        // Shell meldet: ein anderes Fenster wurde aktiv -> wir verschwinden
         if (msg == ctx->m_shellHookMsg && wp == HSHELL_WINDOWACTIVATED) {
-            OutputDebugStringW(L"[ShellOverlay] Fokusänderung bemerkt -> Lautloser Exit.\n");
-            PostQuitMessage(0); // ...beenden wir die App verzögerungs- und flackerfrei!
+            OutputDebugStringW(L"[ShellOverlay] Fokusaenderung -> Exit.\n");
+            PostQuitMessage(0);
+            return 0;
+        }
+
+        // ESC als Notausstieg waehrend der Entwicklung
+        if (msg == WM_KEYDOWN && wp == VK_ESCAPE) {
+            PostQuitMessage(0);
             return 0;
         }
     }
@@ -176,9 +216,9 @@ void ShellOverlayContext::RunMessageLoop()
 
 void ShellOverlayContext::Cleanup()
 {
-    if (m_dummyHwnd) {
-        DeregisterShellHookWindow(m_dummyHwnd);
-        DestroyWindow(m_dummyHwnd);
-        m_dummyHwnd = nullptr;
+    if (m_hwnd) {
+        DeregisterShellHookWindow(m_hwnd);
+        DestroyWindow(m_hwnd);
+        m_hwnd = nullptr;
     }
 }

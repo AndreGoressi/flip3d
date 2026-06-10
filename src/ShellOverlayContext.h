@@ -23,18 +23,21 @@ public:
     void Cleanup();
 
 private:
-    static LRESULT CALLBACK DummyWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
+    static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
     bool CreateD3DAndComposition();
     void RenderAcrylicWash();
 
-    HWND m_dummyHwnd;
-    UINT m_shellHookMsg;
+    HINSTANCE   m_instance;
+    HWND        m_hwnd;        // Das echte, bildschirmgrosse Ankerfenster (fuer DComp)
+    UINT        m_shellHookMsg;
 
-    // Das moderne Grafik-Triebwerk für fensterlose Effekte
+    int m_screenW;
+    int m_screenH;
+
     ComPtr<ID3D11Device>            m_d3dDevice;
-    ComPtr<ID3D11DeviceContext>    m_d3dContext;
-    ComPtr<IDXGISwapChain1>        m_swapChain;
-    ComPtr<IDCompositionDevice>    m_dcompDevice;
-    ComPtr<IDCompositionTarget>    m_dcompTarget;
-    ComPtr<IDCompositionVisual>    m_rootVisual;
+    ComPtr<ID3D11DeviceContext>     m_d3dContext;
+    ComPtr<IDXGISwapChain1>         m_swapChain;
+    ComPtr<IDCompositionDevice>     m_dcompDevice;
+    ComPtr<IDCompositionTarget>     m_dcompTarget;
+    ComPtr<IDCompositionVisual>     m_rootVisual;
 };
