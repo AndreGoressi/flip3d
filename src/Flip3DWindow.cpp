@@ -298,14 +298,49 @@ bool Flip3DPrototype::Create_Window()
     if (!RegisterClassExW(&wc))
         return false;
 
-    HWND hTaskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
+    HWND hActiveWnd = GetForegroundWindow();
 
-    RECT workArea = {};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0);
-    int screenW = workArea.right - workArea.left;
-    int screenH = workArea.bottom - workArea.top;
-    int posX = workArea.left;
-    int posY = workArea.top;
+    if (!hActiveWnd) {
+        hActiveWnd = GetDesktopWindow();
+    }
+
+    HMONITOR hMonitor = MonitorFromWindow(hActiveWnd, MONITOR_DEFAULTTONEAREST);
+
+    MONITORINFO monitorInfo = {};
+    monitorInfo.cbSize = sizeof(MONITORINFO);
+    GetMonitorInfoW(hMonitor, &monitorInfo);
+
+    int screenW = monitorInfo.rcWork.right - monitorInfo.rcWork.left;
+    int screenH = monitorInfo.rcWork.bottom - monitorInfo.rcWork.top;
+    int posX = monitorInfo.rcWork.left;
+    int posY = monitorInfo.rcWork.top;
+
+    HWND hTaskbar = nullptr;
+    MONITORINFO primaryInfo = {};
+    primaryInfo.cbSize = sizeof(MONITORINFO);
+    GetMonitorInfoW(MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY), &primaryInfo);
+
+    if (monitorInfo.rcMonitor.left == primaryInfo.rcMonitor.left && 
+        monitorInfo.rcMonitor.top == primaryInfo.rcMonitor.top)
+    {
+        hTaskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
+    }
+    else
+    {
+        HWND hSecondaryTray = nullptr;
+        while ((hSecondaryTray = FindWindowExW(nullptr, hSecondaryTray, L"SecondaryTrayWnd", nullptr)) != nullptr)
+        {
+            HMONITOR hTrayMonitor = MonitorFromWindow(hSecondaryTray, MONITOR_DEFAULTTONEAREST);
+            if (hTrayMonitor == hMonitor)
+            {
+                hTaskbar = hSecondaryTray;
+                break;
+            }
+        }
+        if (!hTaskbar) {
+            hTaskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
+        }
+    }
 
     DWORD style   = WS_POPUP | WS_VISIBLE; 
     DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
@@ -359,6 +394,7 @@ bool Flip3DPrototype::Create_Window()
 
     return m_hwnd != nullptr;
 }
+
 
 
 // ============================================================================
