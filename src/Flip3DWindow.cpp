@@ -1848,7 +1848,8 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
         {
             if (LOWORD(wParam) == WA_INACTIVE)
             {
-                ShowWindow(m_hwnd, SW_HIDE);
+                SetWindowPos(m_hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, 
+                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
 
                 BeginExitView();
                 return 0;
@@ -1860,7 +1861,8 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
         {
             if (wParam == FALSE)
             {
-                ShowWindow(m_hwnd, SW_HIDE);
+                SetWindowPos(m_hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, 
+                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
 
                 BeginExitView();
                 return 0;
