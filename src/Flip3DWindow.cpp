@@ -298,9 +298,8 @@ bool Flip3DPrototype::Create_Window()
     int posX = workArea.left;
     int posY = workArea.top;
 
-    DWORD style   = WS_OVERLAPPEDWINDOW;
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
-    //DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE;
+    DWORD style   = WS_POPUP | WS_VISIBLE; 
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
 
     m_hwnd = CreateWindowExW(
         exStyle,
@@ -343,18 +342,11 @@ bool Flip3DPrototype::Create_Window()
     BOOL useDarkMode = TRUE;
     DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
 
-    style &= ~WS_CAPTION;
-    style &= ~WS_THICKFRAME;
-    SetWindowLongW(m_hwnd, GWL_STYLE, style);
-
     SetWindowPos(
-        m_hwnd, nullptr,
+        m_hwnd, HWND_TOPMOST,
         posX, posY, screenW, screenH,
-        SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOOWNERZORDER
+        SWP_FRAMECHANGED | SWP_SHOWWINDOW
     );
-
-    ShowWindow(m_hwnd, SW_SHOW);
-    UpdateWindow(m_hwnd);
 
     return m_hwnd != nullptr;
 }
