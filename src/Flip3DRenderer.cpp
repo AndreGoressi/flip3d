@@ -2,12 +2,16 @@
 #include "Shaders.h"
 #include "Capture.h"
 
-struct FXAAConstants
+struct FXAAConstants                       
 {
-    DirectX::XMFLOAT2 rcpFrame;
-    float fxaaSpanMax = 8.0f;
+    float rcpFrameX;                       
+    float rcpFrameY;                       
+    float fxaaSpanMax   = 8.0f;
     float fxaaReduceMul = 1.0f/8.0f;
     float fxaaReduceMin = 1.0f/128.0f;
+    float _pad0 = 0.0f;
+    float _pad1 = 0.0f;
+    float _pad2 = 0.0f;
 };
 
 namespace
