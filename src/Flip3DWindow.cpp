@@ -328,7 +328,7 @@ bool Flip3DPrototype::Create_Window()
     else
     {
         HWND hSecondaryTray = nullptr;
-        while ((hSecondaryTray = FindWindowExW(nullptr, hSecondaryTray, L"SecondaryTrayWnd", nullptr)) != nullptr)
+        while ((hSecondaryTray = FindWindowExW(nullptr, hSecondaryTray, L"Shell_SecondaryTrayWnd", nullptr)) != nullptr)
         {
             HMONITOR hTrayMonitor = MonitorFromWindow(hSecondaryTray, MONITOR_DEFAULTTONEAREST);
             if (hTrayMonitor == hMonitor)
