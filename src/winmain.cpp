@@ -41,56 +41,81 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
         if (kb->vkCode == VK_TAB)
         {
             bool winDown = (GetAsyncKeyState(VK_LWIN) | GetAsyncKeyState(VK_RWIN)) & 0x8000;
-            if (winDown)
-                return 1; // schlucken
+            if (winDown) return 1;
         }
     }
     return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
 }
 
+// Fensterprozedur für das unsichtbare Nachrichtenfenster
+HWND g_hWnd = nullptr;
+HINSTANCE g_hInstance = nullptr;
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+    if (msg == WM_HOTKEY && wParam == HOTKEY_WIN_TAB)
+    {
+        // Overlay starten
+        ShellOverlayContext overlay;
+        if (overlay.Initialize(g_hInstance))
+            overlay.RunMessageLoop();
+        else
+            OutputDebugStringW(L"[Main] Fehler beim Initialisieren.\n");
+        overlay.Cleanup();
+        return 0;
+    }
+    return DefWindowProcW(hwnd, msg, wParam, lParam);
+}
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 {
+    g_hInstance = instance;
+
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
 
-    // Hotkey registrieren — optional, kein hard exit wenn es scheitert
-    bool hotKeyOk = RegisterHotKey(nullptr, HOTKEY_WIN_TAB, MOD_WIN | MOD_NOREPEAT, VK_TAB);
+    // Fensterklasse registrieren
+    WNDCLASSEXW wc = {};
+    wc.cbSize        = sizeof(wc);
+    wc.lpfnWndProc   = WndProc;
+    wc.hInstance     = instance;
+    wc.lpszClassName = L"OverlayHotkeyWindow";
+    RegisterClassExW(&wc);
 
-    // Task View blockieren — optional
-    g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, nullptr, 0);
+    // Unsichtbares Message-Only Fenster erstellen
+    g_hWnd = CreateWindowExW(
+        0, L"OverlayHotkeyWindow", L"",
+        0, 0, 0, 0, 0,
+        HWND_MESSAGE,  // Message-Only, kein echtes Fenster
+        nullptr, instance, nullptr
+    );
 
-    while (true)
+    if (!g_hWnd)
     {
-        MSG msg = {};
-        bool shouldOpenOverlay = false;
-
-        while (GetMessageW(&msg, nullptr, 0, 0))
-        {
-            if (hotKeyOk && msg.message == WM_HOTKEY && msg.wParam == HOTKEY_WIN_TAB)
-            {
-                shouldOpenOverlay = true;
-                break;
-            }
-            if (msg.message == WM_QUIT)
-                goto cleanup;
-
-            TranslateMessage(&msg);
-            DispatchMessageW(&msg);
-        }
-
-        if (!shouldOpenOverlay) break;
-
-        ShellOverlayContext overlay;
-        if (overlay.Initialize(instance))
-            overlay.RunMessageLoop();
-        else
-            OutputDebugStringW(L"[Main] Fehler beim Initialisieren des Overlays.\n");
-        overlay.Cleanup();
+        OutputDebugStringW(L"[Main] Fenster konnte nicht erstellt werden.\n");
+        CoUninitialize();
+        return -1;
     }
 
-cleanup:
+    // Hotkey ans Fenster binden
+    RegisterHotKey(g_hWnd, HOTKEY_WIN_TAB, MOD_WIN | MOD_NOREPEAT, VK_TAB);
+
+    // Task View optional blockieren
+    g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, nullptr, 0);
+
+    // Message Loop
+    MSG msg = {};
+    while (GetMessageW(&msg, nullptr, 0, 0))
+    {
+        if (msg.message == WM_QUIT) break;
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+    }
+
     if (g_hKeyboardHook) UnhookWindowsHookEx(g_hKeyboardHook);
-    if (hotKeyOk) UnregisterHotKey(nullptr, HOTKEY_WIN_TAB);
+    UnregisterHotKey(g_hWnd, HOTKEY_WIN_TAB);
+    DestroyWindow(g_hWnd);
     CoUninitialize();
     return 0;
+}
 }
