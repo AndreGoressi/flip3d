@@ -343,7 +343,7 @@ bool Flip3DPrototype::Create_Window()
     }
 
     DWORD style   = WS_POPUP; 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
 
     m_hwnd = CreateWindowExW(
         exStyle,
@@ -386,9 +386,6 @@ bool Flip3DPrototype::Create_Window()
     BOOL useDarkMode = TRUE;
     DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
     
-    style &= ~WS_EX_TOPMOST;
-    SetWindowLongW(m_hwnd, GWL_STYLE, style);
-
     SetWindowPos(
         m_hwnd, nullptr,
         posX, posY, screenW, screenH,
