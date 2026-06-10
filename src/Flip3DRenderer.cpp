@@ -1797,9 +1797,6 @@ void Flip3DRenderer::Render()
     m_swapChain->Present(1, 0);
 }
 
-
-
-
 // ============================================================================
 // Window message handling
 // ============================================================================
@@ -1810,14 +1807,12 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         case WM_ERASEBKGND:
             return 1;
 
-        // ------------------------------------------------
-        // Fokus verloren → sofort verstecken
-        // ------------------------------------------------
         case WM_ACTIVATE:
         {
             if (LOWORD(wParam) == WA_INACTIVE)
             {
-                ShowWindow(m_hwnd, SW_HIDE);
+                ShowWindow(m_hwnd, SW_HIDE);   
+                BeginExitView();               
                 return 0;
             }
             return 0;
@@ -1827,7 +1822,8 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         {
             if (wParam == FALSE)
             {
-                ShowWindow(m_hwnd, SW_HIDE);
+                ShowWindow(m_hwnd, SW_HIDE);   
+                BeginExitView();               
                 return 0;
             }
             return DefWindowProcW(m_hwnd, message, wParam, lParam);
@@ -1885,8 +1881,8 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
         case WM_CLOSE:
         {
-            // Wenn du willst, kannst du hier auch SW_HIDE machen
             ShowWindow(m_hwnd, SW_HIDE);
+            BeginExitView();
             return 0;
         }
 
@@ -1897,4 +1893,5 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
+
 
