@@ -329,13 +329,15 @@ bool Flip3DRenderer::Render_Window()
 
     RegisterClassExW(&windowClass);
 
-    int x      = 0;
-    int y      = 0;
+    HMONITOR hMonitor = MonitorFromPoint({0, 0}, MONITOR_DEFAULTTOPRIMARY);
+
+    MONITORINFO mi = {};
+    mi.cbSize = sizeof(mi);
+
+    int x = 0;
+    int y = 0;
     int width  = GetSystemMetrics(SM_CXSCREEN);
     int height = GetSystemMetrics(SM_CYSCREEN);
-
-    HMONITOR hMonitor = MonitorFromPoint({ 0, 0 }, MONITOR_DEFAULTTOPRIMARY);
-    MONITORINFO mi    = { sizeof(mi) };
 
     if (GetMonitorInfoW(hMonitor, &mi))
     {
@@ -346,10 +348,13 @@ bool Flip3DRenderer::Render_Window()
     }
 
     DWORD exStyle =
-        WS_EX_NOREDIRECTIONBITMAP |
-        WS_EX_TOOLWINDOW;
+        WS_EX_TOPMOST |
+        WS_EX_TOOLWINDOW |
+        WS_EX_NOREDIRECTIONBITMAP;
 
-    DWORD style = WS_POPUP;
+    DWORD style =
+        WS_POPUP |
+        WS_VISIBLE;
 
     m_hwnd = CreateWindowExW(
         exStyle,
@@ -363,15 +368,10 @@ bool Flip3DRenderer::Render_Window()
         nullptr,
         nullptr,
         m_instance,
-        this
-    );
+        this);
 
     if (!m_hwnd)
         return false;
-
-    // -----------------------------
-    // DWM Setup
-    // -----------------------------
 
     BOOL darkMode = TRUE;
     DwmSetWindowAttribute(
@@ -405,6 +405,7 @@ bool Flip3DRenderer::Render_Window()
 
 #ifdef DWMWA_SYSTEMBACKDROP_TYPE
     DWORD backdropType = DWMSBT_TRANSIENTWINDOW;
+
     DwmSetWindowAttribute(
         m_hwnd,
         DWMWA_SYSTEMBACKDROP_TYPE,
@@ -412,25 +413,8 @@ bool Flip3DRenderer::Render_Window()
         sizeof(backdropType));
 #endif
 
-    // Sicherstellen dass das Fenster NICHT gecloakt ist
-    BOOL cloak = FALSE;
-    DwmSetWindowAttribute(
-        m_hwnd,
-        DWMWA_CLOAKED,
-        &cloak,
-        sizeof(cloak));
-
-    // -----------------------------
-    // Vollbild + TopMost
-    // -----------------------------
-
-    LONG_PTR ex = GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE);
-    ex |= WS_EX_TOPMOST;
-    SetWindowLongPtrW(m_hwnd, GWL_EXSTYLE, ex);
-
-    LONG_PTR st = GetWindowLongPtrW(m_hwnd, GWL_STYLE);
-    st |= WS_VISIBLE;
-    SetWindowLongPtrW(m_hwnd, GWL_STYLE, st);
+    ShowWindow(m_hwnd, SW_SHOW);
+    UpdateWindow(m_hwnd);
 
     SetWindowPos(
         m_hwnd,
@@ -439,15 +423,7 @@ bool Flip3DRenderer::Render_Window()
         y,
         width,
         height,
-        SWP_SHOWWINDOW |
-        SWP_FRAMECHANGED);
-
-    // -----------------------------
-    // Fokus erzwingen
-    // -----------------------------
-
-    ShowWindow(m_hwnd, SW_SHOW);
-    UpdateWindow(m_hwnd);
+        SWP_SHOWWINDOW | SWP_FRAMECHANGED);
 
     BringWindowToTop(m_hwnd);
 
@@ -2044,24 +2020,14 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
         case WM_ACTIVATE:
         {
-            const UINT state = LOWORD(wParam);
-
-            if (state == WA_INACTIVE)
-            {
-                HWND newActiveWindow = reinterpret_cast<HWND>(lParam);
-
-                if (newActiveWindow != nullptr &&
-                    newActiveWindow != m_hwnd)
-                {
-                    BeginExitView();
-                }
-            }
-
+            // Win+Tab-artiges Verhalten:
+            // Aktivierungswechsel ignorieren.
             return 0;
         }
 
         case WM_NCACTIVATE:
         {
+            // Nicht zum Schließen verwenden.
             return DefWindowProcW(m_hwnd, message, wParam, lParam);
         }
 
@@ -2099,6 +2065,13 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
         case WM_KEYDOWN:
         {
+            // ESC zum Schließen
+            if (wParam == VK_ESCAPE)
+            {
+                BeginExitView();
+                return 0;
+            }
+
             if (wParam == VK_SPACE)
             {
                 if ((lParam & 0x40000000) == 0)
@@ -2157,6 +2130,5 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
-
 
 
