@@ -106,12 +106,13 @@ inline constexpr const char* kFXAAPixelShader = R"(
 Texture2D texInput : register(t0);
 SamplerState samLinear : register(s0);
 
-cbuffer FXAAConstants : register(b2) 
+cbuffer FXAAConstants : register(b0)
 {
-    float2 rcpFrame;
-    float fxaaSpanMax;
-    float fxaaReduceMul;
-    float fxaaReduceMin;
+    float2 rcpFrame;       // slot 0+1
+    float fxaaSpanMax;     // slot 2
+    float fxaaReduceMul;   // slot 3  → first 16 Bytes full
+    float fxaaReduceMin;   // slot 4
+    float3 _pad;           // padding → second 16 Bytes
 };
 
 float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
