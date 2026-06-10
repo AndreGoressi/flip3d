@@ -1998,21 +1998,24 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
         case WM_ACTIVATE:
         {
-            if (LOWORD(wParam) == WA_INACTIVE)
+            const UINT state = LOWORD(wParam);
+
+            if (state == WA_INACTIVE)
             {
-                BeginExitView();
-                return 0;
+                HWND newActiveWindow = reinterpret_cast<HWND>(lParam);
+
+                if (newActiveWindow != nullptr &&
+                    newActiveWindow != m_hwnd)
+                {
+                    BeginExitView();
+                }
             }
+
             return 0;
         }
 
         case WM_NCACTIVATE:
         {
-            if (wParam == FALSE)
-            {
-                BeginExitView();
-                return 0;
-            }
             return DefWindowProcW(m_hwnd, message, wParam, lParam);
         }
 
@@ -2025,11 +2028,14 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
             }
 
             m_minimized = false;
+
             m_width  = std::max<UINT>(1, LOWORD(lParam));
             m_height = std::max<UINT>(1, HIWORD(lParam));
 
             if (m_swapChain)
+            {
                 CreateWindowSizeResources(true);
+            }
 
             return 0;
         }
@@ -2038,22 +2044,29 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         case WM_MOUSEHWHEEL:
         case WM_LBUTTONDOWN:
         case WM_LBUTTONUP:
+        {
             if (ProcessMouseInput(message, wParam, lParam))
                 return 0;
+
             break;
+        }
 
         case WM_KEYDOWN:
         {
             if (wParam == VK_SPACE)
             {
                 if ((lParam & 0x40000000) == 0)
+                {
                     ReplayEnterAnimation();
+                }
+
                 return 0;
             }
 
-            if (ProcessKeyboardInput(true,
-                                     static_cast<UINT>(wParam),
-                                     (lParam & 0x40000000) != 0))
+            if (ProcessKeyboardInput(
+                    true,
+                    static_cast<UINT>(wParam),
+                    (lParam & 0x40000000) != 0))
             {
                 return 0;
             }
@@ -2063,12 +2076,14 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
         case WM_KEYUP:
         {
-            if (ProcessKeyboardInput(false,
-                                     static_cast<UINT>(wParam),
-                                     false))
+            if (ProcessKeyboardInput(
+                    false,
+                    static_cast<UINT>(wParam),
+                    false))
             {
                 return 0;
             }
+
             break;
         }
 
@@ -2083,17 +2098,19 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
             {
                 BeginExitView();
             }
+
             return 0;
         }
 
         case WM_DESTROY:
+        {
             PostQuitMessage(0);
             return 0;
+        }
     }
 
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
-
 
 
 
