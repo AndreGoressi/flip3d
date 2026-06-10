@@ -217,7 +217,7 @@ void Flip3DPrototype::CreateWindowCaptures()
         card.capture = std::move(cap);
     }
 
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(150);
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(0);
     bool allReady = false;
     while (!allReady && std::chrono::steady_clock::now() < deadline)
     {
@@ -230,7 +230,7 @@ void Flip3DPrototype::CreateWindowCaptures()
                 allReady = false;
         }
         if (!allReady)
-            Sleep(3); 
+            Sleep(0); 
     }
 }
 
