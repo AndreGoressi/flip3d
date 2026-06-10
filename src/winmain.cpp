@@ -32,13 +32,32 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 
 #define HOTKEY_WIN_TAB 1
 
+// Low-Level Keyboard Hook: blockiert Win+Tab systemweit für explorer.exe
+HHOOK g_hKeyboardHook = nullptr;
+
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    if (nCode == HC_ACTION)
+    {
+        KBDLLHOOKSTRUCT* kb = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+        bool winDown = (GetAsyncKeyState(VK_LWIN) & 0x8000) ||
+                       (GetAsyncKeyState(VK_RWIN) & 0x8000);
+
+        if (winDown && kb->vkCode == VK_TAB)
+        {
+            // Win+Tab schlucken → explorer.exe bekommt es nicht
+            return 1;
+        }
+    }
+    return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam);
+}
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-    if (FAILED(hr)) {
-        return -1;
-    }
+    if (FAILED(hr)) return -1;
 
+    // Win+Tab für unser Programm registrieren
     if (!RegisterHotKey(nullptr, HOTKEY_WIN_TAB, MOD_WIN | MOD_NOREPEAT, VK_TAB))
     {
         OutputDebugStringW(L"[Main] Hotkey Win+Tab konnte nicht registriert werden.\n");
@@ -46,12 +65,18 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
         return -1;
     }
 
-    // Äußere Loop: Programm läuft dauerhaft, wartet immer wieder auf Win+Tab
+    // Low-Level Hook setzen → blockiert Win+Tab in explorer.exe
+    g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, nullptr, 0);
+    if (!g_hKeyboardHook)
+    {
+        OutputDebugStringW(L"[Main] Keyboard Hook konnte nicht gesetzt werden.\n");
+    }
+
     while (true)
     {
-        // Auf Win+Tab warten
         MSG msg = {};
         bool hotKeyReceived = false;
+
         while (GetMessageW(&msg, nullptr, 0, 0))
         {
             if (msg.message == WM_HOTKEY && msg.wParam == HOTKEY_WIN_TAB)
@@ -59,9 +84,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
                 hotKeyReceived = true;
                 break;
             }
-            // WM_QUIT beendet alles sauber
             if (msg.message == WM_QUIT)
             {
+                if (g_hKeyboardHook) UnhookWindowsHookEx(g_hKeyboardHook);
                 UnregisterHotKey(nullptr, HOTKEY_WIN_TAB);
                 CoUninitialize();
                 return 0;
@@ -70,8 +95,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
             DispatchMessageW(&msg);
         }
 
-        if (!hotKeyReceived)
-            break; // GetMessage Fehler (-1), raus
+        if (!hotKeyReceived) break;
 
         // Overlay ausführen
         ShellOverlayContext overlay;
@@ -84,10 +108,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
             OutputDebugStringW(L"[Main] Schwerwiegender Fehler beim Initialisieren des Overlays.\n");
         }
         overlay.Cleanup();
-
-        // Hier angekommen: Overlay wurde geschlossen → wieder von vorne warten
     }
 
+    if (g_hKeyboardHook) UnhookWindowsHookEx(g_hKeyboardHook);
     UnregisterHotKey(nullptr, HOTKEY_WIN_TAB);
     CoUninitialize();
     return 0;
