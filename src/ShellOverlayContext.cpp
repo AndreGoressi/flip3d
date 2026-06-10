@@ -57,7 +57,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     if (!m_hwnd) return false;
 
     // Fenster komplett durchsichtig machen (DComp-Visual laeuft darueber)
-    SetLayeredWindowAttributes(m_hwnd, 0, 0, LWA_ALPHA);
+    SetLayeredWindowAttributes(m_hwnd, 0, 1, LWA_ALPHA);
 
     // Fenster sichtbar schalten (noetig damit DComp ein gueltiges Target bekommt)
     ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
@@ -127,6 +127,9 @@ bool ShellOverlayContext::CreateD3DAndComposition()
     // --- Root-Visual erstellen und Swapchain als Inhalt setzen ---
     hr = m_dcompDevice->CreateVisual(&m_rootVisual);
     if (FAILED(hr)) return false;
+
+    // HIER ERGÄNZEN: Dem Visual sagen, dass es die Swapchain-Transparenz respektieren soll
+    m_rootVisual->SetCompositeMode(DCOMP_COMPOSITE_MODE_SOURCE_OVER);
 
     m_rootVisual->SetContent(m_swapChain.Get());
     m_dcompTarget->SetRoot(m_rootVisual.Get());
