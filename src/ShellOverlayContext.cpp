@@ -102,8 +102,9 @@ bool ShellOverlayContext::CreateD3DAndComposition()
             // 30.0f Deviation entspricht dem originalen Windows 11 Task View Blur!
             blurEffect->SetStandardDeviation(30.0f);
             
-            // DCOMP_SOURCE_MODIFIER_BACKGROUND krallt sich die Pixel DIREKT hinter der Ebene
-            blurEffect->SetInput(0, nullptr, DCOMP_SOURCE_MODIFIER_BACKGROUND);
+            // NEU UND KOMPATIBEL:
+            // Wenn wir nullptr als Source und DCOMP_SOURCE_MODIFIER_BACKGROUND (Wert 1) übergeben:
+            blurEffect->SetInput(0, nullptr, static_cast<DCOMP_SOURCE_MODIFIER>(1));
             
             // Dem Visual den DWM-System-Blur aufzwingen
             m_rootVisual->SetEffect(blurEffect.Get());
