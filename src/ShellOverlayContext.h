@@ -10,9 +10,9 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dcomp.lib")
 
-using Microsoft::WRL::ComPtr;
+#pragma once
 
-class ShellOverlayContext 
+class ShellOverlayContext
 {
 public:
     ShellOverlayContext();
@@ -24,20 +24,12 @@ public:
 
 private:
     static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
-    bool CreateD3DAndComposition();
-    void RenderAcrylicWash();
+    bool ApplyAcrylic();
 
-    HINSTANCE   m_instance;
-    HWND        m_hwnd;        // Das echte, bildschirmgrosse Ankerfenster (fuer DComp)
-    UINT        m_shellHookMsg;
+    HINSTANCE m_instance;
+    HWND      m_hwnd;
+    UINT      m_shellHookMsg;
 
-    int m_screenW;
-    int m_screenH;
-
-    ComPtr<ID3D11Device>            m_d3dDevice;
-    ComPtr<ID3D11DeviceContext>     m_d3dContext;
-    ComPtr<IDXGISwapChain1>         m_swapChain;
-    ComPtr<IDCompositionDevice>     m_dcompDevice;
-    ComPtr<IDCompositionTarget>     m_dcompTarget;
-    ComPtr<IDCompositionVisual>     m_rootVisual;
+    int m_x, m_y;        // Ursprung des Arbeitsbereichs (oben links, ohne Taskleiste)
+    int m_screenW, m_screenH;
 };
