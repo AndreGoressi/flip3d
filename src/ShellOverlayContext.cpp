@@ -2,6 +2,12 @@
 #include <dwmapi.h>
 #pragma comment(lib, "dwmapi.lib")
 
+// HSHELL_RUDEAPPACTIVATED: Shell-eigene / "rude" Fenster (u.a. Startmenue)
+// werden mit gesetztem HIGHBIT gemeldet, NICHT als HSHELL_WINDOWACTIVATED!
+#ifndef HSHELL_RUDEAPPACTIVATED
+#define HSHELL_RUDEAPPACTIVATED (HSHELL_WINDOWACTIVATED | HSHELL_HIGHBIT)
+#endif
+
 // --- Undokumentierte SetWindowCompositionAttribute-API ---
 enum ACCENT_STATE {
     ACCENT_DISABLED                   = 0,
@@ -76,13 +82,46 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
         return false;
     }
 
+    // Dokumentierte COM-API zur Startmenue-Sichtbarkeit (Win8+).
+    // Faengt auch den Fall ab, dass das Startmenue BEREITS offen ist,
+    // wenn das Overlay startet -> dann kommt naemlich nie ein ShellHook-Event.
+    if (FAILED(CoCreateInstance(CLSID_AppVisibility, nullptr, CLSCTX_ALL,
+                                IID_PPV_ARGS(&m_appVisibility))))
+    {
+        m_appVisibility = nullptr;  // Fallback im Timer greift trotzdem
+        OutputDebugStringW(L"[Overlay] IAppVisibility nicht verfuegbar, nutze Fallback.\n");
+    }
+
     ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
     UpdateWindow(m_hwnd);
 
     RegisterShellHookWindow(m_hwnd);
     m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
+    // Leichtgewichtiger Poll-Timer: 100 ms reichen voellig und sind unmessbar billig.
+    SetTimer(m_hwnd, TIMER_STARTMENU, 100, nullptr);
+
     return true;
+}
+
+bool ShellOverlayContext::IsStartMenuOpen() const
+{
+    // Primaer: die offizielle Shell-Antwort.
+    if (m_appVisibility) {
+        BOOL visible = FALSE;
+        if (SUCCEEDED(m_appVisibility->IsLauncherVisible(&visible)))
+            return visible != FALSE;
+    }
+
+    // Fallback: Startmenue/Suche laufen als UWP-CoreWindow im Vordergrund.
+    HWND fg = GetForegroundWindow();
+    if (fg) {
+        wchar_t cls[64] = {};
+        GetClassNameW(fg, cls, 64);
+        if (wcscmp(cls, L"Windows.UI.Core.CoreWindow") == 0)
+            return true;
+    }
+    return false;
 }
 
 bool ShellOverlayContext::ApplyAcrylic()
@@ -121,8 +160,18 @@ LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM
     }
 
     if (ctx) {
-        if (msg == ctx->m_shellHookMsg && wp == HSHELL_WINDOWACTIVATED) {
-            PostQuitMessage(0);   // Startmenue / Fensterwechsel -> beenden
+        // ShellHook: normale UND "rude" Aktivierungen (Startmenue!) abfangen.
+        if (msg == ctx->m_shellHookMsg &&
+            (wp == HSHELL_WINDOWACTIVATED || wp == HSHELL_RUDEAPPACTIVATED)) {
+            PostQuitMessage(0);
+            return 0;
+        }
+        // Timer: deckt den Fall ab, dass das Startmenue schon offen war
+        // oder ohne Aktivierungsereignis geoeffnet wird.
+        if (msg == WM_TIMER && wp == TIMER_STARTMENU) {
+            if (ctx->IsStartMenuOpen()) {
+                PostQuitMessage(0);
+            }
             return 0;
         }
         if (msg == WM_KEYDOWN && wp == VK_ESCAPE) {
@@ -153,8 +202,10 @@ void ShellOverlayContext::RunMessageLoop()
 void ShellOverlayContext::Cleanup()
 {
     if (m_hwnd) {
+        KillTimer(m_hwnd, TIMER_STARTMENU);
         DeregisterShellHookWindow(m_hwnd);
         DestroyWindow(m_hwnd);
         m_hwnd = nullptr;
     }
+    m_appVisibility.Reset();  // ComPtr VOR CoUninitialize freigeben!
 }
