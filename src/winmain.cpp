@@ -118,4 +118,3 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     CoUninitialize();
     return 0;
 }
-}
