@@ -15,6 +15,7 @@ add_executable(flip3d WIN32
     src/Capture.cpp
     src/WindowCapture.cpp
     src/Flip3DWindow.cpp
+    src/resources.rc
 )
 
 # ---------------------------------------------------------
