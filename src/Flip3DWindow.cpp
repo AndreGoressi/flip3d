@@ -1842,15 +1842,12 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
     switch (message)
     {
         case WM_ERASEBKGND:
-            return 1;
+            return 1; 
         
         case WM_ACTIVATE:
         {
             if (LOWORD(wParam) == WA_INACTIVE)
             {
-                SetWindowPos(m_hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, 
-                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
-
                 BeginExitView();
                 return 0;
             }
@@ -1861,13 +1858,22 @@ LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lPara
         {
             if (wParam == FALSE)
             {
-                SetWindowPos(m_hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, 
-                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
-
                 BeginExitView();
-                return 0;
+                return TRUE; 
             }
-            return DefWindowProcW(m_hwnd, message, TRUE, lParam);
+            return DefWindowProcW(m_hwnd, message, wParam, lParam);
+        }
+
+        case WM_PAINT:
+        {
+            if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
+            {
+                PAINTSTRUCT ps;
+                HDC hdc = BeginPaint(m_hwnd, &ps);
+                EndPaint(m_hwnd, &ps);
+                return 0; 
+            }
+            break; 
         }
         // ------------------------------------------------
 
