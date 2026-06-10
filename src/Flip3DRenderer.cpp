@@ -1927,7 +1927,7 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
             if (wParam == FALSE)
             {
                 HWND fg = GetForegroundWindow();
-                
+
                 if (fg == nullptr || fg == GetDesktopWindow())
                     return 0;
 
@@ -2018,6 +2018,7 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
+
 
 
 
