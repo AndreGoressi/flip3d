@@ -64,6 +64,10 @@ static bool AreTransparencyEffectsEnabled()
     return value != 0;
 }
 
+void SmoothHideNative(HWND hwnd, DWORD duration_ms) {
+    AnimateWindow(hwnd, duration_ms, AW_BLEND | AW_HIDE);
+}
+
 // ============================================================================
 // Initialisation
 // ============================================================================
@@ -1805,12 +1809,15 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
     {
         case WM_ERASEBKGND:
             return 1;
-        
+
+        // ------------------------------------------------
+        // Fokus verloren → sofort verstecken
+        // ------------------------------------------------
         case WM_ACTIVATE:
         {
             if (LOWORD(wParam) == WA_INACTIVE)
             {
-                BeginExitView();
+                ShowWindow(m_hwnd, SW_HIDE);
                 return 0;
             }
             return 0;
@@ -1820,20 +1827,29 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         {
             if (wParam == FALSE)
             {
-                BeginExitView();
+                ShowWindow(m_hwnd, SW_HIDE);
                 return 0;
             }
             return DefWindowProcW(m_hwnd, message, wParam, lParam);
         }
+
         // ------------------------------------------------
 
         case WM_SIZE:
         {
-            if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
+            if (wParam == SIZE_MINIMIZED)
+            {
+                m_minimized = true;
+                return 0;
+            }
+
             m_minimized = false;
-            m_width = std::max<UINT>(1, LOWORD(lParam));
+            m_width  = std::max<UINT>(1, LOWORD(lParam));
             m_height = std::max<UINT>(1, HIWORD(lParam));
-            if (m_swapChain) CreateWindowSizeResources(true);
+
+            if (m_swapChain)
+                CreateWindowSizeResources(true);
+
             return 0;
         }
 
@@ -1841,35 +1857,44 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         case WM_MOUSEHWHEEL:
         case WM_LBUTTONDOWN:
         case WM_LBUTTONUP:
-            if (ProcessMouseInput(message, wParam, lParam)) return 0;
+            if (ProcessMouseInput(message, wParam, lParam))
+                return 0;
             break;
 
         case WM_KEYDOWN:
+        {
             if (wParam == VK_SPACE)
             {
                 if ((lParam & 0x40000000) == 0)
                     ReplayEnterAnimation();
                 return 0;
             }
+
             if (ProcessKeyboardInput(true, static_cast<UINT>(wParam), (lParam & 0x40000000) != 0))
                 return 0;
+
             break;
+        }
 
         case WM_KEYUP:
+        {
             if (ProcessKeyboardInput(false, static_cast<UINT>(wParam), false))
                 return 0;
             break;
+        }
 
         case WM_CLOSE:
-            if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
-                DestroyWindow(m_hwnd);
-            else
-                BeginExitView();
+        {
+            // Wenn du willst, kannst du hier auch SW_HIDE machen
+            ShowWindow(m_hwnd, SW_HIDE);
             return 0;
+        }
 
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;
     }
+
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
+
