@@ -1812,7 +1812,7 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
             if (LOWORD(wParam) == WA_INACTIVE)
             {
                 //ShowWindow(m_hwnd, SW_HIDE);
-                SmoothHideNative(m_hwnd, 150);
+                SmoothHideNative(m_hwnd, 333);
                 BeginExitView();               
                 return 0;
             }
@@ -1824,7 +1824,7 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
             if (wParam == FALSE)
             {
                 //ShowWindow(m_hwnd, SW_HIDE);  
-                SmoothHideNative(m_hwnd, 150);
+                SmoothHideNative(m_hwnd, 333);
                 BeginExitView();               
                 return 0;
             }
@@ -1884,7 +1884,7 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         case WM_CLOSE:
         {
             //ShowWindow(m_hwnd, SW_HIDE);
-            SmoothHideNative(m_hwnd, 150);
+            SmoothHideNative(m_hwnd, 333);
             BeginExitView();
             return 0;
         }
