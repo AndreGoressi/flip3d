@@ -1,16 +1,8 @@
 #pragma once
 
 #include <windows.h>
-#include <d3d11.h>
-#include <dxgi1_2.h>
-#include <dcomp.h>
+#include <shobjidl_core.h>   // IAppVisibility / CLSID_AppVisibility
 #include <wrl/client.h>
-
-#pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "dcomp.lib")
-
-#pragma once
 
 class ShellOverlayContext
 {
@@ -25,10 +17,15 @@ public:
 private:
     static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
     bool ApplyAcrylic();
+    bool IsStartMenuOpen() const;
+
+    static constexpr UINT_PTR TIMER_STARTMENU = 1;
 
     HINSTANCE m_instance;
     HWND      m_hwnd;
     UINT      m_shellHookMsg;
+
+    Microsoft::WRL::ComPtr<IAppVisibility> m_appVisibility;
 
     int m_x, m_y;        // Ursprung des Arbeitsbereichs (oben links, ohne Taskleiste)
     int m_screenW, m_screenH;
