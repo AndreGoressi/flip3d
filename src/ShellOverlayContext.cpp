@@ -92,13 +92,29 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
         OutputDebugStringW(L"[Overlay] IAppVisibility nicht verfuegbar, nutze Fallback.\n");
     }
 
+    // Startmenue aktiv schliessen bevor das Overlay erscheint.
+    // LWin-Toggle ist der zuverlaessigste Weg das Startmenue zu dismissen.
+    {
+        INPUT inputs[2] = {};
+        inputs[0].type       = INPUT_KEYBOARD;
+        inputs[0].ki.wVk     = VK_LWIN;
+        inputs[0].ki.dwFlags = 0;
+        inputs[1].type       = INPUT_KEYBOARD;
+        inputs[1].ki.wVk     = VK_LWIN;
+        inputs[1].ki.dwFlags = KEYEVENTF_KEYUP;
+        SendInput(2, inputs, sizeof(INPUT));
+        Sleep(200); // warten bis Startmenue wirklich zu ist
+    }
+
     ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
     UpdateWindow(m_hwnd);
 
     RegisterShellHookWindow(m_hwnd);
     m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
-    // Leichtgewichtiger Poll-Timer: 100 ms reichen voellig und sind unmessbar billig.
+    // Grace-Timer: 800ms Anlaufschutz bevor der Startmenue-Check aktiv wird.
+    m_graceActive = true;
+    SetTimer(m_hwnd, TIMER_GRACE,     800, nullptr);
     SetTimer(m_hwnd, TIMER_STARTMENU, 100, nullptr);
 
     return true;
@@ -161,15 +177,23 @@ LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM
 
     if (ctx) {
         // ShellHook: normale UND "rude" Aktivierungen (Startmenue!) abfangen.
-        if (msg == ctx->m_shellHookMsg &&
+        // Aber erst nach Grace-Phase - sonst schliesst das Overlay sich sofort
+        // weil der eigene Fenster-Auftritt ein WINDOWACTIVATED ausloest.
+        if (!ctx->m_graceActive &&
+            msg == ctx->m_shellHookMsg &&
             (wp == HSHELL_WINDOWACTIVATED || wp == HSHELL_RUDEAPPACTIVATED)) {
             PostQuitMessage(0);
             return 0;
         }
-        // Timer: deckt den Fall ab, dass das Startmenue schon offen war
-        // oder ohne Aktivierungsereignis geoeffnet wird.
+        // Grace-Timer: Anlaufschutz aufheben nach 800ms
+        if (msg == WM_TIMER && wp == TIMER_GRACE) {
+            ctx->m_graceActive = false;
+            KillTimer(hwnd, TIMER_GRACE);
+            return 0;
+        }
+        // Timer: Startmenue-Check - aber erst nach Grace-Phase
         if (msg == WM_TIMER && wp == TIMER_STARTMENU) {
-            if (ctx->IsStartMenuOpen()) {
+            if (!ctx->m_graceActive && ctx->IsStartMenuOpen()) {
                 PostQuitMessage(0);
             }
             return 0;
@@ -202,6 +226,7 @@ void ShellOverlayContext::RunMessageLoop()
 void ShellOverlayContext::Cleanup()
 {
     if (m_hwnd) {
+        KillTimer(m_hwnd, TIMER_GRACE);
         KillTimer(m_hwnd, TIMER_STARTMENU);
         DeregisterShellHookWindow(m_hwnd);
         DestroyWindow(m_hwnd);
