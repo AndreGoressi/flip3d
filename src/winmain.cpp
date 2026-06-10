@@ -30,7 +30,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 #include <windows.h>
 #include "ShellOverlayContext.h"
 
-// Hotkey-ID
 #define HOTKEY_WIN_TAB 1
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
@@ -40,7 +39,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
         return -1;
     }
 
-    // Win+Tab Hotkey registrieren (MOD_WIN | MOD_NOREPEAT + VK_TAB)
     if (!RegisterHotKey(nullptr, HOTKEY_WIN_TAB, MOD_WIN | MOD_NOREPEAT, VK_TAB))
     {
         OutputDebugStringW(L"[Main] Hotkey Win+Tab konnte nicht registriert werden.\n");
@@ -48,25 +46,34 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
         return -1;
     }
 
-    // Auf Win+Tab warten
-    MSG msg = {};
-    bool hotKeyReceived = false;
-    while (GetMessageW(&msg, nullptr, 0, 0))
+    // Äußere Loop: Programm läuft dauerhaft, wartet immer wieder auf Win+Tab
+    while (true)
     {
-        if (msg.message == WM_HOTKEY && msg.wParam == HOTKEY_WIN_TAB)
+        // Auf Win+Tab warten
+        MSG msg = {};
+        bool hotKeyReceived = false;
+        while (GetMessageW(&msg, nullptr, 0, 0))
         {
-            hotKeyReceived = true;
-            break;
+            if (msg.message == WM_HOTKEY && msg.wParam == HOTKEY_WIN_TAB)
+            {
+                hotKeyReceived = true;
+                break;
+            }
+            // WM_QUIT beendet alles sauber
+            if (msg.message == WM_QUIT)
+            {
+                UnregisterHotKey(nullptr, HOTKEY_WIN_TAB);
+                CoUninitialize();
+                return 0;
+            }
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
         }
-        TranslateMessage(&msg);
-        DispatchMessageW(&msg);
-    }
 
-    UnregisterHotKey(nullptr, HOTKEY_WIN_TAB);
+        if (!hotKeyReceived)
+            break; // GetMessage Fehler (-1), raus
 
-    // Overlay nur starten wenn Hotkey empfangen wurde
-    if (hotKeyReceived)
-    {
+        // Overlay ausführen
         ShellOverlayContext overlay;
         if (overlay.Initialize(instance))
         {
@@ -77,8 +84,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
             OutputDebugStringW(L"[Main] Schwerwiegender Fehler beim Initialisieren des Overlays.\n");
         }
         overlay.Cleanup();
+
+        // Hier angekommen: Overlay wurde geschlossen → wieder von vorne warten
     }
 
+    UnregisterHotKey(nullptr, HOTKEY_WIN_TAB);
     CoUninitialize();
     return 0;
 }
