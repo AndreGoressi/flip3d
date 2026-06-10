@@ -106,7 +106,8 @@ inline constexpr const char* kFXAAPixelShader = R"(
 Texture2D texInput : register(t0);
 SamplerState samLinear : register(s0);
 
-cbuffer FXAAConstants : register(b0)
+// REPARATUR 1: Register auf b2 verschoben, um b0 (FrameCB) nicht zu überschreiben
+cbuffer FXAAConstants : register(b2) 
 {
     float2 rcpFrame;
     float fxaaSpanMax;
@@ -116,6 +117,9 @@ cbuffer FXAAConstants : register(b0)
 
 float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
 {
+    // Wir sichern das originale Alpha aus der Mitte, um die Transparenz zu retten
+    float originalAlpha = texInput.Sample(samLinear, uv).a;
+
     float3 rgbNW = texInput.Sample(samLinear, uv + float2(-rcpFrame.x, -rcpFrame.y)).rgb;
     float3 rgbNE = texInput.Sample(samLinear, uv + float2( rcpFrame.x, -rcpFrame.y)).rgb;
     float3 rgbSW = texInput.Sample(samLinear, uv + float2(-rcpFrame.x,  rcpFrame.y)).rgb;
@@ -152,6 +156,9 @@ float4 main(float4 pos : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
     );
 
     float lumaB = dot(rgbB, luma);
-    return float4((lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB, 1.0);
+    
+    // REPARATUR 2: rgbA/rgbB wählen, aber IMMER das originale Alpha zurückgeben!
+    float3 finalRGB = (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
+    return float4(finalRGB, originalAlpha); 
 }
 )";
