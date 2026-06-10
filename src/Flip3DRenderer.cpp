@@ -203,7 +203,7 @@ void Flip3DRenderer::CreateWindowCaptures()
 // ============================================================================
 // Window creation
 // ============================================================================
-bool Flip3DRenderer::Render_Window()
+/*bool Flip3DRenderer::Render_Window()
 {
     WNDCLASSEXW wc = {};
     wc.cbSize        = sizeof(wc);
@@ -314,7 +314,89 @@ bool Flip3DRenderer::Render_Window()
     );
 
     return m_hwnd != nullptr;
+}*/
+
+bool Flip3DRenderer::Render_Window()
+{
+    WNDCLASSEXW wc = {};
+    wc.cbSize        = sizeof(wc);
+    wc.hInstance     = m_instance;
+    wc.lpfnWndProc   = &Flip3DRenderer::WndProc;
+    wc.lpszClassName = kWindowClassName;
+    wc.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
+    wc.style         = CS_HREDRAW | CS_VREDRAW;
+
+    if (!RegisterClassExW(&wc))
+        return false;
+
+    HWND hActiveWnd = GetForegroundWindow();
+    if (!hActiveWnd)
+        hActiveWnd = GetDesktopWindow();
+
+    HMONITOR hMonitor = MonitorFromWindow(hActiveWnd, MONITOR_DEFAULTTONEAREST);
+
+    MONITORINFO monitorInfo = {};
+    monitorInfo.cbSize = sizeof(MONITORINFO);
+    GetMonitorInfoW(hMonitor, &monitorInfo);
+
+    int screenW = monitorInfo.rcMonitor.right  - monitorInfo.rcMonitor.left;
+    int screenH = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+    int posX    = monitorInfo.rcMonitor.left;
+    int posY    = monitorInfo.rcMonitor.top;
+
+    DWORD style   = WS_POPUP | WS_VISIBLE;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
+
+    m_hwnd = CreateWindowExW(
+        exStyle,
+        kWindowClassName,
+        kWindowTitle,
+        style,
+        posX, posY, screenW, screenH,
+        nullptr,        
+        nullptr,
+        m_instance,
+        this
+    );
+
+    if (!m_hwnd)
+        return false;
+
+    bool transparencyEnabled = AreTransparencyEffectsEnabled();
+    MARGINS margins = {};
+
+    if (transparencyEnabled)
+    {
+        margins = { -1, -1, -1, -1 };
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+
+        int backdropType = 3; // Acrylic
+        DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
+    }
+    else
+    {
+        int none = 0;
+        DwmSetWindowAttribute(m_hwnd, 38, &none, sizeof(none));
+
+        margins = { 0, 0, 0, 0 };
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+    }
+
+    BOOL disableTransitions = TRUE;
+    DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
+
+    BOOL useDarkMode = TRUE;
+    DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
+
+    SetWindowPos(
+        m_hwnd, HWND_TOPMOST,
+        posX, posY, screenW, screenH,
+        SWP_FRAMECHANGED | SWP_SHOWWINDOW
+    );
+
+    return m_hwnd != nullptr;
 }
+
 
 
 
@@ -1897,12 +1979,10 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         case WM_ERASEBKGND:
             return 1;
 
-        // Fokus weg → sofort schließen
         case WM_ACTIVATE:
         {
             if (LOWORD(wParam) == WA_INACTIVE)
             {
-                ShowWindow(m_hwnd, SW_HIDE);
                 BeginExitView();
                 return 0;
             }
@@ -1913,7 +1993,6 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         {
             if (wParam == FALSE)
             {
-                ShowWindow(m_hwnd, SW_HIDE);
                 BeginExitView();
                 return 0;
             }
@@ -1978,8 +2057,15 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
         case WM_CLOSE:
         {
-            ShowWindow(m_hwnd, SW_HIDE);
-            BeginExitView();
+            if (m_state == ViewState::Exit ||
+                m_state == ViewState::ExitRepeatedRotate)
+            {
+                DestroyWindow(m_hwnd);
+            }
+            else
+            {
+                BeginExitView();
+            }
             return 0;
         }
 
