@@ -30,7 +30,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 #include <windows.h>
 #include "ShellOverlayContext.h"
 
-const int HOTKEY_ID = 1;
+// Hotkey-ID
+#define HOTKEY_WIN_TAB 1
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 {
@@ -39,75 +40,45 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
         return -1;
     }
 
-    // 1. Hotkey registrieren. Die App lauscht jetzt nur auf diese ID!
-    if (!RegisterHotKey(nullptr, HOTKEY_ID, MOD_CONTROL | MOD_WIN, VK_TAB)) {
-        OutputDebugStringW(L"[Main] Hotkey-Registrierung fehlgeschlagen.\n");
+    // Win+Tab Hotkey registrieren (MOD_WIN | MOD_NOREPEAT + VK_TAB)
+    if (!RegisterHotKey(nullptr, HOTKEY_WIN_TAB, MOD_WIN | MOD_NOREPEAT, VK_TAB))
+    {
+        OutputDebugStringW(L"[Main] Hotkey Win+Tab konnte nicht registriert werden.\n");
         CoUninitialize();
         return -1;
     }
 
-    MSG msg;
-    ShellOverlayContext* overlay = nullptr; // Pointer, damit wir es dynamisch steuern können
-    bool isVisible = false;
-
-    // 2. Die Schleife startet und BLOCKIERT sofort bei GetMessageW, bis eine Taste gedrückt wird
-    while (GetMessageW(&msg, nullptr, 0, 0)) 
+    // Auf Win+Tab warten
+    MSG msg = {};
+    bool hotKeyReceived = false;
+    while (GetMessageW(&msg, nullptr, 0, 0))
     {
-        // Wurde unser Hotkey gedrückt?
-        if (msg.message == WM_HOTKEY && msg.wParam == HOTKEY_ID) 
+        if (msg.message == WM_HOTKEY && msg.wParam == HOTKEY_WIN_TAB)
         {
-            if (!isVisible) 
-            {
-                // ERST JETZT wird die Klasse erstellt und initialisiert!
-                overlay = new ShellOverlayContext();
-                if (overlay->Initialize(instance)) 
-                {
-                    isVisible = true;
-                    OutputDebugStringW(L"[Main] Overlay ERST JETZT initialisiert und sichtbar.\n");
-                } 
-                else 
-                {
-                    delete overlay;
-                    overlay = nullptr;
-                }
-            }
-            else 
-            {
-                // Zweites Mal drücken -> Zerstören und in den Tiefschlaf gehen
-                if (overlay) {
-                    overlay->Cleanup();
-                    delete overlay;
-                    overlay = nullptr;
-                }
-                isVisible = false;
-                OutputDebugStringW(L"[Main] Overlay zerstört, warte auf nächsten Hotkey.\n");
-            }
-            continue;
+            hotKeyReceived = true;
+            break;
         }
-
-        // Wenn der ShellHook das Fenster schließt (weil du woanders hinklickst)
-        if (msg.message == WM_QUIT && isVisible)
-        {
-            OutputDebugStringW(L"[Main] ShellHook hat gefeuert -> Zerstöre Overlay.\n");
-            if (overlay) {
-                // Nicht nur verstecken, sondern komplett aufräumen!
-                delete overlay; 
-                overlay = nullptr;
-            }
-            isVisible = false;
-            continue; // Wichtig: Verhindert, dass die wWinMain-Schleife stirbt!
-        }
-
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
 
-    // Falls beim Beenden noch was offen war, wegräumen
-    if (overlay) {
-        delete overlay;
+    UnregisterHotKey(nullptr, HOTKEY_WIN_TAB);
+
+    // Overlay nur starten wenn Hotkey empfangen wurde
+    if (hotKeyReceived)
+    {
+        ShellOverlayContext overlay;
+        if (overlay.Initialize(instance))
+        {
+            overlay.RunMessageLoop();
+        }
+        else
+        {
+            OutputDebugStringW(L"[Main] Schwerwiegender Fehler beim Initialisieren des Overlays.\n");
+        }
+        overlay.Cleanup();
     }
 
-    UnregisterHotKey(nullptr, HOTKEY_ID);
     CoUninitialize();
     return 0;
 }
