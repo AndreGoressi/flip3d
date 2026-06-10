@@ -204,7 +204,7 @@ void Flip3DPrototype::CreateWindowCaptures()
 // Window creation
 // ============================================================================
 
-bool Flip3DPrototype::Create_Window()
+/*bool Flip3DPrototype::Create_Window()
 {
     WNDCLASSEXW wc = {};
     wc.cbSize        = sizeof(wc);
@@ -275,6 +275,87 @@ bool Flip3DPrototype::Create_Window()
     UpdateWindow(m_hwnd);
 
     //return true;
+    return m_hwnd != nullptr;
+}*/
+
+bool Flip3DPrototype::Create_Window()
+{
+    WNDCLASSEXW wc = {};
+    wc.cbSize        = sizeof(wc);
+    wc.hInstance     = m_instance;
+    wc.lpfnWndProc   = &Flip3DPrototype::WndProc;
+    wc.lpszClassName = kWindowClassName;
+    wc.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
+    wc.style         = CS_HREDRAW | CS_VREDRAW;
+
+    if (!RegisterClassExW(&wc))
+        return false;
+
+    RECT workArea = {};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0);
+    int screenW = workArea.right - workArea.left;
+    int screenH = workArea.bottom - workArea.top;
+    int posX = workArea.left;
+    int posY = workArea.top;
+
+    DWORD style   = WS_OVERLAPPEDWINDOW;
+    //DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE;
+
+    m_hwnd = CreateWindowExW(
+        exStyle,
+        kWindowClassName,
+        kWindowTitle,
+        style,
+        posX, posY, screenW, screenH,
+        nullptr, nullptr,
+        m_instance,
+        this
+    );
+
+    if (!m_hwnd){
+        return false;
+    }
+
+    bool transparencyEnabled = AreTransparencyEffectsEnabled();
+    MARGINS margins = {}; 
+
+    if (transparencyEnabled)
+    {
+        margins = { -1, -1, -1, -1 };
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+        
+        int backdropType = 3; // Acrylic
+        DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
+    }
+    else
+    {
+        int none = 0;
+        DwmSetWindowAttribute(m_hwnd, 38, &none, sizeof(none));
+
+        margins = { 0, 0, 0, 0 };
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+    }
+
+    BOOL disableTransitions = TRUE;
+    DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
+
+    BOOL useDarkMode = TRUE;
+    DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
+
+    style &= ~WS_CAPTION;
+    style &= ~WS_THICKFRAME;
+    SetWindowLongW(m_hwnd, GWL_STYLE, style);
+
+    SetWindowPos(
+        m_hwnd, nullptr,
+        posX, posY, screenW, screenH,
+        SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOOWNERZORDER
+    );
+
+    ShowWindow(m_hwnd, SW_SHOW);
+    UpdateWindow(m_hwnd);
+
     return m_hwnd != nullptr;
 }
 
