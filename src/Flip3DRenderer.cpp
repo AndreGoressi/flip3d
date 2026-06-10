@@ -2,6 +2,14 @@
 #include "Shaders.h"
 #include "Capture.h"
 
+struct FXAAConstants
+{
+    DirectX::XMFLOAT2 rcpFrame;
+    float fxaaSpanMax = 8.0f;
+    float fxaaReduceMul = 1.0f/8.0f;
+    float fxaaReduceMin = 1.0f/128.0f;
+};
+
 namespace
 {
 void ActivateWindowLikeThreadMessage403(HWND selectedHwnd)
