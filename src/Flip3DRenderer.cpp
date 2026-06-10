@@ -64,10 +64,6 @@ static bool AreTransparencyEffectsEnabled()
     return value != 0;
 }
 
-void SmoothHideNative(HWND hwnd, DWORD duration_ms) {
-    AnimateWindow(hwnd, duration_ms, AW_BLEND | AW_HIDE);
-}
-
 // ============================================================================
 // Initialisation
 // ============================================================================
@@ -1811,8 +1807,7 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         {
             if (LOWORD(wParam) == WA_INACTIVE)
             {
-                //ShowWindow(m_hwnd, SW_HIDE);
-                SmoothHideNative(m_hwnd, 333);
+                ShowWindow(m_hwnd, SW_HIDE);
                 BeginExitView();               
                 return 0;
             }
@@ -1823,8 +1818,7 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
         {
             if (wParam == FALSE)
             {
-                //ShowWindow(m_hwnd, SW_HIDE);  
-                SmoothHideNative(m_hwnd, 333);
+                ShowWindow(m_hwnd, SW_HIDE);  
                 BeginExitView();               
                 return 0;
             }
@@ -1883,8 +1877,7 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 
         case WM_CLOSE:
         {
-            //ShowWindow(m_hwnd, SW_HIDE);
-            SmoothHideNative(m_hwnd, 333);
+            ShowWindow(m_hwnd, SW_HIDE);
             BeginExitView();
             return 0;
         }
