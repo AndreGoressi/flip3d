@@ -2,17 +2,6 @@
 #include "Shaders.h"
 #include "Capture.h"
 
-struct FXAAConstants
-{
-    DirectX::XMFLOAT2 rcpFrame;
-    float fxaaSpanMax   = 8.0f;
-    float fxaaReduceMul = 1.0f / 8.0f;
-    float fxaaReduceMin = 1.0f / 128.0f;
-    float _pad0 = 0.0f;   // +4
-    float _pad1 = 0.0f;   // +4
-    float _pad2 = 0.0f;   // +4 → 32 Bytes total ✓
-};
-
 namespace
 {
 void ActivateWindowLikeThreadMessage403(HWND selectedHwnd)
@@ -406,7 +395,7 @@ HRESULT Flip3DRenderer::InitializeD3D()
     return CreateWindowSizeResources(false);
 }
 
-/*HRESULT Flip3DRenderer::CreateDeviceResources()
+HRESULT Flip3DRenderer::CreateDeviceResources()
 {
     HRESULT hr = S_OK;
     ComPtr<ID3DBlob> backgroundVS, backgroundPS, cardVS, cardPS;
@@ -479,15 +468,6 @@ HRESULT Flip3DRenderer::InitializeD3D()
     hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
     if (FAILED(hr)) return hr;
 
-    D3D11_BUFFER_DESC fxaaCBDesc = {};
-    fxaaCBDesc.ByteWidth = sizeof(FXAAConstants);
-    fxaaCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-    fxaaCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    fxaaCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-
-    hr = m_device->CreateBuffer(&fxaaCBDesc, nullptr, &m_fxaaCB);
-    if (FAILED(hr)) return hr;
-
     D3D11_DEPTH_STENCIL_DESC dsDesc = {};
     dsDesc.DepthEnable = TRUE;
     dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
@@ -515,141 +495,16 @@ HRESULT Flip3DRenderer::InitializeD3D()
     sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
     hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
     return hr;
-}*/
-
-HRESULT Flip3DRenderer::CreateDeviceResources()
-{
-    HRESULT hr = S_OK;
-    ComPtr<ID3DBlob> backgroundVS, backgroundPS, cardVS, cardPS, fxaaPS;
-
-    hr = CompileShader(kBackgroundVertexShader, "main", "vs_5_0", backgroundVS);
-    if (FAILED(hr)) return hr;
-    hr = CompileShader(kBackgroundPixelShader, "main", "ps_5_0", backgroundPS);
-    if (FAILED(hr)) return hr;
-    hr = CompileShader(kCardVertexShader, "main", "vs_5_0", cardVS);
-    if (FAILED(hr)) return hr;
-    hr = CompileShader(kCardPixelShader, "main", "ps_5_0", cardPS);
-    if (FAILED(hr)) return hr;
-
-    hr = CompileShader(kFXAAPixelShader, "main", "ps_5_0", fxaaPS);
-    if (FAILED(hr)) return hr;
-
-    hr = m_device->CreateVertexShader(backgroundVS->GetBufferPointer(), backgroundVS->GetBufferSize(), nullptr, &m_backgroundVertexShader);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreatePixelShader(backgroundPS->GetBufferPointer(), backgroundPS->GetBufferSize(), nullptr, &m_backgroundPixelShader);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreateVertexShader(cardVS->GetBufferPointer(), cardVS->GetBufferSize(), nullptr, &m_cardVertexShader);
-    if (FAILED(hr)) return hr;
-    hr = m_device->CreatePixelShader(cardPS->GetBufferPointer(), cardPS->GetBufferSize(), nullptr, &m_cardPixelShader);
-    if (FAILED(hr)) return hr;
-
-    // FXAA Pixel Shader erstellen
-    hr = m_device->CreatePixelShader(
-        fxaaPS->GetBufferPointer(),
-        fxaaPS->GetBufferSize(),
-        nullptr,
-        &m_fxaaPixelShader
-    );
-    if (FAILED(hr)) return hr;
-
-    static constexpr D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[] = {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,  D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,    0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-    };
-    hr = m_device->CreateInputLayout(inputLayoutDesc, static_cast<UINT>(std::size(inputLayoutDesc)),
-        cardVS->GetBufferPointer(), cardVS->GetBufferSize(), &m_inputLayout);
-    if (FAILED(hr)) return hr;
-
-    static constexpr Vertex quadVertices[] = {
-        {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-        {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}}, {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
-    };
-    static constexpr std::uint16_t quadIndices[] = {0, 1, 2, 0, 2, 3};
-
-    D3D11_BUFFER_DESC vbDesc = {};
-    vbDesc.ByteWidth = sizeof(quadVertices);
-    vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    vbDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    D3D11_SUBRESOURCE_DATA vbData = {};
-    vbData.pSysMem = quadVertices;
-    hr = m_device->CreateBuffer(&vbDesc, &vbData, &m_vertexBuffer);
-    if (FAILED(hr)) return hr;
-
-    D3D11_BUFFER_DESC ibDesc = {};
-    ibDesc.ByteWidth = sizeof(quadIndices);
-    ibDesc.Usage = D3D11_USAGE_IMMUTABLE;
-    ibDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
-    D3D11_SUBRESOURCE_DATA ibData = {};
-    ibData.pSysMem = quadIndices;
-    hr = m_device->CreateBuffer(&ibDesc, &ibData, &m_indexBuffer);
-    if (FAILED(hr)) return hr;
-
-    D3D11_BUFFER_DESC cbDesc = {};
-    cbDesc.ByteWidth = sizeof(FrameConstants);
-    cbDesc.Usage = D3D11_USAGE_DEFAULT;
-    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    hr = m_device->CreateBuffer(&cbDesc, nullptr, &m_frameConstantsBuffer);
-    if (FAILED(hr)) return hr;
-
-    cbDesc.ByteWidth = sizeof(ObjectConstants);
-    hr = m_device->CreateBuffer(&cbDesc, nullptr, &m_objectConstantsBuffer);
-    if (FAILED(hr)) return hr;
-
-    // FXAA Constant Buffer
-    D3D11_BUFFER_DESC fxaaCBDesc = {};
-    fxaaCBDesc.ByteWidth = sizeof(FXAAConstants);
-    fxaaCBDesc.Usage = D3D11_USAGE_DYNAMIC;
-    fxaaCBDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    fxaaCBDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    hr = m_device->CreateBuffer(&fxaaCBDesc, nullptr, &m_fxaaCB);
-    if (FAILED(hr)) return hr;
-
-    D3D11_RASTERIZER_DESC rsDesc = {};
-    rsDesc.FillMode = D3D11_FILL_SOLID;
-    rsDesc.CullMode = D3D11_CULL_NONE;
-    rsDesc.DepthClipEnable = TRUE;
-    rsDesc.MultisampleEnable = TRUE;
-    hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
-    if (FAILED(hr)) return hr;
-
-    D3D11_DEPTH_STENCIL_DESC dsDesc = {};
-    dsDesc.DepthEnable = TRUE;
-    dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-    dsDesc.DepthFunc = D3D11_COMPARISON_LESS;
-    hr = m_device->CreateDepthStencilState(&dsDesc, &m_depthStencilState);
-    if (FAILED(hr)) return hr;
-
-    D3D11_BLEND_DESC blendDesc = {};
-    blendDesc.RenderTarget[0].BlendEnable           = TRUE;
-    blendDesc.RenderTarget[0].SrcBlend              = D3D11_BLEND_ONE;
-    blendDesc.RenderTarget[0].DestBlend             = D3D11_BLEND_INV_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOp               = D3D11_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].SrcBlendAlpha         = D3D11_BLEND_ONE;
-    blendDesc.RenderTarget[0].DestBlendAlpha        = D3D11_BLEND_INV_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOpAlpha          = D3D11_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-    hr = m_device->CreateBlendState(&blendDesc, &m_blendState);
-    if (FAILED(hr)) return hr;
-
-    D3D11_SAMPLER_DESC sampDesc = {};
-    sampDesc.Filter   = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-    sampDesc.MaxLOD   = D3D11_FLOAT32_MAX;
-    hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
-    return hr;
 }
 
-
-/*HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
+HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
 {
     if (!m_swapChain) return E_FAIL;
     m_msaaRTV.Reset(); m_renderTargetView.Reset(); m_msaaRenderTarget.Reset();
     m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
-    static constexpr UINT kSampleCount = 2;
+    static constexpr UINT kSampleCount = 4;
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
@@ -692,121 +547,7 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
 
     m_viewport = {0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
     return S_OK;
-}*/
-
-HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
-{
-    if (!m_swapChain) return E_FAIL;
-    m_msaaRTV.Reset(); 
-    m_renderTargetView.Reset(); 
-    m_msaaRenderTarget.Reset();
-    m_depthStencilTexture.Reset(); 
-    m_depthStencilView.Reset();
-
-    // FXAA resolved resources reset
-    m_resolvedTexture.Reset();
-    m_resolvedRTV.Reset();
-    m_resolvedSRV.Reset();
-
-    m_context->OMSetRenderTargets(0, nullptr, nullptr);
-
-    static constexpr UINT kSampleCount = 2;
-    if (resizeBuffers)
-    {
-        HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
-        if (FAILED(hr)) return hr;
-    }
-
-    // === Backbuffer RTV ===
-    ComPtr<ID3D11Texture2D> backBuffer;
-    HRESULT hr = m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
-    if (FAILED(hr)) return hr;
-
-    hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
-    if (FAILED(hr)) return hr;
-
-    // === MSAA Render Target ===
-    D3D11_TEXTURE2D_DESC msaaDesc = {};
-    msaaDesc.Width = m_width; 
-    msaaDesc.Height = m_height;
-    msaaDesc.MipLevels = 1; 
-    msaaDesc.ArraySize = 1;
-    msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    msaaDesc.SampleDesc.Count = kSampleCount;
-    msaaDesc.Usage = D3D11_USAGE_DEFAULT;
-    msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
-
-    hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
-    if (FAILED(hr)) return hr;
-
-    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-    rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
-
-    hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
-    if (FAILED(hr)) return hr;
-
-    // === Depth Stencil ===
-    D3D11_TEXTURE2D_DESC depthDesc = {};
-    depthDesc.Width = m_width; 
-    depthDesc.Height = m_height;
-    depthDesc.MipLevels = 1; 
-    depthDesc.ArraySize = 1;
-    depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthDesc.SampleDesc.Count = kSampleCount;
-    depthDesc.Usage = D3D11_USAGE_DEFAULT;
-    depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-
-    hr = m_device->CreateTexture2D(&depthDesc, nullptr, &m_depthStencilTexture);
-    if (FAILED(hr)) return hr;
-
-    hr = m_device->CreateDepthStencilView(m_depthStencilTexture.Get(), nullptr, &m_depthStencilView);
-    if (FAILED(hr)) return hr;
-
-    // ========================================================================
-    // ⭐ FXAA resolved texture (non‑MSAA)
-    // ========================================================================
-    D3D11_TEXTURE2D_DESC resolvedDesc = {};
-    resolvedDesc.Width              = m_width;
-    resolvedDesc.Height             = m_height;
-    resolvedDesc.MipLevels          = 1;
-    resolvedDesc.ArraySize          = 1;
-    resolvedDesc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM;
-    resolvedDesc.SampleDesc.Count   = 1; //  IMPORTANT: non MSAA
-    resolvedDesc.Usage              = D3D11_USAGE_DEFAULT;
-    resolvedDesc.BindFlags          = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-
-    hr = m_device->CreateTexture2D(&resolvedDesc, nullptr, &m_resolvedTexture);
-    if (FAILED(hr)) return hr;
-
-    D3D11_RENDER_TARGET_VIEW_DESC rtvResolvedDesc = {};
-    rtvResolvedDesc.Format        = resolvedDesc.Format;
-    rtvResolvedDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-
-    hr = m_device->CreateRenderTargetView(m_resolvedTexture.Get(), &rtvResolvedDesc, &m_resolvedRTV);
-    if (FAILED(hr)) return hr;
-
-    D3D11_SHADER_RESOURCE_VIEW_DESC srvResolvedDesc = {};
-    srvResolvedDesc.Format                    = resolvedDesc.Format;
-    srvResolvedDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
-    srvResolvedDesc.Texture2D.MipLevels       = 1;
-    srvResolvedDesc.Texture2D.MostDetailedMip = 0;
-
-    hr = m_device->CreateShaderResourceView(m_resolvedTexture.Get(), &srvResolvedDesc, &m_resolvedSRV);
-    if (FAILED(hr)) return hr;
-
-    // ========================================================================
-
-    m_viewport = {
-        0.0f, 0.0f,
-        static_cast<float>(m_width),
-        static_cast<float>(m_height),
-        0.0f, 1.0f
-    };
-
-    return S_OK;
 }
-
 
 // ============================================================================
 // Per-frame update
@@ -1959,7 +1700,7 @@ std::vector<DrawItem> Flip3DRenderer::BuildDrawItems(float enterProgress) const
     return items;
 }
 
-/*void Flip3DRenderer::Render()
+void Flip3DRenderer::Render()
 {
     if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
 
@@ -2049,157 +1790,9 @@ std::vector<DrawItem> Flip3DRenderer::BuildDrawItems(float enterProgress) const
     }
 
     m_swapChain->Present(1, 0);
-}*/
-
-void Flip3DRenderer::Render()
-{
-    if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
-
-    const float enterProgress = EnterProgress();
-    const XMMATRIX view = BuildViewMatrix(enterProgress);
-    const XMMATRIX projection = BuildProjectionMatrix(enterProgress);
-    const XMMATRIX viewProj = view * projection;
-
-    XMVECTOR det = XMMatrixDeterminant(view);
-    m_matHitTestInverse = XMMatrixInverse(&det, view);
-    if (XMVectorGetX(det) < 0.000001f) m_matHitTestInverse = XMMatrixIdentity();
-    m_monitorWidth  = static_cast<int>(m_width);
-    m_monitorHeight = static_cast<int>(m_height);
-
-    FrameConstants frameConstants = {};
-    XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
-    frameConstants.washParams = XMFLOAT4(enterProgress * 0.5f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f);
-    frameConstants.viewport   = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
-    m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
-
-    static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
-    m_context->OMSetRenderTargets(1, m_msaaRTV.GetAddressOf(), m_depthStencilView.Get());
-    m_context->RSSetViewports(1, &m_viewport);
-    m_context->RSSetState(m_rasterizerState.Get());
-    m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
-    m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
-    m_context->ClearRenderTargetView(m_msaaRTV.Get(), clearColor);
-    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-    ID3D11Buffer* frameBuffers[] = { m_frameConstantsBuffer.Get() };
-    m_context->IASetInputLayout(nullptr);
-    m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_context->VSSetShader(m_backgroundVertexShader.Get(), nullptr, 0);
-    m_context->PSSetShader(m_backgroundPixelShader.Get(), nullptr, 0);
-    m_context->VSSetConstantBuffers(0, 1, frameBuffers);
-    m_context->PSSetConstantBuffers(0, 1, frameBuffers);
-    m_context->Draw(3, 0);
-    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-    const UINT stride = sizeof(Vertex);
-    const UINT offset = 0;
-    ID3D11Buffer* vertexBuffers[] = { m_vertexBuffer.Get() };
-    m_context->IASetInputLayout(m_inputLayout.Get());
-    m_context->IASetVertexBuffers(0, 1, vertexBuffers, &stride, &offset);
-    m_context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-    m_context->VSSetShader(m_cardVertexShader.Get(), nullptr, 0);
-    m_context->PSSetShader(m_cardPixelShader.Get(), nullptr, 0);
-    m_context->OMSetBlendState(m_blendState.Get(), nullptr, 0xFFFFFFFFu);
-    m_context->PSSetSamplers(0, 1, m_cardSampler.GetAddressOf());
-
-    const auto drawItems = BuildDrawItems(enterProgress);
-
-    for (const auto& item : drawItems)
-    {
-        size_t pos = 0;
-        for (auto& card : m_cards)
-        {
-            if (pos == static_cast<size_t>(item.cardPosition) && card.capture)
-            {
-                card.capture->PollFrame();
-                break;
-            }
-            ++pos;
-        }
-    }
-
-    for (const DrawItem& item : drawItems)
-    {
-        ObjectConstants objectConstants = {};
-        objectConstants.world  = item.world;
-        objectConstants.color  = item.color;
-        objectConstants.accent = item.accent;
-        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
-
-        size_t pos = 0;
-        ID3D11ShaderResourceView* srv = nullptr;
-        for (auto& card : m_cards)
-        {
-            if (pos == static_cast<size_t>(item.cardPosition))
-            {
-                srv = card.captureSRV;
-                break;
-            }
-            ++pos;
-        }
-        if (!srv) continue;
-
-        m_context->PSSetShaderResources(0, 1, &srv);
-        ID3D11Buffer* objectBuffers[] = { m_objectConstantsBuffer.Get() };
-        m_context->VSSetConstantBuffers(1, 1, objectBuffers);
-        m_context->PSSetConstantBuffers(1, 1, objectBuffers);
-        m_context->DrawIndexed(6, 0, 0);
-    }
-
-    ID3D11ShaderResourceView* nullSRV[1] = { nullptr };
-    m_context->PSSetShaderResources(0, 1, nullSRV);
-    m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
-
-    // === MSAA → resolved Texture (non‑MSAA) ===
-    if (m_resolvedTexture)
-    {
-        m_context->ResolveSubresource(
-            m_resolvedTexture.Get(), 0,
-            m_msaaRenderTarget.Get(), 0,
-            DXGI_FORMAT_B8G8R8A8_UNORM
-        );
-    }
-    //
-    {
-        ComPtr<ID3D11Texture2D> backBuffer;
-        if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-        {
-            ID3D11RenderTargetView* rtv = m_renderTargetView.Get();
-            m_context->OMSetRenderTargets(1, &rtv, nullptr);
-            m_context->RSSetViewports(1, &m_viewport);
-
-            D3D11_MAPPED_SUBRESOURCE mapped = {};
-            if (SUCCEEDED(m_context->Map(m_fxaaCB.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
-            {
-                auto* c = reinterpret_cast<FXAAConstants*>(mapped.pData);
-                c->rcpFrame      = DirectX::XMFLOAT2(1.0f / m_width, 1.0f / m_height);
-                c->fxaaSpanMax   = 8.0f;
-                c->fxaaReduceMul = 1.0f / 8.0f;
-                c->fxaaReduceMin = 1.0f / 128.0f;
-                m_context->Unmap(m_fxaaCB.Get(), 0);
-            }
-
-            m_context->IASetInputLayout(nullptr);
-            m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            m_context->VSSetShader(m_backgroundVertexShader.Get(), nullptr, 0); 
-            m_context->PSSetShader(m_fxaaPixelShader.Get(), nullptr, 0);
-
-            ID3D11Buffer* fxaaCBs[] = { m_fxaaCB.Get() };
-            m_context->PSSetConstantBuffers(0, 1, fxaaCBs);
-
-            ID3D11ShaderResourceView* fxaaSRV = m_resolvedSRV.Get();
-            m_context->PSSetShaderResources(0, 1, &fxaaSRV);
-            m_context->PSSetSamplers(0, 1, m_cardSampler.GetAddressOf());
-
-            m_context->Draw(3, 0);
-
-            ID3D11ShaderResourceView* nullFxaaSRV[1] = { nullptr };
-            m_context->PSSetShaderResources(0, 1, nullFxaaSRV);
-        }
-    }
-
-    m_swapChain->Present(1, 0);
 }
+
+
 
 
 // ============================================================================
