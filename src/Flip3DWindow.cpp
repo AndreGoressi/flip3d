@@ -204,7 +204,7 @@ void Flip3DPrototype::CreateWindowCaptures()
 // Window creation
 // ============================================================================
 
-bool Flip3DPrototype::Create_Window()
+/*bool Flip3DPrototype::Create_Window()
 {
     WNDCLASSEXW wc = {};
     wc.cbSize        = sizeof(wc);
@@ -282,6 +282,88 @@ bool Flip3DPrototype::Create_Window()
     UpdateWindow(m_hwnd);
 
     //return true;
+    return m_hwnd != nullptr;
+}*/
+
+bool Flip3DPrototype::Create_Window()
+{
+    WNDCLASSEXW wc = {};
+    wc.cbSize        = sizeof(wc);
+    wc.hInstance     = m_instance;
+    wc.lpfnWndProc   = &Flip3DPrototype::WndProc;
+    wc.lpszClassName = kWindowClassName;
+    wc.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
+    wc.style         = CS_HREDRAW | CS_VREDRAW;
+
+    if (!RegisterClassExW(&wc))
+        return false;
+
+    int screenW = GetSystemMetrics(SM_CXSCREEN);
+    int screenH = GetSystemMetrics(SM_CYSCREEN);
+
+    DWORD style   = WS_OVERLAPPEDWINDOW;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
+
+    m_hwnd = CreateWindowExW(
+        exStyle,
+        kWindowClassName,
+        kWindowTitle,
+        style,
+        0, 0, screenW, screenH,
+        nullptr, nullptr,
+        m_instance,
+        this
+    );
+
+    if (!m_hwnd){
+        return false;
+    }
+
+    bool transparencyEnabled = AreTransparencyEffectsEnabled();
+    MARGINS margins = {}; 
+
+    if (transparencyEnabled)
+    {
+        margins = { -1, -1, -1, -1 };
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+        
+        int backdropType = 3; // Acrylic
+        DwmSetWindowAttribute(m_hwnd, 38, &backdropType, sizeof(backdropType));
+    }
+    else
+    {
+        int none = 0;
+        DwmSetWindowAttribute(m_hwnd, 38, &none, sizeof(none));
+        margins = { 0, 0, 0, 0 };
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+    }
+
+    BOOL disableTransitions = TRUE;
+    DwmSetWindowAttribute(m_hwnd, 3, &disableTransitions, sizeof(disableTransitions));
+
+    BOOL useDarkMode = TRUE;
+    DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
+
+    style &= ~WS_CAPTION;
+    style &= ~WS_THICKFRAME;
+    SetWindowLongW(m_hwnd, GWL_STYLE, style);
+
+    RECT workArea = {};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0);
+    int workW = workArea.right - workArea.left;
+    int workH = workArea.bottom - workArea.top;
+    int posX = workArea.left;
+    int posY = workArea.top;
+
+    SetWindowPos(
+        m_hwnd, HWND_TOPMOST,
+        posX, posY, workW, workH,
+        SWP_FRAMECHANGED | SWP_NOACTIVATE
+    );
+
+    ShowWindow(m_hwnd, SW_SHOW);
+    UpdateWindow(m_hwnd);
+
     return m_hwnd != nullptr;
 }
 
@@ -1763,7 +1845,7 @@ void Flip3DPrototype::Render()
 // ============================================================================
 // Window message handling
 // ============================================================================
-/*LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
@@ -1836,91 +1918,4 @@ void Flip3DPrototype::Render()
             return 0;
     }
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
-}*/
-LRESULT Flip3DPrototype::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
-{
-    switch (message)
-    {
-        case WM_ERASEBKGND:
-            return 1;
-
-        case WM_ACTIVATE:
-        {
-            if (LOWORD(wParam) == WA_INACTIVE)
-            {
-                BeginExitView();
-                return 0;
-            }
-            return 0;
-        }
-
-        case WM_NCACTIVATE:
-        {
-            if (wParam == FALSE)
-            {
-                BeginExitView();
-                return TRUE; 
-            }
-            return DefWindowProcW(m_hwnd, message, wParam, lParam);
-        }
-
-        case WM_PAINT:
-        {
-            if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
-            {
-                PAINTSTRUCT ps;
-                HDC hdc = BeginPaint(m_hwnd, &ps);
-                EndPaint(m_hwnd, &ps);
-                return 0; 
-            }
-            break;
-        }
-        // ------------------------------------------------
-
-        case WM_SIZE:
-        {
-            if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
-            m_minimized = false;
-            m_width = std::max<UINT>(1, LOWORD(lParam));
-            m_height = std::max<UINT>(1, HIWORD(lParam));
-            if (m_swapChain) CreateWindowSizeResources(true);
-            return 0;
-        }
-
-        case WM_MOUSEWHEEL:
-        case WM_MOUSEHWHEEL:
-        case WM_LBUTTONDOWN:
-        case WM_LBUTTONUP:
-            if (ProcessMouseInput(message, wParam, lParam)) return 0;
-            break;
-
-        case WM_KEYDOWN:
-            if (wParam == VK_SPACE)
-            {
-                if ((lParam & 0x40000000) == 0)
-                    ReplayEnterAnimation();
-                return 0;
-            }
-            if (ProcessKeyboardInput(true, static_cast<UINT>(wParam), (lParam & 0x40000000) != 0))
-                return 0;
-            break;
-
-        case WM_KEYUP:
-            if (ProcessKeyboardInput(false, static_cast<UINT>(wParam), false))
-                return 0;
-            break;
-
-        case WM_CLOSE:
-            if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
-                DestroyWindow(m_hwnd);
-            else
-                BeginExitView();
-            return 0;
-
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            return 0;
-    }
-    return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
-
