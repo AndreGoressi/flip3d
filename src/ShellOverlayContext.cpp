@@ -129,7 +129,7 @@ bool ShellOverlayContext::CreateD3DAndComposition()
     if (FAILED(hr)) return false;
 
     // HIER ERGÄNZEN: Dem Visual sagen, dass es die Swapchain-Transparenz respektieren soll
-    m_rootVisual->SetCompositeMode(DCOMP_COMPOSITE_MODE_SOURCE_OVER);
+    m_rootVisual->SetCompositeMode(DCOMPOSITION_COMPOSITE_MODE_SOURCE_OVER);
 
     m_rootVisual->SetContent(m_swapChain.Get());
     m_dcompTarget->SetRoot(m_rootVisual.Get());
