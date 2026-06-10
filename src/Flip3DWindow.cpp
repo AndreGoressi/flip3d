@@ -504,7 +504,7 @@ HRESULT Flip3DPrototype::CreateWindowSizeResources(bool resizeBuffers)
     m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
-    static constexpr UINT kSampleCount = 8;
+    static constexpr UINT kSampleCount = 2;
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
