@@ -343,7 +343,7 @@ bool Flip3DPrototype::Create_Window()
     }
 
     DWORD style   = WS_POPUP; 
-    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_TOPMOST;
+    DWORD exStyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW;
 
     m_hwnd = CreateWindowExW(
         exStyle,
