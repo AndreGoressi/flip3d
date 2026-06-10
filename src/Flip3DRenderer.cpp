@@ -228,10 +228,12 @@ bool Flip3DRenderer::Render_Window()
     monitorInfo.cbSize = sizeof(MONITORINFO);
     GetMonitorInfoW(hMonitor, &monitorInfo);
 
-    int screenW = monitorInfo.rcWork.right - monitorInfo.rcWork.left;
-    int screenH = monitorInfo.rcWork.bottom - monitorInfo.rcWork.top;
-    int posX = monitorInfo.rcWork.left;
-    int posY = monitorInfo.rcWork.top;
+    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
+    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    const int width = bounds.right - bounds.left;
+    const int height = bounds.bottom - bounds.top;
+    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width));
+    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height));
 
     HWND hTaskbar = nullptr;
     MONITORINFO primaryInfo = {};
@@ -271,7 +273,7 @@ bool Flip3DRenderer::Render_Window()
         kWindowClassName,
         kWindowTitle,
         style,
-        posX, posY, screenW, screenH,
+        x, y, width, height,
         hTaskbar, 
         nullptr,
         m_instance,
@@ -309,7 +311,7 @@ bool Flip3DRenderer::Render_Window()
 
     SetWindowPos(
         m_hwnd, nullptr,
-        posX, posY, screenW, screenH,
+        x, y, width, height,
         SWP_FRAMECHANGED | SWP_SHOWWINDOW | SWP_NOZORDER
     );
 
