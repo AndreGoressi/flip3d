@@ -182,6 +182,24 @@ void Flip3DPrototype::BuildCardModels()
 // ============================================================================
 // Create per-window captures
 // ============================================================================
+/*void Flip3DPrototype::CreateWindowCaptures()
+{
+    if (!m_device) return;
+    ComPtr<IDXGIDevice> dxgiDevice;
+    m_device.As(&dxgiDevice);
+    if (!dxgiDevice) return;
+
+    for (auto &card : m_cards)
+    {
+        if (!card.hwnd) continue;
+        auto cap = std::make_unique<WindowCapture>();
+        HRESULT hr = cap->Initialize(card.hwnd, m_hwnd, m_device.Get());
+        if (SUCCEEDED(hr))
+            card.captureSRV = cap->GetSRV();
+        card.capture = std::move(cap);
+    }
+}*/
+
 void Flip3DPrototype::CreateWindowCaptures()
 {
     if (!m_device) return;
@@ -197,6 +215,22 @@ void Flip3DPrototype::CreateWindowCaptures()
         if (SUCCEEDED(hr))
             card.captureSRV = cap->GetSRV();
         card.capture = std::move(cap);
+    }
+
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(150);
+    bool allReady = false;
+    while (!allReady && std::chrono::steady_clock::now() < deadline)
+    {
+        allReady = true;
+        for (auto &card : m_cards)
+        {
+            if (!card.capture) continue;
+            card.capture->PollFrame();
+            if (!card.capture->HasFirstFrame())
+                allReady = false;
+        }
+        if (!allReady)
+            Sleep(3); 
     }
 }
 
