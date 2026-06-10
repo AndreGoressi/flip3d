@@ -387,7 +387,6 @@ bool Flip3DPrototype::Create_Window()
     DwmSetWindowAttribute(m_hwnd, 20, &useDarkMode, sizeof(useDarkMode));
     
     style &= ~WS_EX_TOPMOST;
-    style &= ~WS_EX_NOACTIVATE;
     SetWindowLongW(m_hwnd, GWL_STYLE, style);
 
     SetWindowPos(
