@@ -1,9 +1,5 @@
 #pragma once
-
 #include <windows.h>
-#include "Flip3DRenderer.h"
-
-#pragma once
 
 class ShellOverlayContext
 {
@@ -23,8 +19,6 @@ private:
     HWND      m_hwnd;
     UINT      m_shellHookMsg;
 
-    int m_x, m_y;        // Ursprung des Arbeitsbereichs (oben links, ohne Taskleiste)
+    int m_x, m_y;        
     int m_screenW, m_screenH;
-
-    Flip3DRenderer   m_renderer;   
 };
