@@ -187,23 +187,33 @@ void Flip3DRenderer::CreateWindowCaptures()
 // ============================================================================
 bool Flip3DRenderer::Render3Dstack()
 {
-    /*RECT wc{};
+    WNDCLASSEXW renderClass   = { sizeof(WNDCLASSEXW) };
+    renderClass.lpfnWndProc   = Flip3DRenderer::WndProc;
+    renderClass.hInstance     = m_instance;
+    renderClass.lpszClassName = kRenderClassName;
+    renderClass.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+    
+    if (!GetClassInfoExW(m_instance, kRenderClassName, &renderClass)) {
+        if (!RegisterClassExW(&renderClass)) return false;
+    }
+
+    RECT wc{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
-    w_x       = wc.left;
-    w_y       = wc.top;
-    w_screenW = wc.right  - wc.left;
-    w_screenH = wc.bottom - wc.top;
+    int x       = wc.left;
+    int y       = wc.top;
+    int screenW = wc.right  - wc.left;
+    int screenH = wc.bottom - wc.top;
 
-    WNDCLASSEXW windowClass   = { sizeof(WNDCLASSEXW) };
-    windowClass.lpfnWndProc   = Flip3DRenderer::WndProc;
-    windowClass.hInstance     = m_instance;
-    windowClass.lpszClassName = kWindowClassName;
-    windowClass.hCursor       = LoadCursor(nullptr, IDC_ARROW);
-    if (!RegisterClassExW(&windowClass)) return false;
+    m_hwnd = CreateWindowExW(
+        WS_EX_NOREDIRECTIONBITMAP, 
+        kWindowClassName, 
+        kWindowTitle,
+        WS_POPUP | WS_VISIBLE, 
+        x, y, screenW, screenH, 
+        nullptr, nullptr, m_instance, this
+    );
 
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_OVERLAPPEDWINDOW, w_x, w_y, w_screenW, w_screenH, nullptr, nullptr, m_instance, this);
-    return m_hwnd != nullptr;*/
+    return m_hwnd != nullptr;
 }
 
 // ============================================================================
