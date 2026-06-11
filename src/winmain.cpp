@@ -37,19 +37,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HWND overlayHwnd = overlay.ShellHandle();
     HWND renderHwnd  = rnd.RenderHandle();
 
-if (renderHwnd && overlayHwnd) 
+    if (renderHwnd && overlayHwnd) 
     {
-        RECT swa{};
-        SystemParametersInfoW(SPI_GETWORKAREA, 0, &swa, 0);
-        int zztopX = swa.left;
-        int zztopY = swa.top;
-        int zztopW = swa.right  - swa.left;
-        int zztopH = swa.bottom - swa.top;
-
-        SetWindowPos(overlayHwnd, nullptr, 
-            zztopX, zztopY, zztopW, zztopH, 
-            SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
