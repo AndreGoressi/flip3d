@@ -4,14 +4,11 @@
 class ShellOverlayContext
 {
 public:
-    // KEIN = default mehr! Das fixt das "already has a body"
     ShellOverlayContext();
     ~ShellOverlayContext();
 
-    // Das fixt das "function does not take 3 arguments"
-    bool Initialize(HINSTANCE instance, int width, int height);
+    bool Initialize(HINSTANCE instance);
     
-    // Die beiden MÜSSEN hier stehen, damit die .cpp nicht meckert!
     void RunMessageLoop();
     void Cleanup();
     
