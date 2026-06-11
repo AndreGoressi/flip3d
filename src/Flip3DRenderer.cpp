@@ -187,16 +187,15 @@ void Flip3DRenderer::CreateWindowCaptures()
 // ============================================================================
 bool Flip3DRenderer::Render3Dstack()
 {
-    WNDCLASSEXW renderClass   = { sizeof(WNDCLASSEXW) };
-    renderClass.lpfnWndProc   = Flip3DRenderer::WndProc;
-    renderClass.hInstance     = m_instance;
-    renderClass.lpszClassName = kRenderClassName;
-    renderClass.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+    WNDCLASSEXW renderClass = {};
+    renderClass.cbSize = sizeof(windowClass);
+    renderClass.hInstance = m_instance;
+    renderClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
+    renderClass.lpszClassName = kWindowClassName;
+    renderClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    renderClass.style = CS_HREDRAW | CS_VREDRAW;
+    if (!RegisterClassExW(&renderClass)) return false;
     
-    if (!GetClassInfoExW(m_instance, kRenderClassName, &renderClass)) {
-        if (!RegisterClassExW(&renderClass)) return false;
-    }
-
     RECT wc{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
     int x       = wc.left;
@@ -215,6 +214,29 @@ bool Flip3DRenderer::Render3Dstack()
 
     return m_hwnd != nullptr;
 }
+
+/*bool Flip3DPrototypeApp::CreateAppWindow()
+{
+    WNDCLASSEXW renderClass = {};
+    renderClass.cbSize = sizeof(windowClass);
+    renderClass.hInstance = m_instance;
+    renderClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
+    renderClass.lpszClassName = kWindowClassName;
+    renderClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    renderClass.style = CS_HREDRAW | CS_VREDRAW;
+    if (!RegisterClassExW(&renderClass)) return false;
+
+    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
+    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    const int width = bounds.right - bounds.left;
+    const int height = bounds.bottom - bounds.top;
+    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
+    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
+
+    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
+        WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, m_instance, this);
+    return m_hwnd != nullptr;
+}*/
 
 // ============================================================================
 // D3D initialisation
