@@ -11,6 +11,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     if (!overlay.Initialize(instance))
         OutputDebugStringW(L"[Main] Fatal error initializing the overlay.\n");
 
+    MSG msg;
+    while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
+    {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+    }
+
     Flip3DRenderer wnd;
     if (!wnd.Initialize(instance))
     {
@@ -22,10 +29,18 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HWND overlayHwnd = overlay.ShellHandle();
     HWND renderHwnd  = wnd.RenderHandle();
 
-    SetWindowPos(overlayHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-    SetWindowPos(renderHwnd,  HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    if (renderHwnd && overlayHwnd) 
+    {
+        RECT workArea{};
+        SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0);
+        int waX      = workArea.left;
+        int waY      = workArea.top;
+        int waWidth  = workArea.right  - workArea.left;
+        int waHeight = workArea.bottom - workArea.top;
 
-    SetWindowPos(renderHwnd, overlayHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        SetWindowPos(overlayHwnd, renderHwnd, waX, waY, waWidth, waHeight, SWP_NOACTIVATE);
+    }
 
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(renderHwnd);
