@@ -31,14 +31,30 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
-        // --- DIAGNOSE-BOX: Zeigt uns, was die Klasse wirklich liefert ---
-        wchar_t debugBuf[256];
-        swprintf_s(debugBuf, L"Getter Werte:\nX: %d, Y: %d\nBreite: %d, Höhe: %d", 
-            overlay.GetX(), overlay.GetY(), overlay.GetWidth(), overlay.GetHeight());
-        MessageBoxW(nullptr, debugBuf, L"Win32 Debug", MB_OK | MB_ICONINFORMATION);
-        // -----------------------------------------------------------------
+        // --- ABSOLUT SICHERER DESKTOP-LOG ---
+        wchar_t desktopPath[MAX_PATH];
+        // Holt den Pfad zum Desktop des aktuellen Nutzers
+        if (SUCCEEDED(SHGetFolderPathW(nullptr, CSIDL_DESKTOP, nullptr, 0, desktopPath))) 
+        {
+            wchar_t fullLogPath[MAX_PATH];
+            swprintf_s(fullLogPath, L"%s\\flip3d_debug.txt", desktopPath);
+            
+            // Datei öffnen und Werte reinschreiben
+            FILE* f = nullptr;
+            if (_wfopen_s(&f, fullLogPath, L"w, cccs=UTF-8") == 0 && f != nullptr) 
+            {
+                fwprintf(f, L"=== FLIP3D Z-ORDER & SIZE DEBUG ===\n");
+                fwprintf(f, L"Getter X: %d\n", overlay.GetX());
+                fwprintf(f, L"Getter Y: %d\n", overlay.GetY());
+                fwprintf(f, L"Getter Breite: %d\n", overlay.GetWidth());
+                fwprintf(f, L"Getter Höhe: %d\n", overlay.GetHeight());
+                fwprintf(f, L"==================================\n");
+                fclose(f);
+            }
+        }
+        // ------------------------------------
 
-        // 1. Größe erzwingen mit den Gettern
+        // 1. Größe erzwingen
         SetWindowPos(overlayHwnd, nullptr, 
             overlay.GetX(), 
             overlay.GetY(), 
@@ -46,10 +62,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
             overlay.GetHeight(), 
             SWP_NOZORDER | SWP_NOACTIVATE);
 
-        // 2. Stack nach oben
+        // 2. Stack nach ganz oben
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
-        // 3. Overlay dahinter
+        // 3. Overlay dahinter kette
         SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
 
