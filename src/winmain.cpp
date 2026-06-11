@@ -37,33 +37,25 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
-        // --- NUR TEXT LOG: Komplett ohne Getter-Zugriffe! ---
-        wchar_t exePath[MAX_PATH];
-        GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-        
-        wchar_t* lastSlash = wcsrchr(exePath, L'\\');
-        if (lastSlash) *(lastSlash + 1) = L'\0';
-        
-        wchar_t fullLogPath[MAX_PATH];
-        swprintf_s(fullLogPath, L"%sflip3d_debug.txt", exePath);
-        
-        FILE* f = nullptr;
-        if (_wfopen_s(&f, fullLogPath, L"w, cccs=UTF-8") == 0 && f != nullptr) 
-        {
-            fwprintf(f, L"=== PROGRAMM ERREICHT DIE MAIN ===\n");
-            fwprintf(f, L"Wenn du das lesen kannst, lebt die Main noch!\n");
-            fwprintf(f, L"==================================\n");
-            fclose(f);
-        }
-        // ----------------------------------------------------
+        // 1. Größe und Position erzwingen (Jetzt ohne Shell-Hook-Sperre!)
+        SetWindowPos(overlayHwnd, nullptr, 
+            overlay.GetX(), 
+            overlay.GetY(), 
+            overlay.GetWidth(), 
+            overlay.GetHeight(), 
+            SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
-        // Zum Testen nehmen wir hier temporär wieder feste Standardwerte,
-        // damit das Programm wegen der Getter auf keinen Fall hier crasht:
-        SetWindowPos(overlayHwnd, nullptr, 0, 0, 1920, 1080, SWP_NOZORDER | SWP_NOACTIVATE);
+        // 2. Stack nach ganz oben
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-        SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-    }
 
+        // 3. Overlay dahinter verketten
+        SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+        // === ERST JETZT, WO ALLES BEREIT IST, STARTEN WIR DEN HOOK ===
+        RegisterShellHookWindow(overlayHwnd);
+        // Falls m_shellHookMsg eine Membervariable der Klasse ist, setzen wir sie über eine kleine Public-Variable oder Funktion:
+        // overlay.m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK"); 
+    }
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(renderHwnd);
 
