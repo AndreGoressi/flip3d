@@ -37,13 +37,37 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
+        // --- BOMBENFESTER LOG DIREKT BEI DER EXE ---
+        wchar_t exePath[MAX_PATH];
+        GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+        
+        // Schneidet den Dateinamen ab, sodass nur der Ordner übrig bleibt
+        wchar_t* lastSlash = wcsrchr(exePath, L'\\');
+        if (lastSlash) *(lastSlash + 1) = L'\0';
+        
+        wchar_t fullLogPath[MAX_PATH];
+        swprintf_s(fullLogPath, L"%sflip3d_debug.txt", exePath);
+        
+        FILE* f = nullptr;
+        if (_wfopen_s(&f, fullLogPath, L"w, cccs=UTF-8") == 0 && f != nullptr) 
+        {
+            fwprintf(f, L"=== FLIP3D Z-ORDER & SIZE DEBUG ===\n");
+            fwprintf(f, L"Getter X: %d\n", overlay.GetX());
+            fwprintf(f, L"Getter Y: %d\n", overlay.GetY());
+            fwprintf(f, L"Getter Breite: %d\n", overlay.GetWidth());
+            fwprintf(f, L"Getter Höhe: %d\n", overlay.GetHeight());
+            fwprintf(f, L"==================================\n");
+            fclose(f);
+        }
+        // --------------------------------------------
+
         // 1. Größe erzwingen
         SetWindowPos(overlayHwnd, nullptr, 
             overlay.GetX(), 
             overlay.GetY(), 
             overlay.GetWidth(), 
             overlay.GetHeight(), 
-            SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+            SWP_NOZORDER | SWP_NOACTIVATE);
 
         // 2. Stack nach ganz oben
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
