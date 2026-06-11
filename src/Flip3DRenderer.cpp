@@ -1541,8 +1541,8 @@ float Flip3DRenderer::UpdateDrawItemAlpha(
     float enterProgress) const
 {
     const float transitionOpacity = ResolveDrawItemTransitionOpacity(entry, context);
-    const float windowOpacity = ApplyEnterProgressToWindowOpacity(
-        ResolveDrawItemWindowOpacity(entry, context, animationState), enterProgress);
+    const float windowOpacity = ApplyEnterProgressToOpacity(
+        ResolveDrawItemOpacity(entry, context, animationState), enterProgress);
     const float stateOpacity = ResolveDrawItemStateOpacity(card, enterProgress);
     return transitionOpacity * windowOpacity * stateOpacity;
 }
