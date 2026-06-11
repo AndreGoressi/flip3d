@@ -23,7 +23,7 @@ void CloseStartMenuIfOpen()
         //keybd_event(VK_LWIN, 0, 0, 0);
         //keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, 0);
         GetModuleHandleW(L"Shell32.dll"),
-        "SHToggleDesktop"
+        "Shell.ToggleDesktop"
     }
 }
 
