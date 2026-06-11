@@ -9,7 +9,7 @@
 class Flip3DRenderer
 {
 public:
-    bool Initialize(HINSTANCE instance);
+    bool Initialize(HINSTANCE instance, HWND parentHwnd);
     HWND WindowHandle() const { return m_hwnd; }
     int Run();
 
