@@ -31,6 +31,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
+        // --- DIAGNOSE-BOX: Zeigt uns, was die Klasse wirklich liefert ---
+        wchar_t debugBuf[256];
+        swprintf_s(debugBuf, L"Getter Werte:\nX: %d, Y: %d\nBreite: %d, Höhe: %d", 
+            overlay.GetX(), overlay.GetY(), overlay.GetWidth(), overlay.GetHeight());
+        MessageBoxW(nullptr, debugBuf, L"Win32 Debug", MB_OK | MB_ICONINFORMATION);
+        // -----------------------------------------------------------------
+
+        // 1. Größe erzwingen mit den Gettern
         SetWindowPos(overlayHwnd, nullptr, 
             overlay.GetX(), 
             overlay.GetY(), 
@@ -38,7 +46,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
             overlay.GetHeight(), 
             SWP_NOZORDER | SWP_NOACTIVATE);
 
+        // 2. Stack nach oben
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+        // 3. Overlay dahinter
         SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
 
