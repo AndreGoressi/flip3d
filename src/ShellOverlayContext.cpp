@@ -60,7 +60,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
         shc.lpszClassName,
         nullptr,
-        WS_POPUP | WS_VISIBLE,
+        WS_POPUP, 
         m_x, m_y, m_screenW, m_screenH,
         nullptr, nullptr, instance, this
     );
@@ -77,8 +77,8 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
     UpdateWindow(m_hwnd);
 
-    RegisterShellHookWindow(m_hwnd);
-    m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
+    //RegisterShellHookWindow(m_hwnd);
+    //m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
     return true;
 }
