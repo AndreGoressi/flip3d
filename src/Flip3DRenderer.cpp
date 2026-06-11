@@ -188,9 +188,9 @@ void Flip3DRenderer::CreateWindowCaptures()
 bool Flip3DRenderer::Render3Dstack()
 {
     WNDCLASSEXW renderClass = {};
-    renderClass.cbSize = sizeof(windowClass);
+    renderClass.cbSize = sizeof(renderClass);
     renderClass.hInstance = m_instance;
-    renderClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
+    renderClass.lpfnWndProc = &Flip3DRenderer::WndProc;
     renderClass.lpszClassName = kRenderClassName;
     renderClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     renderClass.style = CS_HREDRAW | CS_VREDRAW;
