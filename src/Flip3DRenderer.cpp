@@ -1729,6 +1729,17 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 {
     switch (message)
     {
+    case WM_ACTIVATE:
+    {
+        if (LOWORD(wParam) == WA_INACTIVE) 
+        {
+            if (m_state != ViewState::Exit && m_state != ViewState::ExitRepeatedRotate) 
+            {
+                BeginExitView();
+            }
+        }
+        return 0;
+    }
     case WM_SIZE:
     {
         if (wParam == SIZE_MINIMIZED) { m_minimized = true; return 0; }
@@ -1758,4 +1769,3 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
     }
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }
-
