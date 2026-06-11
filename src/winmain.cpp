@@ -4,22 +4,12 @@
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
-
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
 
     ShellOverlayContext overlay;
     if (!overlay.Initialize(instance))
-    {
         OutputDebugStringW(L"[Main] Fatal error initializing the overlay.\n");
-    }
-
-    MSG msg;
-    while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
-    {
-        TranslateMessage(&msg);
-        DispatchMessageW(&msg);
-    }
 
     Flip3DRenderer rnd;
     if (!rnd.Initialize(instance))
@@ -32,18 +22,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HWND overlayHwnd = overlay.ShellHandle();
     HWND renderHwnd  = rnd.RenderHandle();
 
-    if (renderHwnd && overlayHwnd) 
+    if (renderHwnd && overlayHwnd)
     {
-        SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, 
+        // 3D Stack wird Child vom Overlay – DWM schneidet Acrylic nicht mehr ab
+        SetParent(renderHwnd, overlayHwnd);
+        SetWindowPos(overlayHwnd, HWND_TOPMOST, 0, 0, 0, 0,
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-
-        SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, 
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); 
     }
-    
+
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(renderHwnd);
-
     SetForegroundWindow(renderHwnd);
     SetActiveWindow(renderHwnd);
 
