@@ -37,28 +37,26 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HWND overlayHwnd = overlay.ShellHandle();
     HWND renderHwnd  = rnd.RenderHandle();
 
-    if (renderHwnd && overlayHwnd) 
+if (renderHwnd && overlayHwnd) 
     {
-        // 1. Größe und Position erzwingen (Jetzt ohne Shell-Hook-Sperre!)
+        RECT swa{};
+        SystemParametersInfoW(SPI_GETWORKAREA, 0, &swa, 0);
+        int zztopX = swa.left;
+        int zztopY = swa.top;
+        int zztopW = swa.right  - swa.left;
+        int zztopH = swa.bottom - swa.top;
+
         SetWindowPos(overlayHwnd, nullptr, 
-            overlay.GetX(), 
-            overlay.GetY(), 
-            overlay.GetWidth(), 
-            overlay.GetHeight(), 
+            zztopX, zztopY, zztopW, zztopH, 
             SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
-        // 2. Stack nach ganz oben
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-
-        // 3. Overlay dahinter verketten
         SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
-        // === ERST JETZT, WO ALLES BEREIT IST, STARTEN WIR DEN HOOK ===
         g_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
         RegisterShellHookWindow(overlayHwnd);
-        // Falls m_shellHookMsg eine Membervariable der Klasse ist, setzen wir sie über eine kleine Public-Variable oder Funktion:
-        // overlay.m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK"); 
     }
+    
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(renderHwnd);
 
