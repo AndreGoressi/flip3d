@@ -57,13 +57,14 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     if (!RegisterClassExW(&wc)) return false;
 
     m_hwnd = CreateWindowExW(
-        WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
-        wc.lpszClassName,
-        nullptr,
-        WS_POPUP,
-        m_x, m_y, m_screenW, m_screenH,
-        nullptr, nullptr, instance, this
-    );
+    WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED, // <-- DIESE BEIDEN ERGÄNZEN!
+    kWindowClassName, 
+    L"ShellOverlay",
+    WS_POPUP | WS_VISIBLE, 
+    w_x, w_y, w_screenW, w_screenH, 
+    nullptr, nullptr, m_instance, this);
+
+    
     if (!m_hwnd) return false;
 
     if (!ApplyAcrylic())
