@@ -77,6 +77,9 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
     UpdateWindow(m_hwnd);
 
+    if (!m_renderer.Initialize(instance, m_hwnd))  
+    return false;
+
     RegisterShellHookWindow(m_hwnd);
     m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
@@ -105,7 +108,7 @@ bool ShellOverlayContext::ApplyAcrylic()
     return SetWCA(m_hwnd, &data) != FALSE;
 }
 
-LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+/*LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     ShellOverlayContext* ctx = reinterpret_cast<ShellOverlayContext*>(
         GetWindowLongPtrW(hwnd, GWLP_USERDATA));
@@ -126,13 +129,38 @@ LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM
             PostQuitMessage(0);
             return 0;
         }*/
-        if (msg == WM_ERASEBKGND) return 1; 
+        /*if (msg == WM_ERASEBKGND) return 1; 
         if (msg == WM_PAINT) {
             PAINTSTRUCT ps;
             BeginPaint(hwnd, &ps);
             EndPaint(hwnd, &ps);           
             return 0;
         }
+    }
+
+    return DefWindowProcW(hwnd, msg, wp, lp);
+}*/
+
+LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+{
+    ShellOverlayContext* ctx = reinterpret_cast<ShellOverlayContext*>(
+        GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+
+    if (msg == WM_NCCREATE) {
+        auto* cs = reinterpret_cast<CREATESTRUCTW*>(lp);
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA,
+            reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
+        return DefWindowProcW(hwnd, msg, wp, lp);
+    }
+
+    if (ctx) {
+        if (msg == ctx->m_shellHookMsg && wp == HSHELL_WINDOWACTIVATED) {
+            PostQuitMessage(0);
+            return 0;
+        }
+
+        if (ctx->m_renderer)
+            return ctx->m_renderer->HandleMessage(msg, wp, lp);
     }
 
     return DefWindowProcW(hwnd, msg, wp, lp);
