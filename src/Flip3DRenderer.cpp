@@ -203,16 +203,14 @@ void Flip3DRenderer::CreateWindowCaptures()
 // ============================================================================
 // Window creation
 // ============================================================================
-bool Flip3DRenderer::Render_Window()
+bool Flip3DRenderer::Render_Window(HWND parentHwnd)
 {
-    WNDCLASSEXW wc = {};
-    wc.cbSize        = sizeof(wc);
-    wc.hInstance     = m_instance;
-    wc.lpfnWndProc   = &Flip3DRenderer::WndProc;
-    wc.lpszClassName = kWindowClassName;
-    wc.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
-    wc.style         = CS_HREDRAW | CS_VREDRAW;
-    // ===========================================================================
+    m_hwnd = parentHwnd;
+
+    RECT rc{};
+    GetClientRect(m_hwnd, &rc);
+    m_width  = rc.right  - rc.left;
+    m_height = rc.bottom - rc.top;
 
     return m_hwnd != nullptr;
 }
