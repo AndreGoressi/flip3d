@@ -11,9 +11,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
 
+    RECT swa{};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &swa, 0);
+    int workWidth  = swa.right  - swa.left;
+    int workHeight = swa.bottom - swa.top;
+
     ShellOverlayContext overlay;
-    if (!overlay.Initialize(instance))
+    if (!overlay.Initialize(instance, workWidth, workHeight))
+    {
         OutputDebugStringW(L"[Main] Fatal error initializing the overlay.\n");
+    }
 
     MSG msg;
     while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -37,6 +44,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     {
         g_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
         RegisterShellHookWindow(overlayHwnd);
+        
+        overlay.m_shellHookMsg = g_shellHookMsg; 
 
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, 
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
