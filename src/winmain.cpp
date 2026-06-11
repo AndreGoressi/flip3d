@@ -31,15 +31,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
-        RECT workArea{};
-        SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0);
-        int waX      = workArea.left;
-        int waY      = workArea.top;
-        int waWidth  = workArea.right  - workArea.left;
-        int waHeight = workArea.bottom - workArea.top;
-
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-        SetWindowPos(overlayHwnd, renderHwnd, waX, waY, waWidth, waHeight, SWP_NOACTIVATE);
+        SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
 
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
