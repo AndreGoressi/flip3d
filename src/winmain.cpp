@@ -53,8 +53,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     }
 
     const int initialShow = (showCommand == SW_HIDE) ? SW_MAXIMIZE : showCommand;
-    ShowWindow(wnd.RenderHandle(), initialShow);
-    UpdateWindow(wnd.RenderHandle());
+    ShowWindow(r_3d.RenderHandle(), initialShow);
+    UpdateWindow(r_3d.RenderHandle());
 
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0))
