@@ -4,15 +4,25 @@
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
+
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
 
     ShellOverlayContext overlay;
     if (!overlay.Initialize(instance))
+    {
         OutputDebugStringW(L"[Main] Fatal error initializing the overlay.\n");
+    }
 
-    Flip3DRenderer wnd;
-    if (!wnd.Initialize(instance))
+    MSG msg;
+    while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
+    {
+        TranslateMessage(&msg);
+        DispatchMessageW(&msg);
+    }
+
+    Flip3DRenderer rnd;
+    if (!rnd.Initialize(instance))
     {
         MessageBoxW(nullptr, L"Failed to initialize.", kTitle, MB_OK | MB_ICONERROR);
         CoUninitialize();
@@ -20,19 +30,24 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     }
 
     HWND overlayHwnd = overlay.ShellHandle();
-    HWND renderHwnd  = wnd.RenderHandle();
+    HWND renderHwnd  = rnd.RenderHandle();
 
-    SetWindowPos(overlayHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-    SetWindowPos(renderHwnd,  HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-    SetWindowPos(renderHwnd, overlayHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    if (renderHwnd && overlayHwnd) 
+    {
+        SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, 
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
+        SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, 
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); 
+    }
+    
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(renderHwnd);
 
     SetForegroundWindow(renderHwnd);
     SetActiveWindow(renderHwnd);
 
-    int result = wnd.Run();
+    int result = rnd.Run();
     CoUninitialize();
     return result;
 }
