@@ -2,7 +2,7 @@
 #include "ShellOverlayContext.h"
 #include "Flip3DRenderer.h"
 
-int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
     Flip3DRenderer r_stack;
     if (!r_stack.Initialize(instance))
