@@ -1,34 +1,31 @@
-#pragma once
-
 #include <windows.h>
-#include <shobjidl_core.h>   // IAppVisibility / CLSID_AppVisibility
-#include <wrl/client.h>
+#include "ShellOverlayContext.h"
 
-class ShellOverlayContext
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 {
-public:
-    ShellOverlayContext();
-    ~ShellOverlayContext();
+    // COM initialisieren für das DirectComposition-Framework
+    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    if (FAILED(hr)) {
+        return -1;
+    }
 
-    bool Initialize(HINSTANCE instance);
-    void RunMessageLoop();
-    void Cleanup();
+    // Den fensterlosen Overlay-Kontext instanziieren
+    ShellOverlayContext overlay;
 
-private:
-    static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
-    bool ApplyAcrylic();
-    bool IsStartMenuOpen() const;
+    // Hochfahren des Systems (Dummy-HWND, Swapchain, DWM-Visual-Graph & Acrylic-Effekt)
+    if (overlay.Initialize(instance))
+    {
+        // Ab in die Nachrichtenschleife! 
+        // Dein gesamter Bildschirm wird jetzt augenblicklich im echten Windows-Acrylic versinken.
+        overlay.RunMessageLoop();
+    }
+    else
+    {
+        OutputDebugStringW(L"[Main] Schwerwiegender Fehler beim Initialisieren des DComp-Overlays.\n");
+    }
 
-    static constexpr UINT_PTR TIMER_STARTMENU  = 1;
-    static constexpr UINT_PTR TIMER_GRACE      = 2;  // Anlaufschutz
+    // COM sauber entladen
+    CoUninitialize();
 
-    HINSTANCE m_instance;
-    HWND      m_hwnd;
-    UINT      m_shellHookMsg;
-    bool      m_graceActive = true;  // true = Timer-Check noch gesperrt
-
-    Microsoft::WRL::ComPtr<IAppVisibility> m_appVisibility;
-
-    int m_x, m_y;        // Ursprung des Arbeitsbereichs (oben links, ohne Taskleiste)
-    int m_screenW, m_screenH;
-};
+    return 0;
+}
