@@ -25,12 +25,18 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     ShowWindow(wnd.RenderHandle(), initialShow);
     UpdateWindow(wnd.RenderHandle());
 
-    HWND overlayHwnd = FindWindowW(kRenderClassName, nullptr); 
-        
+    HWND overlayHwnd = FindWindowW(kWindowClassName, nullptr); 
+    
     if (wnd.RenderHandle() && overlayHwnd) 
     {
-        SetWindowPos(overlayHwnd, wnd.RenderHandle(), 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-        SetWindowPos(wnd.RenderHandle(), HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        LONG_PTR exStyle = GetWindowLongPtrW(overlayHwnd, GWL_EXSTYLE);
+        SetWindowLongPtrW(overlayHwnd, GWL_EXSTYLE, exStyle | WS_EX_TRANSPARENT | WS_EX_LAYERED);
+
+        SetWindowPos(overlayHwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        
+        SetWindowPos(wnd.RenderHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        SetForegroundWindow(wnd.RenderHandle());
+        SetActiveWindow(wnd.RenderHandle());
     }
 
     int result = wnd.Run();
