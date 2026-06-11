@@ -12,6 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(flip3d WIN32
     src/resources.rc
     src/winmain.cpp
+    src/Flip3Dmain.cpp
     src/Config.cpp
     src/Capture.cpp
     src/WindowCapture.cpp
