@@ -11,6 +11,11 @@ public:
     void RunMessageLoop();
     void Cleanup();
     HWND ShellHandle() const { return m_hwnd; }
+    //
+    int GetX() const { return m_x; }
+    int GetY() const { return m_y; }
+    int GetWidth() const { return m_screenW; }
+    int GetHeight() const { return m_screenH; }
 
 private:
     static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
