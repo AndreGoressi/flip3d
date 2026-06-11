@@ -26,9 +26,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     UpdateWindow(wnd.RenderHandle());
 
     HWND overlayHwnd = FindWindowW(kRenderClassName, nullptr); 
-    
-    HWND overlayHwnd = FindWindowW(kWindowClassName, nullptr); 
-    
+        
     if (wnd.RenderHandle() && overlayHwnd) 
     {
         SetWindowPos(overlayHwnd, wnd.RenderHandle(), 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
