@@ -31,14 +31,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
-        SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-        //
         SetWindowPos(overlayHwnd, renderHwnd, 
             overlay.GetX(), 
             overlay.GetY(), 
             overlay.GetWidth(), 
             overlay.GetHeight(), 
-            SWP_NOACTIVATE); 
+            SWP_NOZORDER | SWP_NOACTIVATE);
+
+        SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        //SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
 
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
