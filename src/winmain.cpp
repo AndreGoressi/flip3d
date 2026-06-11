@@ -27,7 +27,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     }
 
     HWND overlayHwnd = overlay.ShellHandle();
-    HWND renderHwnd  = wnd.RenderHandle();
+    HWND renderHwnd  = rnd.RenderHandle();
 
     if (renderHwnd && overlayHwnd) 
     {
