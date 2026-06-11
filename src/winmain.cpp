@@ -2,8 +2,6 @@
 #include "ShellOverlayContext.h"
 #include "Flip3DRenderer.h"
 
-UINT g_shellHookMsg = 0;
-
 #pragma comment(lib, "shell32.lib")
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
