@@ -56,7 +56,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     if (!RegisterClassExW(&shc)) return false;
 
     m_hwnd = CreateWindowExW(
-        WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP,
+        WS_EX_TOOLWINDOW,
         shc.lpszClassName, nullptr,
         WS_POPUP | WS_VISIBLE,
         m_x, m_y, m_screenW, m_screenH,
