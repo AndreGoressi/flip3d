@@ -10,6 +10,7 @@ public:
     bool Initialize(HINSTANCE instance);
     void RunMessageLoop();
     void Cleanup();
+    HWND WindowHandle() const { return m_hwnd; }
 
 private:
     static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
