@@ -57,7 +57,7 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance, HWND parentHwnd)
     LoadFlip3DPreferences();
     BuildCardModels();
 
-    if (!Render_Window()) return false;
+    if (!Render3Dstack()) return false;
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 
     if (FAILED(InitializeD3D())) return false;
@@ -70,7 +70,7 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance, HWND parentHwnd)
     return true;
 }
 
-int Flip3DRenderer::Run()
+int Flip3DRenderer::Render()
 {
     MSG msg = {};
     while (msg.message != WM_QUIT)
@@ -185,7 +185,7 @@ void Flip3DRenderer::CreateWindowCaptures()
 // ============================================================================
 // Window creation
 // ============================================================================
-bool Flip3DRenderer::Render_Window()
+bool Flip3DRenderer::Render3Dstack()
 {
     /*RECT wc{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
@@ -675,7 +675,7 @@ void Flip3DRenderer::BeginExitAnimation() { BeginExitView(); }
 // ============================================================================
 // Selection
 // ============================================================================
-void Flip3DRenderer::SelectWindow(HWND targetHwnd)
+void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 {
     if (m_cards.empty() || !targetHwnd) return;
 
@@ -766,9 +766,9 @@ void Flip3DRenderer::SelectWindow(HWND targetHwnd)
     }
 }
 
-void Flip3DRenderer::SelectFrontWindow()
+void Flip3DRenderer::SelectFrontThumbnail()
 {
-    if (!m_cards.empty()) SelectWindow(m_cards.front().hwnd);
+    if (!m_cards.empty()) SelectThumbnail(m_cards.front().hwnd);
 }
 
 // ============================================================================
@@ -822,9 +822,9 @@ void Flip3DRenderer::RotateBy(int delta)
     RotateListByMouseWheelAmount(rawWheel);
 }
 
-void Flip3DRenderer::RotateTo(int /*targetIndex*/) { BeginRotateToWindow(nullptr); }
+void Flip3DRenderer::RotateTo(int /*targetIndex*/) { BeginRotateToThumbnail(nullptr); }
 
-void Flip3DRenderer::BeginRotateToWindow(HWND targetHwnd)
+void Flip3DRenderer::BeginRotateToThumbnail(HWND targetHwnd)
 {
     const size_t count = m_cards.size();
     if (count <= 1 || m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) return;
@@ -936,12 +936,12 @@ int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
     return -1;
 }
 
-bool Flip3DRenderer::SelectWindowAtPoint(LONG x, LONG y)
+bool Flip3DRenderer::SelectThumbnailAtPoint(LONG x, LONG y)
 {
     const int pos = HitTest3DScene(x, y);
     if (pos < 0) return false;
     size_t i = 0;
-    for (auto &card : m_cards) { if (i == static_cast<size_t>(pos)) { SelectWindow(card.hwnd); return true; } ++i; }
+    for (auto &card : m_cards) { if (i == static_cast<size_t>(pos)) { SelectThumbnail(card.hwnd); return true; } ++i; }
     return false;
 }
 
@@ -972,7 +972,7 @@ bool Flip3DRenderer::ProcessMouseButtonInput(LONG x, LONG y, bool pressed)
     if (pressedIdx >= 0 && pressedIdx == releasedIdx)
     {
         size_t i = 0;
-        for (auto &card : m_cards) { if (i == static_cast<size_t>(pressedIdx)) { SelectWindow(card.hwnd); break; } ++i; }
+        for (auto &card : m_cards) { if (i == static_cast<size_t>(pressedIdx)) { SelectThumbnail(card.hwnd); break; } ++i; }
     }
     else
     {
@@ -1024,10 +1024,10 @@ bool Flip3DRenderer::ProcessKeyboardInput(bool isKeyDown, UINT vkCode, bool isRe
             case VK_LEFT:  RotateBy(m_fRTLMirror ? 1 : -1); handled = true; break;
             case VK_RIGHT: RotateBy(m_fRTLMirror ? -1 : 1); handled = true; break;
             case VK_HOME:
-                if (IsSelectionKeyboardState()) BeginRotateToWindow(m_originalFrontHWND);
+                if (IsSelectionKeyboardState()) BeginRotateToThumbnail(m_originalFrontHWND);
                 handled = true; break;
             case VK_RETURN:
-                if (IsSelectionKeyboardState()) SelectFrontWindow();
+                if (IsSelectionKeyboardState()) SelectFrontThumbnail();
                 handled = true; break;
             case VK_LWIN: case VK_RWIN:
                 m_pendingWinKeyAction = true; handled = true; break;
@@ -1043,7 +1043,7 @@ bool Flip3DRenderer::ProcessKeyboardInput(bool isKeyDown, UINT vkCode, bool isRe
         if (!m_pendingWinKeyAction) return true;
         const bool anyWinDown = ((GetKeyState(VK_LWIN) & 0xFF80) != 0) || ((GetKeyState(VK_RWIN) & 0xFF80) != 0);
         m_pendingWinKeyAction = false;
-        if (anyWinDown) BeginExitView(); else SelectFrontWindow();
+        if (anyWinDown) BeginExitView(); else SelectFrontThumbnail();
         return true;
     }
     return false;
@@ -1471,7 +1471,7 @@ CardWorldState Flip3DRenderer::GetWorldFromParametric(
     return worldState;
 }
 
-float Flip3DRenderer::ResolveDrawItemWindowOpacity(
+float Flip3DRenderer::ResolveDrawItemOpacity(
     const VisibleCardStructure &entry, const DrawBuildContext &context,
     const CardAnimationState &animationState) const
 {
@@ -1491,7 +1491,7 @@ float Flip3DRenderer::ResolveDrawItemWindowOpacity(
     return 1.0f;
 }
 
-float Flip3DRenderer::ApplyEnterProgressToWindowOpacity(float windowOpacity, float enterProgress) const
+float Flip3DRenderer::ApplyEnterProgressToOpacity(float windowOpacity, float enterProgress) const
 {
     if (std::abs(enterProgress - 1.0f) >= 0.0000012f && std::abs(windowOpacity - 1.0f) >= 0.0000012f)
         return (enterProgress * windowOpacity) + (1.0f - enterProgress);
