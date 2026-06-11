@@ -58,7 +58,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
 
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
-        shc.lpszClassName, nullptr, WS_POPUP, 
+        shc.lpszClassName, nullptr, WS_POPUP | WS_VISIBLE, 
         m_x, m_y, m_screenW, m_screenH,
         hTaskbar, 
         nullptr, instance, this
