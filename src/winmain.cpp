@@ -2,6 +2,10 @@
 #include "ShellOverlayContext.h"
 #include "Flip3DRenderer.h"
 
+#include <windows.h>
+#include "ShellOverlayContext.h"
+#include "Flip3DRenderer.h"
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
@@ -20,17 +24,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     {
         OutputDebugStringW(L"[Main] Fatal error initializing the overlay.\n");
     }
-    
+
     const int initialShow = (showCommand == SW_HIDE) ? SW_MAXIMIZE : showCommand;
     ShowWindow(wnd.RenderHandle(), initialShow);
     UpdateWindow(wnd.RenderHandle());
 
-    HWND overlayHwnd = FindWindowW(kRenderClassName, nullptr); 
-    
+    HWND overlayHwnd = FindWindowW(kWindowClassName, nullptr); 
     if (wnd.RenderHandle() && overlayHwnd) 
     {
-        LONG_PTR exStyle = GetWindowLongPtrW(overlayHwnd, GWL_EXSTYLE);
-        SetWindowLongPtrW(overlayHwnd, GWL_EXSTYLE, exStyle | WS_EX_TRANSPARENT | WS_EX_LAYERED);
 
         SetWindowPos(overlayHwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         
