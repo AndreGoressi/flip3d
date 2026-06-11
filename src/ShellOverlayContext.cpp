@@ -41,13 +41,11 @@ ShellOverlayContext::~ShellOverlayContext()
 bool ShellOverlayContext::Initialize(HINSTANCE instance)
 {
     m_instance = instance;
-
-    RECT swa{};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &swa, 0);
-    m_x       = swa.left;
-    m_y       = swa.top;
-    m_screenW = swa.right  - swa.left;
-    m_screenH = swa.bottom - swa.top;
+    
+    m_x       = 0;
+    m_y       = 0;
+    m_screenW = GetSystemMetrics(SM_CXSCREEN);
+    m_screenH = GetSystemMetrics(SM_CYSCREEN);
 
     WNDCLASSEXW shc   = { sizeof(WNDCLASSEXW) };
     shc.lpfnWndProc   = ShellOverlayContext::OverlayWndProc;
@@ -58,13 +56,10 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
 
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
-        shc.lpszClassName,
-        nullptr,
-        WS_POPUP, 
+        shc.lpszClassName, nullptr, WS_POPUP, 
         m_x, m_y, m_screenW, m_screenH,
         nullptr, nullptr, instance, this
     );
-
     
     if (!m_hwnd) return false;
 
