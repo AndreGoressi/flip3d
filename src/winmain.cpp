@@ -5,6 +5,8 @@
 #include <shlobj.h>
 #include <cstdio>
 
+UINT g_shellHookMsg = 0;
+
 // Das zwingt den Visual Studio Compiler (MSBuild), die richtige Windows-Bibliothek zu linken
 #pragma comment(lib, "shell32.lib")
 
@@ -52,6 +54,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
         SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
         // === ERST JETZT, WO ALLES BEREIT IST, STARTEN WIR DEN HOOK ===
+        g_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
         RegisterShellHookWindow(overlayHwnd);
         // Falls m_shellHookMsg eine Membervariable der Klasse ist, setzen wir sie über eine kleine Public-Variable oder Funktion:
         // overlay.m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK"); 
