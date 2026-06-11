@@ -40,30 +40,6 @@ void CompleteDeferredSelectedWindowActivation(HWND selectedHwnd, bool activation
 }
 }
 
-static bool AreTransparencyEffectsEnabled()
-{
-    DWORD value = 1; // Default: assume enabled
-    DWORD size  = sizeof(value);
-
-    const wchar_t* subKey =
-        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-
-    LONG res = RegGetValueW(
-        HKEY_CURRENT_USER,
-        subKey,
-        L"EnableTransparency",
-        RRF_RT_REG_DWORD,
-        nullptr,
-        &value,
-        &size
-    );
-
-    if (res != ERROR_SUCCESS)
-        return true; // fallback: assume enabled
-
-    return value != 0;
-}
-
 // ============================================================================
 // Initialisation
 // ============================================================================
