@@ -73,7 +73,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     RegisterShellHookWindow(m_hwnd);
     m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
-    ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
+    //ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
     UpdateWindow(m_hwnd);
 
     return true;
