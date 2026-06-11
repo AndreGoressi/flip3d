@@ -2,7 +2,7 @@
 #include <dwmapi.h>
 #pragma comment(lib, "dwmapi.lib")
 
-// --- Undokumentierte SetWindowCompositionAttribute-API ---
+// --- undocumented SetWindowCompositionAttribute-API ---
 enum ACCENT_STATE {
     ACCENT_DISABLED                   = 0,
     ACCENT_ENABLE_GRADIENT            = 1,
@@ -44,7 +44,6 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
 {
     m_instance = instance;
 
-    // Arbeitsbereich = Bildschirm OHNE Taskleiste -> Taskleiste bleibt frei.
     RECT wa{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &wa, 0);
     m_x       = wa.left;
@@ -59,7 +58,6 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     wc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
     if (!RegisterClassExW(&wc)) return false;
 
-    // WS_EX_TRANSPARENT = klick-durchlaessig. KEINE leere Region!
     m_hwnd = CreateWindowExW(
         WS_EX_TRANSPARENT | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
         wc.lpszClassName,
@@ -97,7 +95,6 @@ bool ShellOverlayContext::ApplyAcrylic()
     ACCENT_POLICY accent = {};
     accent.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
     accent.AccentFlags = 0;
-    // 0xAABBGGRR : A=0x73 (~45%), B=25 (0x19), G=15 (0x0F), R=15 (0x0F)
     accent.GradientColor = 0x73190F0F;
 
     WINDOWCOMPOSITIONATTRIBDATA data = {};
@@ -122,18 +119,18 @@ LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM
 
     if (ctx) {
         if (msg == ctx->m_shellHookMsg && wp == HSHELL_WINDOWACTIVATED) {
-            PostQuitMessage(0);   // Startmenue / Fensterwechsel -> beenden
+            PostQuitMessage(0);   
             return 0;
         }
-        if (msg == WM_KEYDOWN && wp == VK_ESCAPE) {
+        /*if (msg == WM_KEYDOWN && wp == VK_ESCAPE) {
             PostQuitMessage(0);
             return 0;
-        }
-        if (msg == WM_ERASEBKGND) return 1;  // niemals weiss uebermalen
+        }*/
+        if (msg == WM_ERASEBKGND) return 1; 
         if (msg == WM_PAINT) {
             PAINTSTRUCT ps;
             BeginPaint(hwnd, &ps);
-            EndPaint(hwnd, &ps);             // leer lassen -> Accent uebernimmt
+            EndPaint(hwnd, &ps);           
             return 0;
         }
     }
