@@ -165,12 +165,32 @@ LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM
     return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
-void ShellOverlayContext::RunMessageLoop()
+/*void ShellOverlayContext::RunMessageLoop()
 {
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
+    }
+}*/
+
+void ShellOverlayContext::RunMessageLoop()
+{
+    MSG msg = {};
+    while (msg.message != WM_QUIT)
+    {
+        while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+            if (msg.message == WM_QUIT) return;
+        }
+
+        const auto now = std::chrono::steady_clock::now();
+        const float delta = std::chrono::duration<float>(now - m_renderer.GetPreviousFrameTime()).count();
+        m_renderer.SetPreviousFrameTime(now);
+        m_renderer.Update(std::min(delta, 0.05f));
+        m_renderer.Render();
     }
 }
 
