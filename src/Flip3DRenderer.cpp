@@ -75,7 +75,7 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance, HWND parentHwnd)
     LoadFlip3DPreferences();
     BuildCardModels();
 
-    if (!Render_Window(parentHwnd)) return false;
+    if (!Render_Window()) return false;
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 
     if (FAILED(InitializeD3D())) return false;
@@ -203,15 +203,24 @@ void Flip3DRenderer::CreateWindowCaptures()
 // ============================================================================
 // Window creation
 // ============================================================================
-bool Flip3DRenderer::Render_Window(HWND parentHwnd)
+bool Flip3DRenderer::Render_Window()
 {
-    m_hwnd = parentHwnd;
+    RECT wc{};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
+    w_x       = wc.left;
+    w_y       = wc.top;
+    w_screenW = wc.right  - wc.left;
+    w_screenH = wc.bottom - wc.top;
 
-    RECT rc{};
-    GetClientRect(m_hwnd, &rc);
-    m_width  = rc.right  - rc.left;
-    m_height = rc.bottom - rc.top;
+    WNDCLASSEXW windowClass   = { sizeof(WNDCLASSEXW) };
+    windowClass.lpfnWndProc   = Flip3DRenderer::WndProc;
+    windowClass.hInstance     = m_instance;
+    windowClass.lpszClassName = kWindowClassName;
+    windowClass.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+    if (!RegisterClassExW(&windowClass)) return false;
 
+    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
+        WS_OVERLAPPEDWINDOW, w_x, w_y, w_screenW, w_screenH, nullptr, nullptr, m_instance, this);
     return m_hwnd != nullptr;
 }
 
