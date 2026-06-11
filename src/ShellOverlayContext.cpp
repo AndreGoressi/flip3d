@@ -61,7 +61,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     L"ShellOverlayClass", 
     L"ShellOverlay",
     WS_POPUP | WS_VISIBLE, 
-    w_x, w_y, w_screenW, w_screenH, 
+    m_x, m_y, m_screenW, m_screenH, 
     nullptr, nullptr, m_instance, this);
 
     
