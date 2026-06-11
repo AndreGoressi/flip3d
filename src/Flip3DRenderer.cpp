@@ -4,41 +4,47 @@
 
 namespace
 {
-void ActivateWindowLikeThreadMessage403(HWND selectedHwnd)
-{
-    if (selectedHwnd == nullptr || !IsWindow(selectedHwnd)) return;
-    HWND activationTarget = selectedHwnd;
-    if (!IsWindowEnabled(activationTarget))
+    void ActivateWindowLikeThreadMessage403(HWND selectedHwnd)
     {
-        if (HWND ancestor = GetAncestor(activationTarget, GA_ROOTOWNER))
+        if (selectedHwnd == nullptr || !IsWindow(selectedHwnd)) return;
+
+        HWND activationTarget = selectedHwnd;
+
+        if (!IsWindowEnabled(activationTarget))
         {
-            if (HWND lastActivePopup = GetLastActivePopup(ancestor))
-                activationTarget = lastActivePopup;
+            if (HWND ancestor = GetAncestor(activationTarget, GA_ROOTOWNER))
+            {
+                if (HWND lastActivePopup = GetLastActivePopup(ancestor))
+                    activationTarget = lastActivePopup;
+            }
         }
-    }
-    if (activationTarget != nullptr && IsWindow(activationTarget))
-        SwitchToThisWindow(activationTarget, TRUE);
-}
 
-bool DispatchImmediateSelectedWindowActivation(HWND selectedHwnd, bool wasMinimized, bool wasShellDesktop)
-{
-    if (selectedHwnd == nullptr || !IsWindow(selectedHwnd)) return false;
-    if (wasMinimized) return false;
-    if (wasShellDesktop || selectedHwnd == GetShellWindow())
+        if (activationTarget != nullptr && IsWindow(activationTarget))
+            SwitchToThisWindow(activationTarget, TRUE);
+    }
+
+    bool DispatchImmediateSelectedWindowActivation(HWND selectedHwnd, bool wasMinimized, bool wasShellDesktop)
     {
-        if (HWND shellTray = FindWindowW(L"Shell_TrayWnd", nullptr))
-            PostMessageW(shellTray, 0x579u, 1u, 0);
-        return true;
-    }
-    return false;
-}
+        if (selectedHwnd == nullptr || !IsWindow(selectedHwnd)) return false;
+        if (wasMinimized) return false;
 
-void CompleteDeferredSelectedWindowActivation(HWND selectedHwnd, bool activationAlreadyDispatched)
-{
-    if (activationAlreadyDispatched) return;
-    ActivateWindowLikeThreadMessage403(selectedHwnd);
-}
-}
+        if (wasShellDesktop || selectedHwnd == GetShellWindow())
+        {
+            if (HWND shellTray = FindWindowW(L"Shell_TrayWnd", nullptr))
+                PostMessageW(shellTray, 0x579u, 1u, 0);
+            return true;
+        }
+
+        return false;
+    }
+
+    void CompleteDeferredSelectedWindowActivation(HWND selectedHwnd, bool activationAlreadyDispatched)
+    {
+        if (activationAlreadyDispatched) return;
+        ActivateWindowLikeThreadMessage403(selectedHwnd);
+    }
+} // namespace
+
 
 // ============================================================================
 // Initialisation
@@ -181,7 +187,7 @@ void Flip3DRenderer::CreateWindowCaptures()
 // ============================================================================
 bool Flip3DRenderer::Render_Window()
 {
-    RECT wc{};
+    /*RECT wc{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
     w_x       = wc.left;
     w_y       = wc.top;
@@ -197,7 +203,7 @@ bool Flip3DRenderer::Render_Window()
 
     m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
         WS_OVERLAPPEDWINDOW, w_x, w_y, w_screenW, w_screenH, nullptr, nullptr, m_instance, this);
-    return m_hwnd != nullptr;
+    return m_hwnd != nullptr;*/
 }
 
 // ============================================================================
