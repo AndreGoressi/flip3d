@@ -11,7 +11,7 @@ class Flip3DRenderer
 public:
     bool Initialize(HINSTANCE instance);
     HWND RenderHandle() const { return m_hwnd; }
-    int Render();
+    int Run();
 
     // Exposed for WndProc forwarding
     LRESULT HandleMessage(UINT message, WPARAM wParam, LPARAM lParam);
