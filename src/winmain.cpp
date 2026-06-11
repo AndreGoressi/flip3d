@@ -4,13 +4,14 @@
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
+
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
 
     Flip3DRenderer wnd;
     if (!wnd.Initialize(instance))
     {
-        MessageBoxW(nullptr, L"Failed to initialize the Flip3D D3D11 prototype.", kWindowTitle, MB_OK | MB_ICONERROR);
+        MessageBoxW(nullptr, L"Failed to initialize the Flip3D D3D11 prototype.", kTitle, MB_OK | MB_ICONERROR);
         CoUninitialize();
         return 1;
     }
@@ -25,10 +26,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     ShowWindow(wnd.RenderHandle(), initialShow);
     UpdateWindow(wnd.RenderHandle());
 
-    if (wnd.RenderHandle() && overlay.GetWindowHandle()) 
+    HWND overlayHwnd = overlay.GetHwnd(); 
+    
+    if (wnd.RenderHandle() && overlayHwnd) 
     {
-        SetWindowLongPtrW(overlay.GetWindowHandle(), GWL_STYLE, WS_POPUP | WS_VISIBLE | WS_CLIPSIBLINGS);
-        SetParent(overlay.GetWindowHandle(), wnd.RenderHandle());
+        SetWindowLongPtrW(overlayHwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE | WS_CLIPSIBLINGS);
+        SetParent(overlayHwnd, wnd.RenderHandle());
     }
 
     int result = wnd.Run();
