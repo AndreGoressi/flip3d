@@ -172,11 +172,4 @@ private:
     int m_monitorHeight = 0;
 
     D3D11_VIEWPORT m_viewport = {};
-
-    // === FXAA ===
-    ComPtr<ID3D11PixelShader>        m_fxaaPixelShader;
-    ComPtr<ID3D11Buffer>             m_fxaaCB;
-    ComPtr<ID3D11Texture2D>          m_resolvedTexture;
-    ComPtr<ID3D11RenderTargetView>   m_resolvedRTV;
-    ComPtr<ID3D11ShaderResourceView> m_resolvedSRV;
 };
