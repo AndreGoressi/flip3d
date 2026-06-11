@@ -42,10 +42,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
-        g_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
+        UINT localShellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
         RegisterShellHookWindow(overlayHwnd);
         
-        overlay.m_shellHookMsg = g_shellHookMsg; 
+        overlay.m_shellHookMsg = localShellHookMsg; 
 
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, 
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
