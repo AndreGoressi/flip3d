@@ -30,15 +30,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
-        int fullWidth  = GetSystemMetrics(SM_CXSCREEN);
-        int fullHeight = GetSystemMetrics(SM_CYSCREEN);
-
-        SetWindowPos(overlayHwnd, HWND_BOTTOM, 0, 0, fullWidth, fullHeight, SWP_NOACTIVATE);
+        SetWindowPos(overlayHwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        
         SetForegroundWindow(renderHwnd);
         SetActiveWindow(renderHwnd);
     }
-
     int result = wnd.Run();
 
     CoUninitialize();
