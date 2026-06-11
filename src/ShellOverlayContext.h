@@ -1,7 +1,7 @@
 #pragma once
 
 #include <windows.h>
-#include <wrl/client.h>
+#include "Flip3DRenderer.h"
 
 #pragma once
 
@@ -25,4 +25,6 @@ private:
 
     int m_x, m_y;        // Ursprung des Arbeitsbereichs (oben links, ohne Taskleiste)
     int m_screenW, m_screenH;
+
+    Flip3DRenderer   m_renderer;   
 };
