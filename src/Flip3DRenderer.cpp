@@ -70,7 +70,7 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance, HWND parentHwnd)
     return true;
 }
 
-int Flip3DRenderer::Render()
+int Flip3DRenderer::Run()
 {
     MSG msg = {};
     while (msg.message != WM_QUIT)
