@@ -42,27 +42,28 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
 {
     m_instance = instance;
 
-    RECT wa{};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &wa, 0);
-    m_x       = wa.left;
-    m_y       = wa.top;
-    m_screenW = wa.right  - wa.left;
-    m_screenH = wa.bottom - wa.top;
+    RECT swa{};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &swa, 0);
+    m_x       = swa.left;
+    m_y       = swa.top;
+    m_screenW = swa.right  - swa.left;
+    m_screenH = swa.bottom - swa.top;
 
     WNDCLASSEXW wc   = { sizeof(WNDCLASSEXW) };
-    wc.lpfnWndProc   = ShellOverlayContext::OverlayWndProc;
-    wc.hInstance     = instance;
-    wc.lpszClassName = L"ShellOverlayClass";
-    wc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
-    if (!RegisterClassExW(&wc)) return false;
+    shc.lpfnWndProc   = ShellOverlayContext::OverlayWndProc;
+    shc.hInstance     = instance;
+    shc.lpszClassName = L"ShellOverlayClass";
+    shc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
+    if (!RegisterClassExW(&shc)) return false;
 
     m_hwnd = CreateWindowExW(
-    WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED, // <-- DIESE BEIDEN ERGÄNZEN!
-    L"ShellOverlayClass", 
-    L"ShellOverlay",
-    WS_POPUP | WS_VISIBLE, 
-    m_x, m_y, m_screenW, m_screenH, 
-    nullptr, nullptr, m_instance, this);
+        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
+        shc.lpszClassName,
+        nullptr,
+        WS_POPUP,
+        m_x, m_y, m_screenW, m_screenH,
+        nullptr, nullptr, instance, this
+    );
 
     
     if (!m_hwnd) return false;
