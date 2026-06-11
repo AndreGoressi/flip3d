@@ -38,6 +38,8 @@ if (renderHwnd && overlayHwnd)
     SetForegroundWindow(renderHwnd);
     SetActiveWindow(renderHwnd);
 
+    overlay.ApplyAcrylic();
+
     int result = rnd.Run();
     CoUninitialize();
     return result;
