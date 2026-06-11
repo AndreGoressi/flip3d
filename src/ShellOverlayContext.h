@@ -1,31 +1,35 @@
+#pragma once
+
 #include <windows.h>
-#include "ShellOverlayContext.h"
+#include <d3d11.h>
+#include <dxgi1_2.h>
+#include <dcomp.h>
+#include <wrl/client.h>
 
-int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
+#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "dcomp.lib")
+
+#pragma once
+
+class ShellOverlayContext
 {
-    // COM initialisieren für das DirectComposition-Framework
-    HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-    if (FAILED(hr)) {
-        return -1;
-    }
+public:
+    ShellOverlayContext();
+    ~ShellOverlayContext();
 
-    // Den fensterlosen Overlay-Kontext instanziieren
-    ShellOverlayContext overlay;
+    bool Initialize(HINSTANCE instance);
+    void RunMessageLoop();
+    void Cleanup();
 
-    // Hochfahren des Systems (Dummy-HWND, Swapchain, DWM-Visual-Graph & Acrylic-Effekt)
-    if (overlay.Initialize(instance))
-    {
-        // Ab in die Nachrichtenschleife! 
-        // Dein gesamter Bildschirm wird jetzt augenblicklich im echten Windows-Acrylic versinken.
-        overlay.RunMessageLoop();
-    }
-    else
-    {
-        OutputDebugStringW(L"[Main] Schwerwiegender Fehler beim Initialisieren des DComp-Overlays.\n");
-    }
+private:
+    static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
+    bool ApplyAcrylic();
 
-    // COM sauber entladen
-    CoUninitialize();
+    HINSTANCE m_instance;
+    HWND      m_hwnd;
+    UINT      m_shellHookMsg;
 
-    return 0;
-}
+    int m_x, m_y;        // Ursprung des Arbeitsbereichs (oben links, ohne Taskleiste)
+    int m_screenW, m_screenH;
+};
