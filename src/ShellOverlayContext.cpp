@@ -1,7 +1,6 @@
 #include "ShellOverlayContext.h"
 #include "Config.h"
 
-// --- Undokumentierte SetWindowCompositionAttribute-API ---
 enum ACCENT_STATE {
     ACCENT_DISABLED                   = 0,
     ACCENT_ENABLE_GRADIENT            = 1,
@@ -14,7 +13,7 @@ enum ACCENT_STATE {
 struct ACCENT_POLICY {
     ACCENT_STATE AccentState;
     DWORD        AccentFlags;
-    DWORD        GradientColor;   // Format 0xAABBGGRR
+    DWORD        GradientColor;
     DWORD        AnimationId;
 };
 
@@ -30,7 +29,7 @@ typedef BOOL (WINAPI* SetWindowCompositionAttribute_t)(HWND, WINDOWCOMPOSITIONAT
 
 ShellOverlayContext::ShellOverlayContext()
     : m_instance(nullptr), m_hwnd(nullptr), m_shellHookMsg(0),
-      m_x(0), m_y(0), m_screenW(0), m_screenH(0) {
+      m_x(0), m_y(0), m_screenW(0), m_screenH(0) {        
 }
 
 ShellOverlayContext::~ShellOverlayContext()
@@ -41,14 +40,12 @@ ShellOverlayContext::~ShellOverlayContext()
 bool ShellOverlayContext::Initialize(HINSTANCE instance)
 {
     m_instance = instance;
-    
-    m_x = 0;
-    m_y = 0;
+
+    m_x       = 0;
+    m_y       = 0;
     m_screenW = GetSystemMetrics(SM_CXSCREEN);
     m_screenH = GetSystemMetrics(SM_CYSCREEN);
 
-    HWND hTaskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
-    //
     WNDCLASSEXW shc   = { sizeof(WNDCLASSEXW) };
     shc.lpfnWndProc   = ShellOverlayContext::OverlayWndProc;
     shc.hInstance     = instance;
@@ -56,23 +53,15 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     shc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
     if (!RegisterClassExW(&shc)) return false;
 
-    /*m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
-        shc.lpszClassName, nullptr, WS_POPUP | WS_VISIBLE, 
-        m_x, m_y, m_screenW, m_screenH,
-        hTaskbar, 
-        nullptr, instance, this
-    );*/
     m_hwnd = CreateWindowExW(
-    WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED,  // WS_EX_NOREDIRECTIONBITMAP raus!
-    shc.lpszClassName, nullptr, WS_POPUP | WS_VISIBLE, 
-    m_x, m_y, m_screenW, m_screenH,
-    nullptr,   // hTaskbar als Parent raus – das schneidet auch ab!
-    nullptr, instance, this
+        WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP,
+        shc.lpszClassName, nullptr,
+        WS_POPUP | WS_VISIBLE,
+        m_x, m_y, m_screenW, m_screenH,
+        nullptr, nullptr, instance, this
     );
-    
     if (!m_hwnd) return false;
-    //
+
     if (!ApplyAcrylic())
     {
         OutputDebugStringW(L"[Overlay] SetWindowCompositionAttribute not available.\n");
@@ -98,14 +87,14 @@ bool ShellOverlayContext::ApplyAcrylic()
     if (!SetWCA) return false;
 
     ACCENT_POLICY accent = {};
-    accent.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
-    accent.AccentFlags = 0;
+    accent.AccentState   = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+    accent.AccentFlags   = 0;
     accent.GradientColor = 0x73190F0F;
 
     WINDOWCOMPOSITIONATTRIBDATA data = {};
-    data.Attrib = WCA_ACCENT_POLICY;
-    data.pvData = &accent;
-    data.cbData = sizeof(accent);
+    data.Attrib  = WCA_ACCENT_POLICY;
+    data.pvData  = &accent;
+    data.cbData  = sizeof(accent);
 
     return SetWCA(m_hwnd, &data) != FALSE;
 }
@@ -124,18 +113,18 @@ LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM
 
     if (ctx) {
         if (msg == ctx->m_shellHookMsg && wp == HSHELL_WINDOWACTIVATED) {
-            PostQuitMessage(0);   
+            PostQuitMessage(0);
             return 0;
         }
         if (msg == WM_KEYDOWN && wp == VK_ESCAPE) {
             PostQuitMessage(0);
             return 0;
         }
-        if (msg == WM_ERASEBKGND) return 1;  
+        if (msg == WM_ERASEBKGND) return 1;
         if (msg == WM_PAINT) {
             PAINTSTRUCT ps;
             BeginPaint(hwnd, &ps);
-            EndPaint(hwnd, &ps);             
+            EndPaint(hwnd, &ps);
             return 0;
         }
     }
