@@ -22,16 +22,21 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HWND overlayHwnd = overlay.ShellHandle();
     HWND renderHwnd  = rnd.RenderHandle();
 
-if (renderHwnd && overlayHwnd)
-{
-    SetWindowPos(overlayHwnd, HWND_TOPMOST, 0, 0, 0, 0,
+    if (renderHwnd && overlayHwnd)
+    {
+        SetWindowPos(overlayHwnd, HWND_TOPMOST, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        SetWindowPos(renderHwnd, overlayHwnd, 0, 0, 0, 0,
         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-    SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0,
-        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-    // Overlay direkt unter den Stack
-    SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0,
-        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-}
+    }
+
+    ShowWindow(overlayHwnd, SW_SHOWNOACTIVATE);
+    overlay.ApplyAcrylic();
+    UpdateWindow(overlayHwnd);
+
+
 
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(renderHwnd);
