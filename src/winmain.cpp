@@ -10,13 +10,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
 
-    RECT swa{};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &swa, 0);
-    int workWidth  = swa.right  - swa.left;
-    int workHeight = swa.bottom - swa.top;
-
     ShellOverlayContext overlay;
-    if (!overlay.Initialize(instance, workWidth, workHeight))
+    if (!overlay.Initialize(instance))
     {
         OutputDebugStringW(L"[Main] Fatal error initializing the overlay.\n");
     }
