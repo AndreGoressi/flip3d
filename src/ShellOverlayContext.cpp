@@ -42,10 +42,8 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
 {
     m_instance = instance;
     
-    m_x       = 0;
-    m_y       = 0;
-    m_screenW = GetSystemMetrics(SM_CXSCREEN);
-    m_screenH = GetSystemMetrics(SM_CYSCREEN);
+    m_x; m_y;
+    m_screenW; m_screenH;
 
     WNDCLASSEXW shc   = { sizeof(WNDCLASSEXW) };
     shc.lpfnWndProc   = ShellOverlayContext::OverlayWndProc;
@@ -71,9 +69,6 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
 
     ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
     UpdateWindow(m_hwnd);
-
-    //RegisterShellHookWindow(m_hwnd);
-    //m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
     return true;
 }
