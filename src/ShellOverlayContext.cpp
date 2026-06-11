@@ -159,7 +159,7 @@ LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM
             return 0;
         }
 
-        return ctx->m_renderer->HandleMessage(msg, wp, lp);
+        return ctx->m_renderer.HandleMessage(msg, wp, lp);
     }
 
     return DefWindowProcW(hwnd, msg, wp, lp);
