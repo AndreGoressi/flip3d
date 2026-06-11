@@ -11,10 +11,10 @@ public:
     void RunMessageLoop();
     void Cleanup();
     HWND ShellHandle() const { return m_hwnd; }
+    bool ApplyAcrylic();
 
 private:
     static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
-    bool ApplyAcrylic();
 
     HINSTANCE m_instance;
     HWND      m_hwnd;
