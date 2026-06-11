@@ -4,7 +4,6 @@
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
-
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
 
@@ -21,12 +20,12 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     {
         OutputDebugStringW(L"[Main] Fatal error initializing the overlay.\n");
     }
-
+    
     const int initialShow = (showCommand == SW_HIDE) ? SW_MAXIMIZE : showCommand;
     ShowWindow(wnd.RenderHandle(), initialShow);
     UpdateWindow(wnd.RenderHandle());
 
-    HWND overlayHwnd = overlay.GetHwnd(); 
+    HWND overlayHwnd = FindWindowW(kRenderClassName, nullptr); 
     
     if (wnd.RenderHandle() && overlayHwnd) 
     {
