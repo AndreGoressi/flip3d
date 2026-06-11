@@ -77,9 +77,6 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
     UpdateWindow(m_hwnd);
 
-    if (!m_renderer.Initialize(instance, m_hwnd))  
-    return false;
-
     RegisterShellHookWindow(m_hwnd);
     m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
@@ -108,7 +105,7 @@ bool ShellOverlayContext::ApplyAcrylic()
     return SetWCA(m_hwnd, &data) != FALSE;
 }
 
-/*LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     ShellOverlayContext* ctx = reinterpret_cast<ShellOverlayContext*>(
         GetWindowLongPtrW(hwnd, GWLP_USERDATA));
@@ -129,7 +126,7 @@ bool ShellOverlayContext::ApplyAcrylic()
             PostQuitMessage(0);
             return 0;
         }*/
-        /*if (msg == WM_ERASEBKGND) return 1; 
+        if (msg == WM_ERASEBKGND) return 1; 
         if (msg == WM_PAINT) {
             PAINTSTRUCT ps;
             BeginPaint(hwnd, &ps);
@@ -139,58 +136,14 @@ bool ShellOverlayContext::ApplyAcrylic()
     }
 
     return DefWindowProcW(hwnd, msg, wp, lp);
-}*/
-
-LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{
-    ShellOverlayContext* ctx = reinterpret_cast<ShellOverlayContext*>(
-        GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-
-    if (msg == WM_NCCREATE) {
-        auto* cs = reinterpret_cast<CREATESTRUCTW*>(lp);
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA,
-            reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
-        return DefWindowProcW(hwnd, msg, wp, lp);
-    }
-
-    if (ctx) {
-        if (msg == ctx->m_shellHookMsg && wp == HSHELL_WINDOWACTIVATED) {
-            PostQuitMessage(0);
-            return 0;
-        }
-
-        return ctx->m_renderer.HandleMessage(msg, wp, lp);
-    }
-
-    return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
-/*void ShellOverlayContext::RunMessageLoop()
+void ShellOverlayContext::RunMessageLoop()
 {
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0)) {
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
-    }
-}*/
-
-void ShellOverlayContext::RunMessageLoop()
-{
-    MSG msg = {};
-    while (msg.message != WM_QUIT)
-    {
-        while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
-        {
-            TranslateMessage(&msg);
-            DispatchMessageW(&msg);
-            if (msg.message == WM_QUIT) return;
-        }
-
-        const auto now = std::chrono::steady_clock::now();
-        const float delta = std::chrono::duration<float>(now - m_renderer.GetPreviousFrameTime()).count();
-        m_renderer.SetPreviousFrameTime(now);
-        m_renderer.Update(std::min(delta, 0.05f));
-        m_renderer.Render();
     }
 }
 
