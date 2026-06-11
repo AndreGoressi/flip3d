@@ -4,14 +4,14 @@
 #include "WindowCapture.h"
 
 // ============================================================================
-// Main Flip3D D3D11 Renderer application class
+// Main Flip3D D3D11 prototype application class
 // ============================================================================
 class Flip3DRenderer
 {
 public:
     bool Initialize(HINSTANCE instance);
-    HWND WindowHandle() const { return m_hwnd; }
-    int Run();
+    HWND RenderHandle() const { return m_hwnd; }
+    int Render();
 
     // Exposed for WndProc forwarding
     LRESULT HandleMessage(UINT message, WPARAM wParam, LPARAM lParam);
@@ -26,8 +26,8 @@ private:
     int ResolveOriginalFrontIndex() const;
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
 
-    // Window creation
-    bool Render_Window();
+    // creation
+    bool Render3Dstack();
 
     // D3D initialization
     HRESULT InitializeD3D();
@@ -51,9 +51,14 @@ private:
     // backward: back card → front   forward: front card → back
     void RotateListPhysically(bool backward);
     void StartRotationStep(bool backward, float duration);
-    void BeginRotateToWindow(HWND targetHwnd);
-    void SelectWindow(HWND targetHwnd);
-    void SelectFrontWindow();
+
+    void BeginRotateToThumbnail(HWND targetHwnd);
+    void SelectThumbnail(HWND targetHwnd);
+    void SelectFrontThumbnail();
+
+
+
+
     void RotateBy(int delta);
     void RotateTo(int targetIndex);
     void RotateListByMouseWheelAmount(int mouseWheelAmount);
@@ -73,7 +78,10 @@ private:
         const XMFLOAT3 &v0, const XMFLOAT3 &v1, const XMFLOAT3 &v2,
         float &t, float &u) const;
     int HitTest3DScene(LONG x, LONG y) const;
-    bool SelectWindowAtPoint(LONG x, LONG y);
+
+
+
+    bool SelectThumbnailAtPoint(LONG x, LONG y);
 
     // Drawing / rendering
     float EnterProgress() const;
@@ -89,8 +97,8 @@ private:
     CardAnimationState ResolveCycleCardAnimationState(const DrawBuildContext &context, CardAnimationState state) const;
     CardAnimationState ResolveCardAnimationState(const VisibleCardStructure &entry, const DrawBuildContext &context) const;
     CardWorldState GetWorldFromParametric(const DrawBuildContext &context, const CardModel &card, size_t position, const CardAnimationState &animationState, float enterProgress) const;
-    float ResolveDrawItemWindowOpacity(const VisibleCardStructure &entry, const DrawBuildContext &context, const CardAnimationState &animationState) const;
-    float ApplyEnterProgressToWindowOpacity(float windowOpacity, float enterProgress) const;
+    float ResolveDrawItemOpacity(const VisibleCardStructure &entry, const DrawBuildContext &context, const CardAnimationState &animationState) const;
+    float ApplyEnterProgressToOpacity(float opacity, float enterProgress) const;
     float ResolveDrawItemStateOpacity(const CardModel &card, float enterProgress) const;
     float ResolveOutgoingTransitionOpacity(const DrawBuildContext &context) const;
     float ResolveIncomingTransitionOpacity(const DrawBuildContext &context) const;
