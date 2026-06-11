@@ -56,12 +56,19 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     shc.hCursor       = LoadCursor(nullptr, IDC_ARROW);
     if (!RegisterClassExW(&shc)) return false;
 
-    m_hwnd = CreateWindowExW(
+    /*m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
         shc.lpszClassName, nullptr, WS_POPUP | WS_VISIBLE, 
         m_x, m_y, m_screenW, m_screenH,
         hTaskbar, 
         nullptr, instance, this
+    );*/
+    m_hwnd = CreateWindowExW(
+    WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED,  // WS_EX_NOREDIRECTIONBITMAP raus!
+    shc.lpszClassName, nullptr, WS_POPUP | WS_VISIBLE, 
+    m_x, m_y, m_screenW, m_screenH,
+    nullptr,   // hTaskbar als Parent raus – das schneidet auch ab!
+    nullptr, instance, this
     );
     
     if (!m_hwnd) return false;
