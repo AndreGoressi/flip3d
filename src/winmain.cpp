@@ -7,7 +7,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
 
-
     Flip3DRenderer wnd;
     if (!wnd.Initialize(instance))
     {
@@ -31,8 +30,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
+        int fullWidth  = GetSystemMetrics(SM_CXSCREEN);
+        int fullHeight = GetSystemMetrics(SM_CYSCREEN);
 
-        SetWindowPos(overlayHwnd, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOACTIVATE);
+        SetWindowPos(overlayHwnd, HWND_BOTTOM, 0, 0, fullWidth, fullHeight, SWP_NOACTIVATE);
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
         SetForegroundWindow(renderHwnd);
         SetActiveWindow(renderHwnd);
