@@ -3,10 +3,6 @@
 #include <windows.h>
 #include <wrl/client.h>
 
-#pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "dcomp.lib")
-
 #pragma once
 
 class ShellOverlayContext
