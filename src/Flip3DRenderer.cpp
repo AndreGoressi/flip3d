@@ -81,13 +81,19 @@ int Flip3DRenderer::Run()
             DispatchMessageW(&msg);
         }
         if (msg.message == WM_QUIT) break;
+        //
         if (!m_minimized)
         {
+            if (m_frameLatencyWaitableObject != nullptr)
+            {
+                WaitForSingleObjectEx(m_frameLatencyWaitableObject, 1000, TRUE);
+            }
+
             const auto now = std::chrono::steady_clock::now();
             const float deltaSeconds = std::chrono::duration<float>(now - m_previousFrameTime).count();
             m_previousFrameTime = now;
             Update(std::min(deltaSeconds, 0.05f));
-            Render();
+            Render(); 
         }
         else
         {
@@ -340,11 +346,20 @@ HRESULT Flip3DRenderer::InitializeD3D()
     swapChainDesc.SampleDesc.Count = 1;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     swapChainDesc.BufferCount = 2;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+    
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
     swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
     swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED;
+    
     hr = factory->CreateSwapChainForComposition(m_device.Get(), &swapChainDesc, nullptr, &m_swapChain);
     if (FAILED(hr)) return hr;
+
+    ComPtr<IDXGISwapChain2> swapChain2;
+    if (SUCCEEDED(m_swapChain.As(&swapChain2)))
+    {
+        swapChain2->SetMaximumFrameLatency(1); 
+        m_frameLatencyWaitableObject = swapChain2->GetFrameLatencyWaitableObject();
+    }
 
     hr = m_dcompVisual->SetContent(m_swapChain.Get());
     if (FAILED(hr)) return hr;
