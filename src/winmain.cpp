@@ -1,15 +1,10 @@
 #include <windows.h>
-#include "ShellOverlayContext.h"
 #include "Flip3DRenderer.h"
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
-
-    ShellOverlayContext overlay;
-    if (!overlay.Initialize(instance))
-        OutputDebugStringW(L"[Main] Fatal error initializing the overlay.\n");
 
     Flip3DRenderer rnd;
     if (!rnd.Initialize(instance))
@@ -19,31 +14,9 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
         return 1;
     }
 
-    HWND overlayHwnd = overlay.ShellHandle();
-    HWND renderHwnd  = rnd.RenderHandle();
-
-    if (renderHwnd && overlayHwnd)
-    {
-        SetWindowPos(overlayHwnd, HWND_TOPMOST, 0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-        SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-        SetWindowPos(renderHwnd, overlayHwnd, 0, 0, 0, 0,
-        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-    }
-
-    ShowWindow(overlayHwnd, SW_SHOWNOACTIVATE);
-    overlay.ApplyAcrylic();
-    UpdateWindow(overlayHwnd);
-
-
-
-    ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
-    UpdateWindow(renderHwnd);
-    SetForegroundWindow(renderHwnd);
-    SetActiveWindow(renderHwnd);
-
-    overlay.ApplyAcrylic();
+    ShowWindow(rnd.RenderHandle(), showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
+    UpdateWindow(rnd.RenderHandle());
+    SetForegroundWindow(rnd.RenderHandle());
 
     int result = rnd.Run();
     CoUninitialize();
