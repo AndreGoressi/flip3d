@@ -25,7 +25,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     return 0;
 }
 
-int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
+int WINAPI Flip3d(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
     Flip3DRenderer r_3d;
     if (!r_3d.Initialize(instance))
