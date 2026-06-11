@@ -2,6 +2,12 @@
 #include "ShellOverlayContext.h"
 #include "Flip3DRenderer.h"
 
+#include <shlobj.h>
+#include <cstdio>
+
+// Das zwingt den Visual Studio Compiler (MSBuild), die richtige Windows-Bibliothek zu linken
+#pragma comment(lib, "shell32.lib")
+
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
