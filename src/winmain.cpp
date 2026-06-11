@@ -22,13 +22,16 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HWND overlayHwnd = overlay.ShellHandle();
     HWND renderHwnd  = rnd.RenderHandle();
 
-    if (renderHwnd && overlayHwnd)
-    {
-        // 3D Stack wird Child vom Overlay – DWM schneidet Acrylic nicht mehr ab
-        SetParent(renderHwnd, overlayHwnd);
-        SetWindowPos(overlayHwnd, HWND_TOPMOST, 0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-    }
+if (renderHwnd && overlayHwnd)
+{
+    SetWindowPos(overlayHwnd, HWND_TOPMOST, 0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    // Overlay direkt unter den Stack
+    SetWindowPos(overlayHwnd, renderHwnd, 0, 0, 0, 0,
+        SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+}
 
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(renderHwnd);
