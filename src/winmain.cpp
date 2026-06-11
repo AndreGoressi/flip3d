@@ -18,8 +18,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
         DispatchMessageW(&msg);
     }
 
-    Flip3DRenderer wnd;
-    if (!wnd.Initialize(instance))
+    Flip3DRenderer rnd;
+    if (!rnd.Initialize(instance))
     {
         MessageBoxW(nullptr, L"Failed to initialize.", kTitle, MB_OK | MB_ICONERROR);
         CoUninitialize();
@@ -41,7 +41,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     SetForegroundWindow(renderHwnd);
     SetActiveWindow(renderHwnd);
 
-    int result = wnd.Run();
+    int result = rnd.Run();
     CoUninitialize();
     return result;
 }
