@@ -38,14 +38,31 @@ ShellOverlayContext::~ShellOverlayContext()
     Cleanup();
 }
 
-bool ShellOverlayContext::Initialize(HINSTANCE instance, int width, int height)
+bool ShellOverlayContext::Initialize(HINSTANCE instance)
 {
     m_instance = instance;
     //
-    m_x       = 0;
-    m_y       = 0;
-    m_screenW = width;
-    m_screenH = height;
+    m_x = 0;
+    m_y = 0;
+    m_screenW = GetSystemMetrics(SM_CXSCREEN);
+    m_screenH = GetSystemMetrics(SM_CYSCREEN);
+
+    HWND hTaskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
+    if (hTaskbar) 
+    {
+        RECT tbRect{};
+        GetWindowRect(hTaskbar, &tbRect);
+
+        int tbHeight = tbRect.bottom - tbRect.top;
+        if (tbRect.left == 0 && tbRect.right >= m_screenW) 
+        {
+            m_screenH -= tbHeight;
+        }
+        else 
+        {
+            m_screenW -= (tbRect.right - tbRect.left);
+        }
+    }
 
     WNDCLASSEXW shc   = { sizeof(WNDCLASSEXW) };
     shc.lpfnWndProc   = ShellOverlayContext::OverlayWndProc;
@@ -57,7 +74,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance, int width, int height)
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
         shc.lpszClassName, nullptr, WS_POPUP, 
-        m_x, m_y, m_screenW, m_screenH, 
+        m_x, m_y, m_screenW, m_screenH,
         nullptr, nullptr, instance, this
     );
     
