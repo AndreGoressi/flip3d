@@ -19,8 +19,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int nShowCmd)
         return 1;
     }
 
-    SetWindowPos(overlay.ShellHandle(), wnd.RenderHandle(),
-        0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    //SetWindowPos(overlay.ShellHandle(), wnd.RenderHandle(),
+    //0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
     ShowWindow(wnd.RenderHandle(), nShowCmd);
     UpdateWindow(wnd.RenderHandle());
