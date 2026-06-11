@@ -27,7 +27,7 @@ private:
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
 
     // creation
-    void ApplyAcrylic(HWND hwnd);
+    bool ApplyAcrylic(HWND hwnd);
     bool Render3Dstack();
 
     // D3D initialization
