@@ -188,26 +188,42 @@ void Flip3DRenderer::CreateWindowCaptures()
 bool Flip3DRenderer::Render3Dstack()
 {
     WNDCLASSEXW windowClass = {};
-    windowClass.cbSize = sizeof(windowClass);
-    windowClass.hInstance = m_instance;
-    windowClass.lpfnWndProc = &Flip3DRenderer::WndProc;
+    windowClass.cbSize        = sizeof(windowClass);
+    windowClass.hInstance     = m_instance;
+    windowClass.lpfnWndProc   = &Flip3DRenderer::WndProc;
     windowClass.lpszClassName = kRenderClassName;
-    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    windowClass.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClassExW(&windowClass)) return false;
+    windowClass.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
+    windowClass.style         = CS_HREDRAW | CS_VREDRAW;
+    windowClass.hbrBackground = nullptr; 
 
-    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
-    const int width = bounds.right - bounds.left;
-    const int height = bounds.bottom - bounds.top;
-    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
-    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
+    if (!GetClassInfoExW(m_instance, kRenderClassName, &windowClass)) {
+        if (!RegisterClassExW(&windowClass)) return false;
+    }
 
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kRenderClassName, kTitle,
-        WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, m_instance, this);
+    RECT wc{};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
+    const int w_x       = wc.left;
+    const int w_y       = wc.top;
+    const int w_screenW = wc.right  - wc.left;
+    const int w_screenH = wc.bottom - wc.top;
+
+    m_hwnd = CreateWindowExW(
+        WS_EX_NOREDIRECTIONBITMAP, 
+        kRenderClassName, 
+        kTitle,
+        WS_POPUP | WS_VISIBLE, 
+        w_x, 
+        w_y, 
+        w_screenW, 
+        w_screenH, 
+        nullptr, 
+        nullptr, 
+        m_instance, 
+        this
+    );
+
     return m_hwnd != nullptr;
 }
-
 /*bool Flip3DPrototypeApp::CreateAppWindow()
 {
     WNDCLASSEXW renderClass = {};
