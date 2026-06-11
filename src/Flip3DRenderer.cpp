@@ -187,31 +187,24 @@ void Flip3DRenderer::CreateWindowCaptures()
 // ============================================================================
 bool Flip3DRenderer::Render3Dstack()
 {
-    WNDCLASSEXW renderClass = {};
-    renderClass.cbSize = sizeof(renderClass);
-    renderClass.hInstance = m_instance;
-    renderClass.lpfnWndProc = &Flip3DRenderer::WndProc;
-    renderClass.lpszClassName = kRenderClassName;
-    renderClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    renderClass.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClassExW(&renderClass)) return false;
-    
-    RECT wc{};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
-    int x       = wc.left;
-    int y       = wc.top;
-    int screenW = wc.right  - wc.left;
-    int screenH = wc.bottom - wc.top;
+    WNDCLASSEXW windowClass = {};
+    windowClass.cbSize = sizeof(windowClass);
+    windowClass.hInstance = m_instance;
+    windowClass.lpfnWndProc = &Flip3DRenderer::WndProc;
+    windowClass.lpszClassName = kRenderClassName;
+    windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    windowClass.style = CS_HREDRAW | CS_VREDRAW;
+    if (!RegisterClassExW(&windowClass)) return false;
 
-    m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP, 
-        kRenderClassName, 
-        kTitle,
-        WS_POPUP | WS_VISIBLE, 
-        x, y, screenW, screenH, 
-        nullptr, nullptr, m_instance, this
-    );
+    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
+    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
+    const int width = bounds.right - bounds.left;
+    const int height = bounds.bottom - bounds.top;
+    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
+    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
 
+    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kRenderClassName, kTitle,
+        WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, m_instance, this);
     return m_hwnd != nullptr;
 }
 
