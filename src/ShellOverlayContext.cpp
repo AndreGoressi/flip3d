@@ -60,7 +60,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
         shc.lpszClassName,
         nullptr,
-        WS_POPUP,
+        WS_POPUP | WS_VISIBLE,
         m_x, m_y, m_screenW, m_screenH,
         nullptr, nullptr, instance, this
     );
