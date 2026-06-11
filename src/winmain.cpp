@@ -1,5 +1,6 @@
 #include <windows.h>
 #include "Flip3DRenderer.h"
+#include "Config.h"
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
@@ -14,9 +15,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
         return 1;
     }
 
-    ShowWindow(rnd.RenderHandle(), showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
-    UpdateWindow(rnd.RenderHandle());
-    SetForegroundWindow(rnd.RenderHandle());
+    HWND renderHwnd = rnd.RenderHandle();
+
+    ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
+    UpdateWindow(renderHwnd);
+
+    SetForegroundWindow(renderHwnd);
+    SetActiveWindow(renderHwnd);
 
     int result = rnd.Run();
     CoUninitialize();
