@@ -272,7 +272,7 @@ bool Flip3DRenderer::Render3Dstack()
     
     if (m_hwnd)
     {
-    ApplyAcrylic(m_hwnd);
+        ApplyAcrylic(m_hwnd);
     }
 
     return m_hwnd != nullptr;
