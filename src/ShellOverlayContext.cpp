@@ -1,8 +1,6 @@
 #include "ShellOverlayContext.h"
-#include <dwmapi.h>
-#pragma comment(lib, "dwmapi.lib")
 
-// --- undocumented SetWindowCompositionAttribute-API ---
+// --- Undokumentierte SetWindowCompositionAttribute-API ---
 enum ACCENT_STATE {
     ACCENT_DISABLED                   = 0,
     ACCENT_ENABLE_GRADIENT            = 1,
@@ -126,11 +124,11 @@ LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM
             PostQuitMessage(0);
             return 0;
         }*/
-        if (msg == WM_ERASEBKGND) return 1; 
+        if (msg == WM_ERASEBKGND) return 1;  
         if (msg == WM_PAINT) {
             PAINTSTRUCT ps;
             BeginPaint(hwnd, &ps);
-            EndPaint(hwnd, &ps);           
+            EndPaint(hwnd, &ps);             
             return 0;
         }
     }
