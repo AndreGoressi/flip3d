@@ -191,7 +191,7 @@ bool Flip3DRenderer::Render3Dstack()
     renderClass.cbSize = sizeof(windowClass);
     renderClass.hInstance = m_instance;
     renderClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
-    renderClass.lpszClassName = kWindowClassName;
+    renderClass.lpszClassName = kRenderClassName;
     renderClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     renderClass.style = CS_HREDRAW | CS_VREDRAW;
     if (!RegisterClassExW(&renderClass)) return false;
