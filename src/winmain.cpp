@@ -7,7 +7,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     Flip3DRenderer r_stack;
     if (!r_stack.Initialize(instance))
     {
-        MessageBoxW(nullptr, L"Failed to initialize the Flip3D D3D11 renderer.", kWindowTitle, MB_OK | MB_ICONERROR);
+        MessageBoxW(nullptr, L"Failed to initialize the Flip3D D3D11 renderer.", kTitle, MB_OK | MB_ICONERROR);
         return 1;
     }
 
@@ -30,7 +30,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
         }
         else
         {
-            OutputDebugStringW(L"[Main] Schwerwiegender Fehler beim Initialisieren des Overlays.\n");
+            OutputDebugStringW(L"[Main] Fatal error initializing the overlay.\n");
         }
 
         overlay.Cleanup();
