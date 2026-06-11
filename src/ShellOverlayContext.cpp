@@ -30,8 +30,7 @@ typedef BOOL (WINAPI* SetWindowCompositionAttribute_t)(HWND, WINDOWCOMPOSITIONAT
 
 ShellOverlayContext::ShellOverlayContext()
     : m_instance(nullptr), m_hwnd(nullptr), m_shellHookMsg(0),
-      m_x(0), m_y(0), m_screenW(0), m_screenH(0)
-{
+      m_x(0), m_y(0), m_screenW(0), m_screenH(0) {
 }
 
 ShellOverlayContext::~ShellOverlayContext()
@@ -39,16 +38,14 @@ ShellOverlayContext::~ShellOverlayContext()
     Cleanup();
 }
 
-bool ShellOverlayContext::Initialize(HINSTANCE instance)
+bool ShellOverlayContext::Initialize(HINSTANCE instance, int width, int height)
 {
     m_instance = instance;
-    
-    RECT swa{};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &swa, 0);
-    m_x       = swa.left;
-    m_y       = swa.top;
-    m_screenW = swa.right  - swa.left;
-    m_screenH = swa.bottom - swa.top;
+    //
+    m_x       = 0;
+    m_y       = 0;
+    m_screenW = width;
+    m_screenH = height;
 
     WNDCLASSEXW shc   = { sizeof(WNDCLASSEXW) };
     shc.lpfnWndProc   = ShellOverlayContext::OverlayWndProc;
@@ -60,7 +57,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
         shc.lpszClassName, nullptr, WS_POPUP, 
-        m_x, m_y, m_screenW, m_screenH,
+        m_x, m_y, m_screenW, m_screenH, 
         nullptr, nullptr, instance, this
     );
     
@@ -100,7 +97,7 @@ bool ShellOverlayContext::ApplyAcrylic()
     return SetWCA(m_hwnd, &data) != FALSE;
 }
 
-/*LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     ShellOverlayContext* ctx = reinterpret_cast<ShellOverlayContext*>(
         GetWindowLongPtrW(hwnd, GWLP_USERDATA));
@@ -121,58 +118,6 @@ bool ShellOverlayContext::ApplyAcrylic()
             PostQuitMessage(0);
             return 0;
         }
-        if (msg == WM_ERASEBKGND) return 1;  
-        if (msg == WM_PAINT) {
-            PAINTSTRUCT ps;
-            BeginPaint(hwnd, &ps);
-            EndPaint(hwnd, &ps);             
-            return 0;
-        }
-    }
-
-    return DefWindowProcW(hwnd, msg, wp, lp);
-}*/
-
-LRESULT CALLBACK ShellOverlayContext::OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
-{
-    if (msg == WM_GETMINMAXINFO) {
-        MINMAXINFO* mmi = reinterpret_cast<MINMAXINFO*>(lp);
-        
-        RECT swa{};
-        SystemParametersInfoW(SPI_GETWORKAREA, 0, &swa, 0);
-        int maxWidth = swa.right - swa.left;
-        int maxHeight = swa.bottom - swa.top;
-
-        mmi->ptMaxTrackSize.x = maxWidth;
-        mmi->ptMaxTrackSize.y = maxHeight;
-        mmi->ptMaxSize.x = maxWidth;
-        mmi->ptMaxSize.y = maxHeight;
-        
-        return 0;
-    }
-
-    if (msg == WM_NCCREATE) {
-        auto* cs = reinterpret_cast<CREATESTRUCTW*>(lp);
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA,
-            reinterpret_cast<LONG_PTR>(cs->lpCreateParams));
-        return DefWindowProcW(hwnd, msg, wp, lp);
-    }
-
-    ShellOverlayContext* ctx = reinterpret_cast<ShellOverlayContext*>(
-        GetWindowLongPtrW(hwnd, GWLP_USERDATA));
-
-    if (ctx) {
-        if (msg == ctx->m_shellHookMsg && wp == HSHELL_WINDOWACTIVATED) {
-            
-            HWND renderHwnd = FindWindowW(L"Flip3DRenderer", nullptr); 
-
-            if (renderHwnd && hwnd) {
-                SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-                SetWindowPos(hwnd, renderHwnd, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-            }
-            return 0;
-        }
-
         if (msg == WM_ERASEBKGND) return 1;  
         if (msg == WM_PAINT) {
             PAINTSTRUCT ps;
