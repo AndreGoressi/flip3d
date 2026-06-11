@@ -208,7 +208,7 @@ bool Flip3DRenderer::Render3Dstack()
     const int w_screenH = wc.bottom - wc.top;
 
     m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP, 
+        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW, 
         kRenderClassName, 
         kTitle,
         WS_POPUP | WS_VISIBLE, 
