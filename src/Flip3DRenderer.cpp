@@ -49,7 +49,7 @@ namespace
 // ============================================================================
 // Initialisation
 // ============================================================================
-bool Flip3DRenderer::Initialize(HINSTANCE instance, HWND parentHwnd)
+bool Flip3DRenderer::Initialize(HINSTANCE instance)
 {
     RoInitialize(RO_INIT_MULTITHREADED);
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -57,7 +57,7 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance, HWND parentHwnd)
     LoadFlip3DPreferences();
     BuildCardModels();
 
-    if (!Render3Dstack()) return false;
+    if (!CreateAppWindow()) return false;
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 
     if (FAILED(InitializeD3D())) return false;
