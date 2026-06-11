@@ -68,9 +68,12 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
     //
     if (!ApplyAcrylic())
     {
-        OutputDebugStringW(L"[Overlay] SetWindowCompositionAttribute nicht verfuegbar.\n");
+        OutputDebugStringW(L"[Overlay] SetWindowCompositionAttribute not available.\n");
         return false;
     }
+
+    RegisterShellHookWindow(m_hwnd);
+    m_shellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
 
     ShowWindow(m_hwnd, SW_SHOWNOACTIVATE);
     UpdateWindow(m_hwnd);
