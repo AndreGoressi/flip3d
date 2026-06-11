@@ -4,27 +4,28 @@
 class ShellOverlayContext
 {
 public:
-    ShellOverlayContext();
-    ~ShellOverlayContext();
+    ShellOverlayContext() = default;
+    ~ShellOverlayContext() = default;
 
-    bool Initialize(HINSTANCE instance);
-    void RunMessageLoop();
-    void Cleanup();
+    bool Initialize(HINSTANCE instance, int width, int height);
+    
     HWND ShellHandle() const { return m_hwnd; }
-    //
     int GetX() const { return m_x; }
     int GetY() const { return m_y; }
     int GetWidth() const { return m_screenW; }
     int GetHeight() const { return m_screenH; }
 
+    UINT m_shellHookMsg = 0; 
+
 private:
-    static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
     bool ApplyAcrylic();
+    static LRESULT CALLBACK OverlayWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
-    HINSTANCE m_instance;
-    HWND      m_hwnd;
-    UINT      m_shellHookMsg;
-
-    int m_x, m_y;        
-    int m_screenW, m_screenH;
+    HINSTANCE m_instance = nullptr;
+    HWND m_hwnd = nullptr;
+    
+    int m_x = 0;
+    int m_y = 0;
+    int m_screenW = 0;
+    int m_screenH = 0;
 };
