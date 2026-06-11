@@ -9,7 +9,7 @@
 class Flip3DRenderer
 {
 public:
-    bool Initialize(HINSTANCE instance, HWND parentHwnd);
+    bool Initialize(HINSTANCE instance);
     HWND WindowHandle() const { return m_hwnd; }
     int Run();
 
@@ -27,7 +27,7 @@ private:
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
 
     // Window creation
-    bool Render_Window(HWND parentHwnd);
+    bool Render_Window();
 
     // D3D initialization
     HRESULT InitializeD3D();
