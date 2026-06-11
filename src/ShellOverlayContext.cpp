@@ -58,7 +58,7 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
 
     m_hwnd = CreateWindowExW(
     WS_EX_NOREDIRECTIONBITMAP | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_LAYERED, // <-- DIESE BEIDEN ERGÄNZEN!
-    kWindowClassName, 
+    L"ShellOverlayClass", 
     L"ShellOverlay",
     WS_POPUP | WS_VISIBLE, 
     w_x, w_y, w_screenW, w_screenH, 
