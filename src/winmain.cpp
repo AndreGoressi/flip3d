@@ -2,10 +2,6 @@
 #include "ShellOverlayContext.h"
 #include "Flip3DRenderer.h"
 
-#include <windows.h>
-#include "ShellOverlayContext.h"
-#include "Flip3DRenderer.h"
-
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
