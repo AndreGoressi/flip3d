@@ -1,9 +1,6 @@
 #include <windows.h>
 #include "ShellOverlayContext.h"
 #include "Flip3DRenderer.h"
-#include "Config.h"
-
-#pragma comment(lib, "shell32.lib")
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 {
@@ -36,11 +33,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     if (renderHwnd && overlayHwnd) 
     {
-        UINT localShellHookMsg = RegisterWindowMessageW(L"SHELLHOOK");
-        RegisterShellHookWindow(overlayHwnd);
-        
-        overlay.m_shellHookMsg = localShellHookMsg; 
-
         SetWindowPos(renderHwnd, HWND_TOPMOST, 0, 0, 0, 0, 
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
