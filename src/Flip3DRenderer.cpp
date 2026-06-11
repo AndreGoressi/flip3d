@@ -182,6 +182,54 @@ void Flip3DRenderer::CreateWindowCaptures()
     }
 }
 
+enum ACCENT_STATE {
+    ACCENT_DISABLED                   = 0,
+    ACCENT_ENABLE_GRADIENT            = 1,
+    ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+    ACCENT_ENABLE_BLURBEHIND          = 3,
+    ACCENT_ENABLE_ACRYLICBLURBEHIND   = 4,
+    ACCENT_ENABLE_HOSTBACKDROP        = 5,
+};
+
+struct ACCENT_POLICY {
+    ACCENT_STATE AccentState;
+    DWORD        AccentFlags;
+    DWORD        GradientColor;   // Format 0xAABBGGRR
+    DWORD        AnimationId;
+};
+
+enum WINDOWCOMPOSITIONATTRIB { WCA_ACCENT_POLICY = 19 };
+
+struct WINDOWCOMPOSITIONATTRIBDATA {
+    WINDOWCOMPOSITIONATTRIB Attrib;
+    PVOID                   pvData;
+    SIZE_T                  cbData;
+};
+
+typedef BOOL (WINAPI* SetWindowCompositionAttribute_t)(HWND, WINDOWCOMPOSITIONATTRIBDATA*);
+
+bool Flip3DRenderer::ApplyAcrylic(HWND hwnd)
+{
+    HMODULE user32 = GetModuleHandleW(L"user32.dll");
+    if (!user32) return false;
+
+    auto SetWCA = reinterpret_cast<SetWindowCompositionAttribute_t>(
+        GetProcAddress(user32, "SetWindowCompositionAttribute"));
+    if (!SetWCA) return false;
+
+    ACCENT_POLICY accent = {};
+    accent.AccentState = ACCENT_ENABLE_ACRYLICBLURBEHIND;
+    accent.AccentFlags = 0;
+    accent.GradientColor = 0x73190F0F; 
+
+    WINDOWCOMPOSITIONATTRIBDATA data = {};
+    data.Attrib = WCA_ACCENT_POLICY;
+    data.pvData = &accent;
+    data.cbData = sizeof(accent);
+
+    return SetWCA(hwnd, &data) != FALSE;
+}
+
 // ============================================================================
 // Window creation
 // ============================================================================
@@ -221,31 +269,14 @@ bool Flip3DRenderer::Render3Dstack()
         m_instance, 
         this
     );
+    
+    if (m_hwnd)
+    {
+    ApplyAcrylic(m_hwnd);
+    }
 
     return m_hwnd != nullptr;
 }
-/*bool Flip3DPrototypeApp::CreateAppWindow()
-{
-    WNDCLASSEXW renderClass = {};
-    renderClass.cbSize = sizeof(windowClass);
-    renderClass.hInstance = m_instance;
-    renderClass.lpfnWndProc = &Flip3DPrototypeApp::WndProc;
-    renderClass.lpszClassName = kWindowClassName;
-    renderClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-    renderClass.style = CS_HREDRAW | CS_VREDRAW;
-    if (!RegisterClassExW(&renderClass)) return false;
-
-    RECT bounds = {0, 0, kInitialWidth, kInitialHeight};
-    AdjustWindowRectEx(&bounds, WS_OVERLAPPEDWINDOW, FALSE, 0);
-    const int width = bounds.right - bounds.left;
-    const int height = bounds.bottom - bounds.top;
-    const int x = std::max(0, (GetSystemMetrics(SM_CXSCREEN) - width) / 2);
-    const int y = std::max(0, (GetSystemMetrics(SM_CYSCREEN) - height) / 2);
-
-    m_hwnd = CreateWindowExW(WS_EX_NOREDIRECTIONBITMAP, kWindowClassName, kWindowTitle,
-        WS_POPUP | WS_THICKFRAME | WS_MAXIMIZE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, m_instance, this);
-    return m_hwnd != nullptr;
-}*/
 
 // ============================================================================
 // D3D initialisation
