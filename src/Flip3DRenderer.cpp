@@ -67,7 +67,7 @@ static bool AreTransparencyEffectsEnabled()
 // ============================================================================
 // Initialisation
 // ============================================================================
-bool Flip3DRenderer::Initialize(HINSTANCE instance)
+bool Flip3DRenderer::Initialize(HINSTANCE instance, HWND parentHwnd)
 {
     RoInitialize(RO_INIT_MULTITHREADED);
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
@@ -75,7 +75,7 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance)
     LoadFlip3DPreferences();
     BuildCardModels();
 
-    if (!Render_Window()) return false;
+    if (!Render_Window(parentHwnd)) return false;
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 
     if (FAILED(InitializeD3D())) return false;
