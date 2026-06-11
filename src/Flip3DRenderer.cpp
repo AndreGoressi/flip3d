@@ -1731,13 +1731,6 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
     {
     case WM_ACTIVATE:
     {
-        if (LOWORD(wParam) == WA_INACTIVE) 
-        {
-            if (m_state != ViewState::Exit && m_state != ViewState::ExitRepeatedRotate) 
-            {
-                BeginExitView();
-            }
-        }
         return 0;
     }
     case WM_SIZE:
