@@ -43,6 +43,13 @@ bool ShellOverlayContext::Initialize(HINSTANCE instance)
 {
     m_instance = instance;
     
+    RECT swa{};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &swa, 0);
+    m_x       = swa.left;
+    m_y       = swa.top;
+    m_screenW = swa.right  - swa.left;
+    m_screenH = swa.bottom - swa.top;
+
     WNDCLASSEXW shc   = { sizeof(WNDCLASSEXW) };
     shc.lpfnWndProc   = ShellOverlayContext::OverlayWndProc;
     shc.hInstance     = instance;
