@@ -27,7 +27,7 @@ private:
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
 
     // Window creation
-    bool Render_Window();
+    bool Render_Window(HWND parentHwnd);
 
     // D3D initialization
     HRESULT InitializeD3D();
