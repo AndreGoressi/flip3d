@@ -35,7 +35,8 @@ public:
     ID3D11ShaderResourceView *GetSRV() const { return m_srv.Get(); }
 
     // Poll for a new captured frame (call from render thread).
-    void PollFrame();
+    //void PollFrame();
+    void PollFrame(bool isMinimized);
 
 private:
     // DWM thumbnail visual → InteropCompositor → WGC(CreateFromVisual)
