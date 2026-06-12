@@ -1781,7 +1781,7 @@ void Flip3DRenderer::Render()
         for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
     }
 
-    /*for (const DrawItem &item : drawItems)
+    for (const DrawItem &item : drawItems)
     {
         ObjectConstants objectConstants = {};
         objectConstants.world = item.world;
@@ -1799,59 +1799,7 @@ void Flip3DRenderer::Render()
         m_context->VSSetConstantBuffers(1, 1, objectBuffers);
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         m_context->DrawIndexed(6, 0, 0);
-    }*/
-
-    for (const DrawItem &item : drawItems)
-    {
-        ObjectConstants objectConstants = {};
-        objectConstants.world = item.world;
-        objectConstants.color = item.color;
-        objectConstants.accent = item.accent;
-        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
-
-        size_t pos = 0;
-        ID3D11ShaderResourceView *srv = nullptr;
-        bool isCardMinimized = false; // Wir holen uns wieder den Status
-
-        for (auto &card : m_cards) 
-        { 
-            if (pos == static_cast<size_t>(item.cardPosition)) 
-            { 
-                srv = card.captureSRV; 
-                isCardMinimized = card.isMinimized; // Status merken
-                break; 
-            } 
-            ++pos; 
-        }
-        if (!srv) continue;
-
-        m_context->PSSetShaderResources(0, 1, &srv);
-        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()};
-        m_context->VSSetConstantBuffers(1, 1, objectBuffers);
-        m_context->PSSetConstantBuffers(1, 1, objectBuffers);
-
-        // ========================================================================
-        // HARDWARE-DARK-MODE FÜR MINIMIERTE FENSTER
-        // ========================================================================
-        if (isCardMinimized)
-        {
-            // Wir definieren einen Hardware-Dämpfungsfaktor (RGBA).
-            // 0.3f zwingt das Bild auf 30% Helligkeit runter. Alpha bleibt bei 1.0f.
-            const float blendFactor[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
-            m_context->OMSetBlendState(m_blendState.Get(), blendFactor, 0xFFFFFFFFu);
-        }
-        else
-        {
-            // Normaler Zustand: Volle Helligkeit (nullptr nutzt Standard 1.0f)
-            m_context->OMSetBlendState(m_blendState.Get(), nullptr, 0xFFFFFFFFu);
-        }
-        // ========================================================================
-
-        m_context->DrawIndexed(6, 0, 0);
     }
-
-    // Am Ende der Schleife den BlendState wieder sauber zurücksetzen
-    m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
 
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
