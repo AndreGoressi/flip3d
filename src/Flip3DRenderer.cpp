@@ -515,7 +515,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
-    static constexpr UINT kSampleCount = 4; //8
+    static constexpr UINT kSampleCount = 4; 
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
@@ -528,6 +528,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
     if (FAILED(hr)) return hr;
 
+    // 1. MSAA-Textur beschreiben (B8G8R8A8_UNORM passt perfekt für Alpha/Acrylic!)
     D3D11_TEXTURE2D_DESC msaaDesc = {};
     msaaDesc.Width = m_width; msaaDesc.Height = m_height;
     msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
@@ -539,24 +540,15 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
     if (FAILED(hr)) return hr;
 
+    // 2. Render Target View für die MSAA-Textur erstellen
     D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
     rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
-    hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
-    if (FAILED(hr)) return hr;
-    
-    hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
-    if (FAILED(hr)) return hr;
-
-    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-    rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    
-    // ÄNDERUNG HIER: Das "MS" (Multisample) am Ende entfernen!
-    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D; 
-    
+    // Zwingend TEXTURE2DMS, da die Textur Multisamples nutzt!
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS; 
     hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
     if (FAILED(hr)) return hr;
 
+    // 3. Tiefenpuffer mit derselben Sample-Anzahl (4) erstellen
     D3D11_TEXTURE2D_DESC depthDesc = {};
     depthDesc.Width = m_width; depthDesc.Height = m_height;
     depthDesc.MipLevels = 1; depthDesc.ArraySize = 1;
@@ -564,6 +556,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     depthDesc.SampleDesc.Count = kSampleCount;
     depthDesc.Usage = D3D11_USAGE_DEFAULT;
     depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+    
     hr = m_device->CreateTexture2D(&depthDesc, nullptr, &m_depthStencilTexture);
     if (FAILED(hr)) return hr;
     hr = m_device->CreateDepthStencilView(m_depthStencilTexture.Get(), nullptr, &m_depthStencilView);
