@@ -374,7 +374,19 @@ void WindowCapture::PollFrame(bool isMinimized)
         return;
     
     if (isMinimized)
-        return;
+    {
+        HWND hwnd = m_hwnd; 
+
+        if (hwnd && IsWindow(hwnd))
+        {
+            ShowWindowAsync(hwnd, SW_RESTORE);
+
+            DWORD cloakAttribute = DWM_CLOAKED_APP;
+            DwmSetWindowAttribute(hwnd, DWMWA_CLOAK, &cloakAttribute, sizeof(cloakAttribute));
+            
+            ShowWindowAsync(hwnd, SW_HIDE);
+        }
+    }
 
     using namespace ABI::Windows::Graphics::Capture;
 
