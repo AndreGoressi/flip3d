@@ -38,7 +38,6 @@ public:
     void PollFrame();
 
 private:
-    HWND m_hwndCapture = nullptr;
     // DWM thumbnail visual → InteropCompositor → WGC(CreateFromVisual)
     HRESULT InitViaThumbnail(HWND hwndCapture, HWND hwndDestination);
 
@@ -61,8 +60,6 @@ private:
     // DWM thumbnail visual (DwmThumbnail path only)
     ComPtr<IDCompositionVisual> m_thumbVisual;
     HTHUMBNAIL m_hThumbnail = nullptr;
-
-
 
     // Global compositor / interop state (lazily initialized)
     static DwmThumbApi s_api;
