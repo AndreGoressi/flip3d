@@ -217,21 +217,20 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     }
 
     wchar_t cls[256];
-    GetClassNameW(hwnd, cls, 256);
+     GetClassNameW(hwnd, cls, 256);
 
-    if (wcscmp(cls, L"XamlWindow") == 0) 
-    {
-        return TRUE;
-    }
+     if (wcscmp(cls, L"XamlWindow") == 0)
+     {
+        HWND realRenderWnd = FindWindowExW(hwnd, nullptr, L"Windows.UI.Composition.DesktopWindowCompositionIsland", nullptr);
+        if (!realRenderWnd)
+        {
+            realRenderWnd = FindWindowExW(hwnd, nullptr, L"Windows.UI.Core.CoreWindow", L"DesktopWindowXamlSource");
+        }
 
-    if (wcsstr(cls, L"DesktopWindowXamlSource")) 
-    {
-        return TRUE;
-    }
-
-    if (wcsstr(cls, L"CoreWindow")) 
-    {
-        return TRUE;
+        if (realRenderWnd)
+        {
+            hwnd = realRenderWnd; 
+        }
     }
 
     const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
