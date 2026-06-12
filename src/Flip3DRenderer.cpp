@@ -1800,49 +1800,38 @@ void Flip3DRenderer::Render()
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         m_context->DrawIndexed(6, 0, 0);
     }*/
-    for (const DrawItem &item : drawItems)
+    for (const DrawItem &item : drawItems) //
     {
-        ObjectConstants objectConstants = {};
-        objectConstants.world = item.world;
+        ObjectConstants objectConstants = {}; //
+        objectConstants.world = item.world; //
         
-        size_t pos = 0;
-        ID3D11ShaderResourceView *srv = nullptr;
-        HWND cardHwnd = nullptr; // Wir holen uns das echte Fenster-Handle!
+        // Jedes Fenster zieht jetzt absolut gleich! Keine Ausnahmen!
+        objectConstants.color = item.color; //
+        objectConstants.accent = item.accent; //
+        
+        size_t pos = 0; //
+        ID3D11ShaderResourceView *srv = nullptr; //
 
         for (auto &card : m_cards) 
         { 
             if (pos == static_cast<size_t>(item.cardPosition)) 
             { 
-                srv = card.captureSRV; 
-                cardHwnd = card.hwnd; // Das HWND des Fensters sichern (falls in CardModel vorhanden)
+                srv = card.captureSRV; //
                 break; 
             } 
-            ++pos; 
+            ++pos; //
         }
 
-        // Win32-Check: Wenn das Fenster-Handle existiert und Windows uns sagt, 
-        // dass es MINIMIERT ist (IsIconic), DANN feuern wir das Signal an den Shader.
-        if (cardHwnd != nullptr && IsIconic(cardHwnd))
-        {
-            // Signal für den Shader (Grau-Filter aktiv)
-            objectConstants.color = XMFLOAT4(0.0f, 0.0f, 0.0f, item.color.w);
-            objectConstants.accent = item.accent;
-        }
-        else
-        {
-            // Fenster ist offen: Zeige das normale, bunte Live-Bild!
-            if (!srv) continue;
-            objectConstants.color = item.color;
-            objectConstants.accent = item.accent;
-        }
+        // Wenn das Tool für diesen Slot absolut gar keine Textur hat, skippen 
+        if (!srv) continue; //
 
-        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
+        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0); //
 
-        m_context->PSSetShaderResources(0, 1, &srv);
-        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()};
-        m_context->VSSetConstantBuffers(1, 1, objectBuffers);
-        m_context->PSSetConstantBuffers(1, 1, objectBuffers);
-        m_context->DrawIndexed(6, 0, 0);
+        m_context->PSSetShaderResources(0, 1, &srv); //
+        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()}; //
+        m_context->VSSetConstantBuffers(1, 1, objectBuffers); //
+        m_context->PSSetConstantBuffers(1, 1, objectBuffers); //
+        m_context->DrawIndexed(6, 0, 0); //
     }
 
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
