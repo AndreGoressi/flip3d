@@ -384,7 +384,6 @@ void WindowCapture::PollFrame(bool isMinimized)
             float standbyColor[4] = { 0.1f, 0.15f, 0.2f, 1.0f }; 
             m_context->ClearRenderTargetView(rtv.Get(), standbyColor);
         }
-        return; 
     }
 
     using namespace ABI::Windows::Graphics::Capture;
