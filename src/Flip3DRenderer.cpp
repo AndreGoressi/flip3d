@@ -800,7 +800,7 @@ void Flip3DRenderer::BeginExitAnimation() { BeginExitView(); }
 // ============================================================================
 // Selection
 // ============================================================================
-void Flip3DRenderer::SelectTSelectThumbnail(HWND targetHwnd)
+void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 {
     if (m_cards.empty() || !targetHwnd) return;
 
@@ -870,9 +870,6 @@ void Flip3DRenderer::SelectTSelectThumbnail(HWND targetHwnd)
     m_selectedHWND = selectedCard->hwnd;
     m_selectedWindowWasMinimized = selectedCard->isMinimized;
     m_selectedWindowWasShellDesktop = selectedCard->hwnd == GetShellWindow();
-    
-    /*m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
-        m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);*/
 
     // new!
     if (m_selectedWindowWasMinimized && m_selectedHWND)
@@ -892,13 +889,11 @@ void Flip3DRenderer::SelectTSelectThumbnail(HWND targetHwnd)
     }
 
     size_t targetPos = 0;
-
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
     HWND frontHwnd = m_cards.front().hwnd;
 
     if (frontHwnd != targetHwnd)
     {
-        // Old code: DistanceBetween(front, selected, true) where true→decrement→backward
         const int dist = DistanceBetween(0, targetPos, true);
         if (dist > 0)
         {
