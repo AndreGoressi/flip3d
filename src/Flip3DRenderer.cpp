@@ -1778,11 +1778,10 @@ void Flip3DRenderer::Render()
     for (const auto &item : drawItems)
     {
         size_t pos = 0;
-        //for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
-        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(card.isMinimized); break; } ++pos; }
+        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
     }
 
-    /*for (const DrawItem &item : drawItems)
+    for (const DrawItem &item : drawItems)
     {
         ObjectConstants objectConstants = {};
         objectConstants.world = item.world;
@@ -1800,69 +1799,7 @@ void Flip3DRenderer::Render()
         m_context->VSSetConstantBuffers(1, 1, objectBuffers);
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         m_context->DrawIndexed(6, 0, 0);
-    }*/
-    for (const DrawItem &item : drawItems) //
-    {
-        ObjectConstants objectConstants = {}; //
-        objectConstants.world = item.world; //
-        
-        size_t pos = 0; //
-        ID3D11ShaderResourceView *srv = nullptr; //
-        bool isCardMinimized = false;
-
-        for (auto &card : m_cards) 
-        { 
-            if (pos == static_cast<size_t>(item.cardPosition)) 
-            { 
-                srv = card.captureSRV; //
-                isCardMinimized = card.isMinimized; 
-                break; 
-            } 
-            ++pos; //
-        }
-        
-        if (isCardMinimized)
-        {
-            // Wir nehmen das originale Standbild...
-            srv = card.captureSRV; 
-
-            // ...aber wir drücken die Farbwerte extrem nach unten (0.15f)
-            // UND wir zwingen das System dazu, den fehlerhaften Windows-Alpha-Kanal 
-            // farblich auszubrennen, indem wir der Hardware sagen, wie sie mischen soll.
-            objectConstants.color = XMFLOAT4(
-                item.color.x * 0.15f, // Extrem abdunkeln gegen das Leuchten
-                item.color.y * 0.15f, 
-                item.color.z * 0.15f, 
-                item.color.w          // Dein originales, gewünschtes Alpha-Level!
-            );
-            
-            // Wenn dein Shader den Akzent/Rahmen nutzt, machen wir den auch dezent
-            objectConstants.accent = XMFLOAT4(
-                item.accent.x * 0.2f, 
-                item.accent.y * 0.2f, 
-                item.accent.z * 0.2f, 
-                item.accent.w
-            );
-        }
-        else
-        {
-            // Normaler Zustand: Wenn das Fenster offen ist, muss ein Bild da sein
-            if (!srv) continue; //
-            objectConstants.color = item.color; //
-            objectConstants.accent = item.accent; //
-        }
-        // ========================================================================
-
-        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0); //
-
-        m_context->PSSetShaderResources(0, 1, &srv); //
-        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()}; //
-        m_context->VSSetConstantBuffers(1, 1, objectBuffers); //
-        m_context->PSSetConstantBuffers(1, 1, objectBuffers); //
-        m_context->DrawIndexed(6, 0, 0); //
     }
-
-    
 
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
