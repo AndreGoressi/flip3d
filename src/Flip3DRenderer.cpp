@@ -877,7 +877,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
     }
 
-size_t targetPos = 0;
+    size_t targetPos = 0;
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
     HWND frontHwnd = m_cards.front().hwnd;
 
@@ -886,11 +886,12 @@ size_t targetPos = 0;
         const int dist = DistanceBetween(0, targetPos, true);
         if (dist > 0)
         {
-            m_rotationTargetIndex = static_cast<int>(targetPos);
-            m_rRepeatedRotateRate = -gEnterExitDurationSec; 
+            m_rotationTargetIndex = -1; 
+            m_rRepeatedRotateRate = 0.0f;
+
+            m_state = ViewState::Exit; 
             
-            m_state = ViewState::ExitRepeatedRotate;
-            TickRepeatedRotate();
+            TickRepeatedRotate(); 
         }
     }
 }
