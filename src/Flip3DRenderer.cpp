@@ -439,7 +439,7 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
     rsDesc.DepthClipEnable = TRUE;
-    rsDesc.MultisampleEnable = TRUE;
+    rsDesc.MultisampleEnable = FALSE; //true
     hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
     if (FAILED(hr)) return hr;
 
@@ -462,12 +462,30 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     hr = m_device->CreateBlendState(&blendDesc, &m_blendState);
     if (FAILED(hr)) return hr;
 
-    D3D11_SAMPLER_DESC sampDesc = {};
+    /*D3D11_SAMPLER_DESC sampDesc = {};
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
+    return hr;*/
+    
+    D3D11_SAMPLER_DESC sampDesc = {};
+    // Das schaltet das geile Anisotrope Filtern scharf:
+    sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.MipLODBias = 0.0f;
+    
+    // Volle Hütte: 16 ist das Maximum für kristallklare, schräge Fenster!
+    sampDesc.MaxAnisotropy = 16; 
+    
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    sampDesc.MinLOD = 0;
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
     hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
     return hr;
 }
@@ -479,7 +497,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
-    static constexpr UINT kSampleCount = 8;
+    static constexpr UINT kSampleCount = 1; //8
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
@@ -492,13 +510,14 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
     if (FAILED(hr)) return hr;
 
-    D3D11_TEXTURE2D_DESC msaaDesc = {};
+    /*D3D11_TEXTURE2D_DESC msaaDesc = {};
     msaaDesc.Width = m_width; msaaDesc.Height = m_height;
     msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
     msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     msaaDesc.SampleDesc.Count = kSampleCount;
     msaaDesc.Usage = D3D11_USAGE_DEFAULT;
     msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
+
     hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
     if (FAILED(hr)) return hr;
 
@@ -506,7 +525,34 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
     hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
+    if (FAILED(hr)) return hr;*/
+
+
+    
+    
+    D3D11_TEXTURE2D_DESC msaaDesc = {};
+    msaaDesc.Width = m_width; msaaDesc.Height = m_height;
+    msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
+    msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    msaaDesc.SampleDesc.Count = kSampleCount; // Bleibt sauber auf 1 (Kein MSAA)
+    msaaDesc.Usage = D3D11_USAGE_DEFAULT;
+    msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
+
+    hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
     if (FAILED(hr)) return hr;
+
+    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+    rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    
+    // ÄNDERUNG HIER: Das "MS" (Multisample) am Ende entfernen!
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D; 
+    
+    hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
+    if (FAILED(hr)) return hr;
+
+
+
+    
 
     D3D11_TEXTURE2D_DESC depthDesc = {};
     depthDesc.Width = m_width; depthDesc.Height = m_height;
@@ -606,7 +652,7 @@ void Flip3DRenderer::TickRepeatedRotate()
 {
     if (m_rotateTimeline.active || m_cards.empty()) return;
 
-    if (m_state == ViewState::ExitRepeatedRotate)
+    if (m_state == ViewState::ExitRepeatedRotate)sample
     {
         if (!m_cards.empty() && m_cards.front().hwnd != m_selectedHWND)
         {
@@ -1800,47 +1846,28 @@ void Flip3DRenderer::Render()
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         m_context->DrawIndexed(6, 0, 0);
     }
-    /*for (const DrawItem &item : drawItems) 
-    {
-        ObjectConstants objectConstants = {}; 
-        objectConstants.world = item.world; 
-        
-        objectConstants.color = item.color; 
-        objectConstants.accent = item.accent; 
-        
-        size_t pos = 0; 
-        ID3D11ShaderResourceView *srv = nullptr; 
-
-        for (auto &card : m_cards) 
-        { 
-            if (pos == static_cast<size_t>(item.cardPosition)) 
-            { 
-                srv = card.captureSRV; 
-                break; 
-            } 
-            ++pos; 
-        }
-
-        if (!srv) continue; 
-
-        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0); 
-
-        m_context->PSSetShaderResources(0, 1, &srv); 
-        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()}; 
-        m_context->VSSetConstantBuffers(1, 1, objectBuffers); 
-        m_context->PSSetConstantBuffers(1, 1, objectBuffers); 
-        m_context->DrawIndexed(6, 0, 0); 
-    }*/
-
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
 
-    {
+    /*{
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
             m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
+    }*/
+
+
+
+    
+    {
+        ComPtr<ID3D11Texture2D> backBuffer;
+        if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
+        {
+            m_context->CopyResource(backBuffer.Get(), m_msaaRenderTarget.Get());
+        }
     }
+
+    
 
     m_swapChain->Present(1, 0);
 }
