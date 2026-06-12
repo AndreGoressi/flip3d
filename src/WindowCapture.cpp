@@ -213,7 +213,7 @@ HRESULT WindowCapture::InitViaThumbnail(HWND hwndCapture, HWND hwndDestination)
     thumbProps.dwFlags        = DWM_TNP_VISIBLE
                                 | DWM_TNP_RECTDESTINATION 
                                 | DWM_TNP_ENABLE3D 
-                                | DWM_TNP_DISABLEFORCECVI
+                                | DWM_TNP_DISABLEFORCECVI;
                                 //| DWM_TNP_SOURCECLIENTAREAONLY;
     thumbProps.fVisible       = TRUE;
     thumbProps.rcDestination  = { 0, 0, srcSize.cx, srcSize.cy };
