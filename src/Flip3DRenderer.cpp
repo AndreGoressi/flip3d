@@ -1778,7 +1778,8 @@ void Flip3DRenderer::Render()
     for (const auto &item : drawItems)
     {
         size_t pos = 0;
-        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
+        //for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
+        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(card.isMinimized); break; } ++pos; }
     }
 
     for (const DrawItem &item : drawItems)
