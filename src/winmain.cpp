@@ -17,6 +17,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
 
     HWND renderHwnd = rnd.RenderHandle();
 
+    PostMessageW(FindWindowW(L"Shell_TrayWnd", nullptr), WM_CANCELMODE, 0, 0);
+
     ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(renderHwnd);
 
