@@ -407,7 +407,7 @@ void WindowCapture::PollFrame()
     
     using namespace ABI::Windows::Graphics::Capture;
 
-    ComPtr<IDirect3D11CaptureFrame> frame;
+ComPtr<IDirect3D11CaptureFrame> frame;
     HRESULT hr = m_framePool->TryGetNextFrame(&frame);
     
     bool wgcUpdateSuccessful = false;
@@ -418,7 +418,7 @@ void WindowCapture::PollFrame()
         if (SUCCEEDED(frame->get_Surface(&surface)) && surface)
         {
             ComPtr<IDirect3DDxgiInterfaceAccess> dxgiAccess;
-            if (SUCCEEDED(surface->As(&dxgiAccess)))
+            if (SUCCEEDED(surface.As(&dxgiAccess)))
             {
                 ComPtr<ID3D11Texture2D> capturedTexture;
                 if (SUCCEEDED(dxgiAccess->GetInterface(IID_PPV_ARGS(&capturedTexture))) && capturedTexture)
