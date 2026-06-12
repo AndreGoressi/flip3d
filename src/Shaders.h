@@ -90,10 +90,9 @@ cbuffer FrameCB : register(b0)
     row_major float4x4 viewProj;
     float4 washParams;
     float4 viewport;
-}
-)";
+};
 
-/*float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
+float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     // Sample captured window content; premultiply for DXGI_ALPHA_MODE_PREMULTIPLIED.
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
@@ -101,4 +100,4 @@ cbuffer FrameCB : register(b0)
     float3 lit = windowColor.rgb * washParams.w;  // ambient light
     return float4(lit * alpha, alpha);
 }
-)";*/
+)";
