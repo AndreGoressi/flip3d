@@ -568,13 +568,11 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            SetForegroundWindow(m_selectedHWND);
-            SetActiveWindow(m_selectedHWND);
-
-            Sleep(10);
-
             SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
             SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
+
+            SetForegroundWindow(m_selectedHWND);
+            SetActiveWindow(m_selectedHWND);
             
             m_selectedWindowActivationDispatched = false; 
         }
@@ -878,10 +876,14 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
         SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
 
+        SendMessageW(m_selectedHWND, WM_SETREDRAW, TRUE, 0);
+
         ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
         ShowWindowAsync(m_selectedHWND, SW_RESTORE);
-
-        RedrawWindow(m_selectedHWND, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+        
+        InvalidateRect(m_selectedHWND, nullptr, TRUE);
+        UpdateWindow(m_selectedHWND);
+        RedrawWindow(m_selectedHWND, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_FRAME);
         
         m_selectedWindowActivationDispatched = true;
     }
