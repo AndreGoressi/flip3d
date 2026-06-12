@@ -44,7 +44,7 @@ void CALLBACK WinEventProc(
 
         wchar_t className[256];
         GetClassNameW(hwnd, className, 256);
-        if (wcscmp(className, L"Flip3DWindowClass") == 0)
+        if (wcscmp(className, kRenderClassName) == 0)
             return;
 
 
