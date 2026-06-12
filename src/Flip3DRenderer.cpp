@@ -439,7 +439,7 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
     rsDesc.DepthClipEnable = TRUE;
-    rsDesc.MultisampleEnable = FALSE; //true
+    rsDesc.MultisampleEnable = TRUE; //true
     hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
     if (FAILED(hr)) return hr;
 
@@ -497,7 +497,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
-    static constexpr UINT kSampleCount = 1; //8
+    static constexpr UINT kSampleCount = 4; //8
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
@@ -510,7 +510,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
     if (FAILED(hr)) return hr;
 
-    /*D3D11_TEXTURE2D_DESC msaaDesc = {};
+    D3D11_TEXTURE2D_DESC msaaDesc = {};
     msaaDesc.Width = m_width; msaaDesc.Height = m_height;
     msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
     msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -525,19 +525,8 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
     hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
-    if (FAILED(hr)) return hr;*/
-
-
+    if (FAILED(hr)) return hr;
     
-    
-    D3D11_TEXTURE2D_DESC msaaDesc = {};
-    msaaDesc.Width = m_width; msaaDesc.Height = m_height;
-    msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
-    msaaDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    msaaDesc.SampleDesc.Count = kSampleCount; // Bleibt sauber auf 1 (Kein MSAA)
-    msaaDesc.Usage = D3D11_USAGE_DEFAULT;
-    msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
-
     hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
     if (FAILED(hr)) return hr;
 
@@ -549,10 +538,6 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     
     hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
     if (FAILED(hr)) return hr;
-
-
-
-    
 
     D3D11_TEXTURE2D_DESC depthDesc = {};
     depthDesc.Width = m_width; depthDesc.Height = m_height;
@@ -1768,7 +1753,7 @@ std::vector<DrawItem> Flip3DRenderer::BuildDrawItems(float enterProgress) const
     return items;
 }
 
-/*void Flip3DRenderer::Render()
+void Flip3DRenderer::Render()
 {
     if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
 
@@ -1854,104 +1839,17 @@ std::vector<DrawItem> Flip3DRenderer::BuildDrawItems(float enterProgress) const
     {
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-            m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
-    }
-    m_swapChain->Present(1, 0);
-}*/
-
-void Flip3DRenderer::Render()
-{
-    if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
-
-    const float enterProgress = EnterProgress();
-    const XMMATRIX view = BuildViewMatrix(enterProgress);
-    const XMMATRIX projection = BuildProjectionMatrix(enterProgress);
-    const XMMATRIX viewProj = view * projection;
-
-    XMVECTOR det = XMMatrixDeterminant(view);
-    m_matHitTestInverse = XMMatrixInverse(&det, view);
-    if (XMVectorGetX(det) < 0.000001f) m_matHitTestInverse = XMMatrixIdentity();
-    m_monitorWidth = static_cast<int>(m_width);
-    m_monitorHeight = static_cast<int>(m_height);
-
-    FrameConstants frameConstants = {};
-    XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
-    frameConstants.washParams = XMFLOAT4(enterProgress * 0.0f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f); 
-    frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
-    m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
-
-    static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
-    m_context->OMSetRenderTargets(1, m_msaaRTV.GetAddressOf(), m_depthStencilView.Get());
-    m_context->RSSetViewports(1, &m_viewport);
-    m_context->RSSetState(m_rasterizerState.Get());
-    m_context->OMSetDepthStencilState(m_depthStencilState.Get(), 0);
-    m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
-    m_context->ClearRenderTargetView(m_msaaRTV.Get(), clearColor);
-    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-    ID3D11Buffer *frameBuffers[] = {m_frameConstantsBuffer.Get()};
-    m_context->IASetInputLayout(nullptr);
-    m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    m_context->VSSetShader(m_backgroundVertexShader.Get(), nullptr, 0);
-    m_context->PSSetShader(m_backgroundPixelShader.Get(), nullptr, 0);
-    m_context->VSSetConstantBuffers(0, 1, frameBuffers);
-    m_context->PSSetConstantBuffers(0, 1, frameBuffers);
-    m_context->Draw(3, 0);
-    m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
-
-    const UINT stride = sizeof(Vertex);
-    const UINT offset = 0;
-    ID3D11Buffer *vertexBuffers[] = {m_vertexBuffer.Get()};
-    m_context->IASetInputLayout(m_inputLayout.Get());
-    m_context->IASetVertexBuffers(0, 1, vertexBuffers, &stride, &offset);
-    m_context->IASetIndexBuffer(m_indexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
-    m_context->VSSetShader(m_cardVertexShader.Get(), nullptr, 0);
-    m_context->PSSetShader(m_cardPixelShader.Get(), nullptr, 0);
-    m_context->OMSetBlendState(m_blendState.Get(), nullptr, 0xFFFFFFFFu);
-    m_context->PSSetSamplers(0, 1, m_cardSampler.GetAddressOf());
-
-    const auto drawItems = BuildDrawItems(enterProgress);
-
-    for (const auto &item : drawItems)
-    {
-        size_t pos = 0;
-        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
+        {
+            m_context->ResolveSubresource(
+                backBuffer.Get(), 0, 
+                m_msaaRenderTarget.Get(), 0, 
+                DXGI_FORMAT_R8G8B8A8_UNORM
+            );
+        }
     }
 
-    for (const DrawItem &item : drawItems)
-    {
-        ObjectConstants objectConstants = {};
-        objectConstants.world = item.world;
-        objectConstants.color = item.color;
-        objectConstants.accent = item.accent;
-        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
-
-        size_t pos = 0;
-        ID3D11ShaderResourceView *srv = nullptr;
-        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; break; } ++pos; }
-        if (!srv) continue;
-
-        m_context->PSSetShaderResources(0, 1, &srv);
-        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()};
-        m_context->VSSetConstantBuffers(1, 1, objectBuffers);
-        m_context->PSSetConstantBuffers(1, 1, objectBuffers);
-        m_context->DrawIndexed(6, 0, 0);
-    }
-    
-    ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
-    m_context->PSSetShaderResources(0, 1, nullSRV);
-    m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
-
-    
-    ComPtr<ID3D11Texture2D> backBuffer;
-    if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-    {
-            // MSAA-Freie, direkte 1:1 Kopie in den Backbuffer
-        m_context->CopyResource(backBuffer.Get(), m_msaaRenderTarget.Get());
-    }
     m_swapChain->Present(1, 0);
 }
-
 // ============================================================================
 // Window message handling
 // ============================================================================
