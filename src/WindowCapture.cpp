@@ -368,7 +368,7 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
 // ---------------------------------------------------------------------------
 // Per-frame capture polling
 // ---------------------------------------------------------------------------
-void WindowCapture::PollFrame(bool isMinimized)
+void WindowCapture::PollFrame()
 {
     if (!m_framePool || !m_srv || !m_context)
         return;
@@ -395,23 +395,5 @@ void WindowCapture::PollFrame(bool isMinimized)
     if (FAILED(hr) || !capturedTexture)
         return;
     
-    // ========================================================================
-    if (isMinimized)
-    {
-        ComPtr<ID3D11RenderTargetView> rtv;
-        ComPtr<ID3D11Device> device;
-        m_context->GetDevice(&device);
-        
-        if (SUCCEEDED(device->CreateRenderTargetView(m_captureTexture.Get(), nullptr, &rtv)))
-        {
-            // Eine solide Farbe, damit das Fenster sichtbar und anklickbar bleibt,
-            // aber kein eingefrorenes Grafik-Müll-Bild anzeigt.
-            float standbyColor[4] = { 0.15f, 0.2f, 0.3f, 1.0f }; 
-            m_context->ClearRenderTargetView(rtv.Get(), standbyColor);
-        }
-    }
-    // ========================================================================
-
-    // GPU-side copy to our managed texture
     m_context->CopyResource(m_captureTexture.Get(), capturedTexture.Get());
 }
