@@ -129,6 +129,7 @@ HRESULT WindowCapture::Initialize(HWND hwndCapture, HWND hwndDest, ID3D11Device 
         return E_INVALIDARG;
 
     m_device = device;
+    m_hwndCapture = hwndCapture; //
     device->GetImmediateContext(&m_context);
 
     // Only one path: DWM thumbnail → InteropCompositor → WGC(CreateFromVisual)
@@ -368,7 +369,8 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
 // ---------------------------------------------------------------------------
 // Per-frame capture polling
 // ---------------------------------------------------------------------------
-void WindowCapture::PollFrame()
+
+/*void WindowCapture::PollFrame()
 {
     if (!m_framePool || !m_srv || !m_context)
         return;
@@ -396,4 +398,81 @@ void WindowCapture::PollFrame()
         return;
     
     m_context->CopyResource(m_captureTexture.Get(), capturedTexture.Get());
+}*/
+
+void WindowCapture::PollFrame()
+{
+    if (!m_framePool || !m_srv || !m_context)
+        return;
+    
+    using namespace ABI::Windows::Graphics::Capture;
+
+    ComPtr<IDirect3D11CaptureFrame> frame;
+    HRESULT hr = m_framePool->TryGetNextFrame(&frame);
+    
+    bool wgcUpdateSuccessful = false;
+
+    if (SUCCEEDED(hr) && frame)
+    {
+        ComPtr<ABI::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface> surface;
+        if (SUCCEEDED(frame->get_Surface(&surface)) && surface)
+        {
+            ComPtr<IDirect3DDxgiInterfaceAccess> dxgiAccess;
+            if (SUCCEEDED(surface->As(&dxgiAccess)))
+            {
+                ComPtr<ID3D11Texture2D> capturedTexture;
+                if (SUCCEEDED(dxgiAccess->GetInterface(IID_PPV_ARGS(&capturedTexture))) && capturedTexture)
+                {
+                    D3D11_TEXTURE2D_DESC frameDesc;
+                    capturedTexture->GetDesc(&frameDesc);
+
+                    if (frameDesc.Width > 0 && frameDesc.Height > 0)
+                    {
+                        m_context->CopyResource(m_captureTexture.Get(), capturedTexture.Get());
+                        wgcUpdateSuccessful = true;
+                    }
+                }
+            }
+        }
+    }
+
+    if (!wgcUpdateSuccessful)
+    {
+        HWND targetHwnd = WindowFromDC(nullptr); 
+
+        if (targetHwnd && IsWindow(targetHwnd))
+        {
+            D3D11_TEXTURE2D_DESC desc = {};
+            m_captureTexture->GetDesc(&desc);
+
+            HDC hdcMem = CreateCompatibleDC(nullptr);
+            if (hdcMem)
+            {
+                BITMAPINFO bmi = {};
+                bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+                bmi.bmiHeader.biWidth = desc.Width;
+                bmi.bmiHeader.biHeight = -static_cast<LONG>(desc.Height); // Top-down
+                bmi.bmiHeader.biPlanes = 1;
+                bmi.bmiHeader.biBitCount = 32;
+                bmi.bmiHeader.biCompression = BI_RGB;
+
+                void* pBits = nullptr;
+                HBITMAP hBmp = CreateDIBSection(hdcMem, &bmi, DIB_RGB_COLORS, &pBits, nullptr, 0);
+                if (hBmp)
+                {
+                    HGDIOBJ hOldBmp = SelectObject(hdcMem, hBmp);
+
+                    if (PrintWindow(targetHwnd, hdcMem, 0x00000002))
+                    {
+                        m_context->UpdateSubresource(m_captureTexture.Get(), 0, nullptr, pBits, desc.Width * 4, 0);
+                        wgcUpdateSuccessful = true;
+                    }
+
+                    SelectObject(hdcMem, hOldBmp);
+                    DeleteObject(hBmp);
+                }
+                DeleteDC(hdcMem);
+            }
+        }
+    }
 }
