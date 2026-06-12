@@ -375,8 +375,7 @@ void WindowCapture::PollFrame(bool isMinimized)
     
     if (isMinimized)
     {
-        m_srv = nullptr;
-        return; 
+        return TRUE; 
     }
 
     using namespace ABI::Windows::Graphics::Capture;
