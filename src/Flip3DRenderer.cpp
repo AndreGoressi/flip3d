@@ -1822,22 +1822,49 @@ void Flip3DRenderer::Render()
         }
 
         // ========================================================================
-        // DER ULTIMATIVE FIX GEGEN DIE ÜBERBELICHTUNG
+        // THE ULTIMATE DUMMY-TEXTURE CHEAT
         // ========================================================================
+        ComPtr<ID3D11ShaderResourceView> localDummySRV;
+
         if (isCardMinimized)
         {
-            // 1. Wir kappen die fehlerhafte, überbelichtete Windows-Textur komplett!
-            srv = nullptr; 
+            // Wir bauen uns direkt eine winzige 1x1 Dummy-Textur im Grafikspeicher.
+            // Farbe: Ein schickes, dunkles Anthrazit (Hex: 0xFF2A2A2A)
+            static const UINT32 dummyPixel = 0xFF2A2A2A; 
+            
+            D3D11_TEXTURE2D_DESC desc = {};
+            desc.Width = 1;
+            desc.Height = 1;
+            desc.MipLevels = 1;
+            desc.ArraySize = 1;
+            desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+            desc.SampleDesc.Count = 1;
+            desc.Usage = D3D11_USAGE_IMMUTABLE;
+            desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
-            // 2. Wir weisen der Kachel eine dezente, dunkle Hintergrundfarbe zu.
-            // Der Alpha-Wert (w) bleibt EXAKT so, wie das System ihn vorgibt!
-            objectConstants.color = XMFLOAT4(0.1f, 0.12f, 0.15f, item.color.w);
-            objectConstants.accent = item.accent; //
+            D3D11_SUBRESOURCE_DATA initData = {};
+            initData.pSysMem = &dummyPixel;
+            initData.SysMemPitch = sizeof(UINT32);
+
+            ComPtr<ID3D11Texture2D> dummyTex;
+            // Wir nutzen m_device deines Renderers, um die Textur kurz zu generieren
+            if (SUCCEEDED(m_device->CreateTexture2D(&desc, &initData, &dummyTex)))
+            {
+                if (SUCCEEDED(m_device->CreateShaderResourceView(dummyTex.Get(), nullptr, &localDummySRV)))
+                {
+                    // Wir überschreiben die fehlerhafte Windows-SRV mit unserem sauberen Dummy!
+                    srv = localDummySRV.Get();
+                }
+            }
+
+            // Die Farbe bleibt voll erhalten, Alpha (w) wird NICHT angerührt!
+            objectConstants.color = item.color; 
+            objectConstants.accent = item.accent; 
         }
         else
         {
-            // Wenn das Fenster offen ist: Alles wie gewohnt laden
-            if (!srv) continue; // Im Normalzustand skippen, wenn kein Bild da ist
+            // Normaler Zustand: Wenn das Fenster offen ist, muss ein Bild da sein
+            if (!srv) continue; //
             objectConstants.color = item.color; //
             objectConstants.accent = item.accent; //
         }
@@ -1845,9 +1872,7 @@ void Flip3DRenderer::Render()
 
         m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0); //
 
-        // Hier binden wir die SRV (die bei minimierten Fenstern nun sicher nullptr ist!)
         m_context->PSSetShaderResources(0, 1, &srv); //
-        
         ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()}; //
         m_context->VSSetConstantBuffers(1, 1, objectBuffers); //
         m_context->PSSetConstantBuffers(1, 1, objectBuffers); //
