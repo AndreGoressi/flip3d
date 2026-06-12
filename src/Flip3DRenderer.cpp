@@ -439,7 +439,7 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
     rsDesc.DepthClipEnable = TRUE;
-    rsDesc.MultisampleEnable = TRUE; //true
+    rsDesc.MultisampleEnable = TRUE;
     hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
     if (FAILED(hr)) return hr;
 
@@ -450,7 +450,7 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     hr = m_device->CreateDepthStencilState(&dsDesc, &m_depthStencilState);
     if (FAILED(hr)) return hr;
 
-    /*D3D11_BLEND_DESC blendDesc = {};
+    D3D11_BLEND_DESC blendDesc = {};
     blendDesc.RenderTarget[0].BlendEnable = TRUE;
     blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
     blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
@@ -460,50 +460,14 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
     blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
     hr = m_device->CreateBlendState(&blendDesc, &m_blendState);
-    if (FAILED(hr)) return hr;*/
-
-    D3D11_BLEND_DESC blendDesc = {};
-    // Das hier ist das Geheimnis für MSAA + Transparenz/Acrylic:
-    blendDesc.AlphaToCoverageEnable = TRUE; 
-    blendDesc.IndependentBlendEnable = FALSE;
-
-    blendDesc.RenderTarget[0].BlendEnable = TRUE;
-    // Wir nutzen klassisches Alpha-Blending, das den Alpha-Kanal im Target schont:
-    blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-    blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-    blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
-    blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-    blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-    
-    hr = m_device->CreateBlendState(&blendDesc, &m_blendState);
     if (FAILED(hr)) return hr;
 
-    /*D3D11_SAMPLER_DESC sampDesc = {};
+    D3D11_SAMPLER_DESC sampDesc = {};
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-    hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
-    return hr;*/
-    
-    D3D11_SAMPLER_DESC sampDesc = {};
-    // Das schaltet das geile Anisotrope Filtern scharf:
-    sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-    sampDesc.MipLODBias = 0.0f;
-    
-    // Volle Hütte: 16 ist das Maximum für kristallklare, schräge Fenster!
-    sampDesc.MaxAnisotropy = 16; 
-    
-    sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-    sampDesc.MinLOD = 0;
-    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-
     hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
     return hr;
 }
@@ -515,7 +479,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
-    static constexpr UINT kSampleCount = 4; 
+    static constexpr UINT kSampleCount = 8;
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
@@ -528,7 +492,6 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     hr = m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &m_renderTargetView);
     if (FAILED(hr)) return hr;
 
-    // 1. MSAA-Textur beschreiben (B8G8R8A8_UNORM passt perfekt für Alpha/Acrylic!)
     D3D11_TEXTURE2D_DESC msaaDesc = {};
     msaaDesc.Width = m_width; msaaDesc.Height = m_height;
     msaaDesc.MipLevels = 1; msaaDesc.ArraySize = 1;
@@ -536,19 +499,15 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     msaaDesc.SampleDesc.Count = kSampleCount;
     msaaDesc.Usage = D3D11_USAGE_DEFAULT;
     msaaDesc.BindFlags = D3D11_BIND_RENDER_TARGET;
-
     hr = m_device->CreateTexture2D(&msaaDesc, nullptr, &m_msaaRenderTarget);
     if (FAILED(hr)) return hr;
 
-    // 2. Render Target View für die MSAA-Textur erstellen
     D3D11_RENDER_TARGET_VIEW_DESC rtvDesc = {};
     rtvDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    // Zwingend TEXTURE2DMS, da die Textur Multisamples nutzt!
-    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS; 
+    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DMS;
     hr = m_device->CreateRenderTargetView(m_msaaRenderTarget.Get(), &rtvDesc, &m_msaaRTV);
     if (FAILED(hr)) return hr;
 
-    // 3. Tiefenpuffer mit derselben Sample-Anzahl (4) erstellen
     D3D11_TEXTURE2D_DESC depthDesc = {};
     depthDesc.Width = m_width; depthDesc.Height = m_height;
     depthDesc.MipLevels = 1; depthDesc.ArraySize = 1;
@@ -556,7 +515,6 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     depthDesc.SampleDesc.Count = kSampleCount;
     depthDesc.Usage = D3D11_USAGE_DEFAULT;
     depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    
     hr = m_device->CreateTexture2D(&depthDesc, nullptr, &m_depthStencilTexture);
     if (FAILED(hr)) return hr;
     hr = m_device->CreateDepthStencilView(m_depthStencilTexture.Get(), nullptr, &m_depthStencilView);
@@ -648,7 +606,7 @@ void Flip3DRenderer::TickRepeatedRotate()
 {
     if (m_rotateTimeline.active || m_cards.empty()) return;
 
-    if (m_state == ViewState::ExitRepeatedRotate)//sample
+    if (m_state == ViewState::ExitRepeatedRotate)
     {
         if (!m_cards.empty() && m_cards.front().hwnd != m_selectedHWND)
         {
@@ -1781,7 +1739,7 @@ void Flip3DRenderer::Render()
 
     FrameConstants frameConstants = {};
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
-    frameConstants.washParams = XMFLOAT4(enterProgress * 0.0f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f); 
+    frameConstants.washParams = XMFLOAT4(enterProgress * 0.0f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f); //0.5f, 0.85f 
     frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
@@ -1842,7 +1800,38 @@ void Flip3DRenderer::Render()
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         m_context->DrawIndexed(6, 0, 0);
     }
-    
+    /*for (const DrawItem &item : drawItems) 
+    {
+        ObjectConstants objectConstants = {}; 
+        objectConstants.world = item.world; 
+        
+        objectConstants.color = item.color; 
+        objectConstants.accent = item.accent; 
+        
+        size_t pos = 0; 
+        ID3D11ShaderResourceView *srv = nullptr; 
+
+        for (auto &card : m_cards) 
+        { 
+            if (pos == static_cast<size_t>(item.cardPosition)) 
+            { 
+                srv = card.captureSRV; 
+                break; 
+            } 
+            ++pos; 
+        }
+
+        if (!srv) continue; 
+
+        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0); 
+
+        m_context->PSSetShaderResources(0, 1, &srv); 
+        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()}; 
+        m_context->VSSetConstantBuffers(1, 1, objectBuffers); 
+        m_context->PSSetConstantBuffers(1, 1, objectBuffers); 
+        m_context->DrawIndexed(6, 0, 0); 
+    }*/
+
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
@@ -1850,14 +1839,7 @@ void Flip3DRenderer::Render()
     {
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-        {
-            // MSAA auflösen mit dem exakt passenden B8G8R8A8_UNORM Format
-            m_context->ResolveSubresource(
-                backBuffer.Get(), 0, 
-                m_msaaRenderTarget.Get(), 0, 
-                DXGI_FORMAT_B8G8R8A8_UNORM
-            );
-        }
+            m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
     }
 
     m_swapChain->Present(1, 0);
