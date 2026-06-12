@@ -800,7 +800,7 @@ void Flip3DRenderer::BeginExitAnimation() { BeginExitView(); }
 // ============================================================================
 // Selection
 // ============================================================================
-void Flip3DRenderer::SelectTSelectThumbnailhumbnail(HWND targetHwnd)
+void Flip3DRenderer::SelectTSelectThumbnail(HWND targetHwnd)
 {
     if (m_cards.empty() || !targetHwnd) return;
 
