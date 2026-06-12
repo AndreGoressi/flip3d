@@ -1743,7 +1743,7 @@ void Flip3DRenderer::Render()
     frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
-    static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 0.0f};
+    static constexpr float clearColor[] = {0.0f, 0.0f, 0.0f, 1.0f};
     m_context->OMSetRenderTargets(1, m_msaaRTV.GetAddressOf(), m_depthStencilView.Get());
     m_context->RSSetViewports(1, &m_viewport);
     m_context->RSSetState(m_rasterizerState.Get());
