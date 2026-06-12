@@ -1820,23 +1820,29 @@ void Flip3DRenderer::Render()
             } 
             ++pos; //
         }
-
-        // ========================================================================
-        // THE ULTIMATE DUMMY-TEXTURE CHEAT
-        // ========================================================================
-        ComPtr<ID3D11ShaderResourceView> localDummySRV;
-
+        
         if (isCardMinimized)
         {
-            // Wir behalten die originale Textur (das letzte Standbild vor dem Minimieren)
-            // aber wir zwingen sie mathematisch in die Knie, damit sie nicht blendet!
+            // Wir nehmen das originale Standbild...
+            srv = card.captureSRV; 
+
+            // ...aber wir drücken die Farbwerte extrem nach unten (0.15f)
+            // UND wir zwingen das System dazu, den fehlerhaften Windows-Alpha-Kanal 
+            // farblich auszubrennen, indem wir der Hardware sagen, wie sie mischen soll.
             objectConstants.color = XMFLOAT4(
-                item.color.x * 0.20f, // Extrem abdunkeln (nur noch 20% Helligkeit)
-                item.color.y * 0.20f, 
-                item.color.z * 0.20f, 
-                item.color.w          // Alpha bleibt original
+                item.color.x * 0.15f, // Extrem abdunkeln gegen das Leuchten
+                item.color.y * 0.15f, 
+                item.color.z * 0.15f, 
+                item.color.w          // Dein originales, gewünschtes Alpha-Level!
             );
-            objectConstants.accent = item.accent;
+            
+            // Wenn dein Shader den Akzent/Rahmen nutzt, machen wir den auch dezent
+            objectConstants.accent = XMFLOAT4(
+                item.accent.x * 0.2f, 
+                item.accent.y * 0.2f, 
+                item.accent.z * 0.2f, 
+                item.accent.w
+            );
         }
         else
         {
