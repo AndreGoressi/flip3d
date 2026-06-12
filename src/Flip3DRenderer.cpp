@@ -1942,15 +1942,14 @@ void Flip3DRenderer::Render()
     m_context->PSSetShaderResources(0, 1, nullSRV);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
 
+    
+    ComPtr<ID3D11Texture2D> backBuffer;
+    if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
     {
-        ComPtr<ID3D11Texture2D> backBuffer;
-        if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
-        {
             // MSAA-Freie, direkte 1:1 Kopie in den Backbuffer
-            m_context->CopyResource(backBuffer.Get(), m_msaaRenderTarget.Get());
-        }
+        m_context->CopyResource(backBuffer.Get(), m_msaaRenderTarget.Get());
     }
-
+}
     m_swapChain->Present(1, 0);
 }
 
