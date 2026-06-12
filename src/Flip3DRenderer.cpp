@@ -1807,26 +1807,30 @@ void Flip3DRenderer::Render()
         
         size_t pos = 0;
         ID3D11ShaderResourceView *srv = nullptr;
-        bool isCardMinimized = false;
+        HWND cardHwnd = nullptr; // Wir holen uns das echte Fenster-Handle!
 
         for (auto &card : m_cards) 
         { 
             if (pos == static_cast<size_t>(item.cardPosition)) 
             { 
                 srv = card.captureSRV; 
-                isCardMinimized = card.isMinimized; 
+                cardHwnd = card.hwnd; // Das HWND des Fensters sichern (falls in CardModel vorhanden)
                 break; 
             } 
             ++pos; 
         }
 
-        if (isCardMinimized)
+        // Win32-Check: Wenn das Fenster-Handle existiert und Windows uns sagt, 
+        // dass es MINIMIERT ist (IsIconic), DANN feuern wir das Signal an den Shader.
+        if (cardHwnd != nullptr && IsIconic(cardHwnd))
         {
+            // Signal für den Shader (Grau-Filter aktiv)
             objectConstants.color = XMFLOAT4(0.0f, 0.0f, 0.0f, item.color.w);
             objectConstants.accent = item.accent;
         }
         else
         {
+            // Fenster ist offen: Zeige das normale, bunte Live-Bild!
             if (!srv) continue;
             objectConstants.color = item.color;
             objectConstants.accent = item.accent;
