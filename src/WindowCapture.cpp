@@ -368,9 +368,12 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
 // ---------------------------------------------------------------------------
 // Per-frame capture polling
 // ---------------------------------------------------------------------------
-void WindowCapture::PollFrame()
+void WindowCapture::PollFrame(bool isMinimized)
 {
     if (!m_framePool || !m_srv || !m_context)
+        return;
+    
+    if (isMinimized)
         return;
 
     using namespace ABI::Windows::Graphics::Capture;
