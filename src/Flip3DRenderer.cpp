@@ -1828,38 +1828,15 @@ void Flip3DRenderer::Render()
 
         if (isCardMinimized)
         {
-            // Wir bauen uns direkt eine winzige 1x1 Dummy-Textur im Grafikspeicher.
-            // Farbe: Ein schickes, dunkles Anthrazit (Hex: 0xFF2A2A2A)
-            static const UINT32 dummyPixel = 0xFF2A2A2A; 
-            
-            D3D11_TEXTURE2D_DESC desc = {};
-            desc.Width = 1;
-            desc.Height = 1;
-            desc.MipLevels = 1;
-            desc.ArraySize = 1;
-            desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-            desc.SampleDesc.Count = 1;
-            desc.Usage = D3D11_USAGE_IMMUTABLE;
-            desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-
-            D3D11_SUBRESOURCE_DATA initData = {};
-            initData.pSysMem = &dummyPixel;
-            initData.SysMemPitch = sizeof(UINT32);
-
-            ComPtr<ID3D11Texture2D> dummyTex;
-            // Wir nutzen m_device deines Renderers, um die Textur kurz zu generieren
-            if (SUCCEEDED(m_device->CreateTexture2D(&desc, &initData, &dummyTex)))
-            {
-                if (SUCCEEDED(m_device->CreateShaderResourceView(dummyTex.Get(), nullptr, &localDummySRV)))
-                {
-                    // Wir überschreiben die fehlerhafte Windows-SRV mit unserem sauberen Dummy!
-                    srv = localDummySRV.Get();
-                }
-            }
-
-            // Die Farbe bleibt voll erhalten, Alpha (w) wird NICHT angerührt!
-            objectConstants.color = item.color; 
-            objectConstants.accent = item.accent; 
+            // Wir behalten die originale Textur (das letzte Standbild vor dem Minimieren)
+            // aber wir zwingen sie mathematisch in die Knie, damit sie nicht blendet!
+            objectConstants.color = XMFLOAT4(
+                item.color.x * 0.20f, // Extrem abdunkeln (nur noch 20% Helligkeit)
+                item.color.y * 0.20f, 
+                item.color.z * 0.20f, 
+                item.color.w          // Alpha bleibt original
+            );
+            objectConstants.accent = item.accent;
         }
         else
         {
