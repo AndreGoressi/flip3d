@@ -223,11 +223,11 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
-    /*DWORD cloaked = 0;
+    DWORD cloaked = 0;
     if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) && cloaked != 0)
     {
         return TRUE;
-    }*/
+    }
 
     const bool isMinimized = IsIconic(hwnd) != FALSE;
 
