@@ -548,7 +548,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
         TickRepeatedRotate();
     }
 
-    if (m_state == ViewState::Exit && !m_enterTimeline.active)
+    /*if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
@@ -561,8 +561,50 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
+    }*/
+// --- INNERHALB VON void Flip3DRenderer::Update(float deltaSeconds) ---
+
+    if (m_state == ViewState::Exit && !m_enterTimeline.active)
+    {
+        if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
+        {
+            // 1. Fenster wieder voll sichtbar machen (Alpha = 255)
+            SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
+            
+            // 2. Den Win32-Layered-Stil sauber entfernen
+            SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
+            
+            // 3. Dem Fenster den finalen Fokus-Schubs geben
+            SetForegroundWindow(m_selectedHWND);
+            SetActiveWindow(m_selectedHWND);
+            
+            // Da wir es jetzt händisch fokussiert haben, verhindern wir, dass CompleteDeferred es nochmal tut
+            m_selectedWindowActivationDispatched = false; 
+        }
+
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
+        return;
     }
 
+    if (m_state == ViewState::ExitRepeatedRotate
+        && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
+    {
+        if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
+        {
+            SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
+            SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
+            SetForegroundWindow(m_selectedHWND);
+            SetActiveWindow(m_selectedHWND);
+            m_selectedWindowActivationDispatched = false;
+        }
+
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
+        return;
+    }
+
+    //----------------------------------------------
     ContinueMouseWheelIfNeeded();
     ContinueKeyboardRepeatIfNeeded();
 }
@@ -832,10 +874,36 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     m_selectedHWND = selectedCard->hwnd;
     m_selectedWindowWasMinimized = selectedCard->isMinimized;
     m_selectedWindowWasShellDesktop = selectedCard->hwnd == GetShellWindow();
-    m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
-        m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
+    
+    /*m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
+        m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);*/
+
+    // NEU: Wenn das Fenster minimiert ist, verstecken wir es JETZT und wecken es im Hintergrund auf!
+    if (m_selectedWindowWasMinimized && m_selectedHWND)
+    {
+        // Macht das Fenster zu einem Layered Window
+        SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
+        // Alpha auf 0 setzen = 100% unsichtbar für den Nutzer
+        SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
+
+        // Asynchrones Aufwecken über Windows: Das Fenster baut sich im Hintergrund auf,
+        // während Flip3D ungestört weiter rendert.
+        ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+        ShowWindowAsync(m_selectedHWND, SW_RESTORE);
+        
+        // Wir markieren die Aktivierung als "dispatched", damit das alte Verhalten übersprungen wird
+        m_selectedWindowActivationDispatched = true;
+    }
+    else
+    {
+        // Falls es nicht minimiert ist, nutzen wir den Standard-Weg
+        m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
+            m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
+    }
 
     size_t targetPos = 0;
+
+
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
     HWND frontHwnd = m_cards.front().hwnd;
 
