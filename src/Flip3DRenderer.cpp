@@ -1806,9 +1806,6 @@ void Flip3DRenderer::Render()
         ObjectConstants objectConstants = {}; //
         objectConstants.world = item.world; //
         
-        // ========================================================================
-        // 1. SCHRITT: Wir suchen die passende Karte, um ihren Status zu prüfen
-        // ========================================================================
         size_t pos = 0; //
         ID3D11ShaderResourceView *srv = nullptr; //
         bool isCardMinimized = false;
@@ -1818,31 +1815,29 @@ void Flip3DRenderer::Render()
             if (pos == static_cast<size_t>(item.cardPosition)) 
             { 
                 srv = card.captureSRV; //
-                isCardMinimized = card.isMinimized; // Status merken!
+                isCardMinimized = card.isMinimized; 
                 break; 
             } 
             ++pos; //
         }
-        if (!srv) continue; //
 
         // ========================================================================
-        // 2. SCHRITT: CHEAT GEGEN ÜBERBELICHTUNG
-        // Wenn minimiert, dimmen wir die Farbe massiv runter (z.B. auf 35% Helligkeit)
+        // DER ULTIMATIVE FIX GEGEN DIE ÜBERBELICHTUNG
         // ========================================================================
         if (isCardMinimized)
         {
-            objectConstants.color = XMFLOAT4(
-                powf(item.color.x, 2.2f) * 0.5f, 
-                powf(item.color.y, 2.2f) * 0.5f, 
-                powf(item.color.z, 2.2f) * 0.5f, 
-                item.color.w                     
-            );
-            
-            objectConstants.accent = item.accent;
+            // 1. Wir kappen die fehlerhafte, überbelichtete Windows-Textur komplett!
+            srv = nullptr; 
+
+            // 2. Wir weisen der Kachel eine dezente, dunkle Hintergrundfarbe zu.
+            // Der Alpha-Wert (w) bleibt EXAKT so, wie das System ihn vorgibt!
+            objectConstants.color = XMFLOAT4(0.1f, 0.12f, 0.15f, item.color.w);
+            objectConstants.accent = item.accent; //
         }
         else
         {
-            // Normaler Zustand -> Volle Original-Helligkeit und Farben
+            // Wenn das Fenster offen ist: Alles wie gewohnt laden
+            if (!srv) continue; // Im Normalzustand skippen, wenn kein Bild da ist
             objectConstants.color = item.color; //
             objectConstants.accent = item.accent; //
         }
@@ -1850,7 +1845,9 @@ void Flip3DRenderer::Render()
 
         m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0); //
 
+        // Hier binden wir die SRV (die bei minimierten Fenstern nun sicher nullptr ist!)
         m_context->PSSetShaderResources(0, 1, &srv); //
+        
         ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()}; //
         m_context->VSSetConstantBuffers(1, 1, objectBuffers); //
         m_context->PSSetConstantBuffers(1, 1, objectBuffers); //
