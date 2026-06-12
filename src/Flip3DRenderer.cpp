@@ -652,7 +652,7 @@ void Flip3DRenderer::TickRepeatedRotate()
 {
     if (m_rotateTimeline.active || m_cards.empty()) return;
 
-    if (m_state == ViewState::ExitRepeatedRotate)sample
+    if (m_state == ViewState::ExitRepeatedRotate)//sample
     {
         if (!m_cards.empty() && m_cards.front().hwnd != m_selectedHWND)
         {
