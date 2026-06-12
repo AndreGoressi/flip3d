@@ -218,22 +218,13 @@ HRESULT WindowCapture::InitViaThumbnail(HWND hwndCapture, HWND hwndDestination)
     thumbProps.fVisible       = TRUE;
     thumbProps.rcDestination  = { 0, 0, srcSize.cx, srcSize.cy };
 
-    /*HTHUMBNAIL hThumb = nullptr;
+    HTHUMBNAIL hThumb = nullptr;
     HRESULT hr = s_api.CreateSharedThumbnailVisual(
         hwndDestination, hwndCapture,
         TT_DEFAULT, &thumbProps,
         s_dcompDevice.Get(),
         (void**)m_thumbVisual.GetAddressOf(),
-        &hThumb);´*/
-    HTHUMBNAIL hThumb = nullptr;
-    //TT_VISUAL_TYPE thumbType = IsIconic(hwndCapture) ? TT_ANIMATE : TT_DEFAULT;
-    const int thumbType = IsIconic(hwndCapture) ? 1 /* TT_ANIMATE */ : 0 /* TT_DEFAULT */;
-    HRESULT hr = s_api.CreateSharedThumbnailVisual(
-        hwndDestination, hwndCapture,
-        thumbType, &thumbProps,
-        s_dcompDevice.Get(),
-        (void**)m_thumbVisual.GetAddressOf(),
-        &hThumb);    
+        &hThumb);   
     //
     if (FAILED(hr) || !m_thumbVisual)
         return hr;
