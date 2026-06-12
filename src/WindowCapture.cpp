@@ -375,17 +375,16 @@ void WindowCapture::PollFrame(bool isMinimized)
     
     if (isMinimized)
     {
-        HWND hwnd = m_hwnd; 
-
-        if (hwnd && IsWindow(hwnd))
+        ComPtr<ID3D11RenderTargetView> rtv;
+        ComPtr<ID3D11Device> device;
+        m_context->GetDevice(&device);
+        
+        if (SUCCEEDED(device->CreateRenderTargetView(m_captureTexture.Get(), nullptr, &rtv)))
         {
-            ShowWindowAsync(hwnd, SW_RESTORE);
-
-            DWORD cloakAttribute = DWM_CLOAKED_APP;
-            DwmSetWindowAttribute(hwnd, DWMWA_CLOAK, &cloakAttribute, sizeof(cloakAttribute));
-            
-            ShowWindowAsync(hwnd, SW_HIDE);
+            float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+            m_context->ClearRenderTargetView(rtv.Get(), clearColor);
         }
+        return; 
     }
 
     using namespace ABI::Windows::Graphics::Capture;
