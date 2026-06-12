@@ -375,7 +375,16 @@ void WindowCapture::PollFrame(bool isMinimized)
     
     if (isMinimized)
     {
-        return TRUE; 
+        ComPtr<ID3D11RenderTargetView> rtv;
+        ComPtr<ID3D11Device> device;
+        m_context->GetDevice(&device);
+        
+        if (SUCCEEDED(device->CreateRenderTargetView(m_captureTexture.Get(), nullptr, &rtv)))
+        {
+            float standbyColor[4] = { 0.1f, 0.15f, 0.2f, 1.0f }; 
+            m_context->ClearRenderTargetView(rtv.Get(), standbyColor);
+        }
+        return; 
     }
 
     using namespace ABI::Windows::Graphics::Capture;
