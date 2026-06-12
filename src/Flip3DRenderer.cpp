@@ -868,6 +868,10 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
         ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
         //ShowWindowAsync(m_selectedHWND, SW_RESTORE);
+        if (!IsZoomed(m_selectedHWND))
+        {
+            ShowWindowAsync(m_selectedHWND, SW_RESTORE); 
+        }
         
         m_selectedWindowActivationDispatched = true;
     }
