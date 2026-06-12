@@ -1781,7 +1781,7 @@ void Flip3DRenderer::Render()
 
     FrameConstants frameConstants = {};
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
-    frameConstants.washParams = XMFLOAT4(enterProgress * 0.0f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f); //0.5f, 0.85f 
+    frameConstants.washParams = XMFLOAT4(enterProgress * 0.0f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f); 
     frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
@@ -1842,7 +1842,7 @@ void Flip3DRenderer::Render()
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         m_context->DrawIndexed(6, 0, 0);
     }
-
+    
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
@@ -1851,16 +1851,18 @@ void Flip3DRenderer::Render()
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
         {
+            // MSAA auflösen mit dem exakt passenden B8G8R8A8_UNORM Format
             m_context->ResolveSubresource(
                 backBuffer.Get(), 0, 
                 m_msaaRenderTarget.Get(), 0, 
-                DXGI_FORMAT_R8G8B8A8_UNORM
+                DXGI_FORMAT_B8G8R8A8_UNORM
             );
         }
     }
 
     m_swapChain->Present(1, 0);
 }
+
 // ============================================================================
 // Window message handling
 // ============================================================================
