@@ -216,10 +216,36 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
+    if (!IsWindowVisible(hwnd))
+    {
+        return TRUE;
+    }
+
+    if (GetWindow(hwnd, GW_OWNER) != nullptr)
+    {
+        return TRUE; 
+    }
 
     wchar_t cls[256];
     GetClassNameW(hwnd, cls, 256);
 
+    DWORD cloaked = 0;
+    if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) && cloaked != 0)
+    {
+        if (wcscmp(cls, L"XamlWindow") != 0 && wcscmp(cls, L"Windows.UI.Core.CoreWindow") != 0)
+        {
+            return TRUE;
+        }
+    }
+
+    const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    if (!QualifiesForFlip3DProxyWindow(hwnd, style, exStyle))
+    {
+        return TRUE;
+    }
+
+    HWND targetWnd = hwnd;
     if (wcscmp(cls, L"XamlWindow") == 0)
     {
         HWND realRenderWnd = FindWindowExW(hwnd, nullptr, L"Windows.UI.Composition.DesktopWindowCompositionIsland", nullptr);
@@ -227,35 +253,93 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         {
             realRenderWnd = FindWindowExW(hwnd, nullptr, L"Windows.UI.Core.CoreWindow", L"DesktopWindowXamlSource");
         }
-
-        HWND targetWnd = realRenderWnd ? realRenderWnd : hwnd;
-        RECT targetBounds = {};
-        
-        if (FAILED(DwmGetWindowAttribute(targetWnd, DWMWA_EXTENDED_FRAME_BOUNDS, &targetBounds, sizeof(targetBounds))))
+        if (realRenderWnd)
         {
-            GetWindowRect(targetWnd, &targetBounds);
-        }
-
-        if (!IsRectEmpty(&targetBounds) && (targetBounds.right - targetBounds.left) > 10)
-        {
-            CapturedWindowLayout layout = {};
-            layout.targetRect   = targetBounds;
-            layout.monitorWork  = context->workArea;
-            layout.isMinimized  = false;
-            layout.hwnd         = targetWnd; 
-            layout.originalRect = targetBounds;
-
-            context->layouts.push_back(layout);
-            
-            return TRUE; 
+            targetWnd = realRenderWnd;
         }
     }
 
-    if (!IsWindowVisible(hwnd))
+    const bool isMinimized = IsIconic(hwnd) != FALSE;
+    RECT winWorkArea = context->workArea;
+    if (const HMONITOR hMon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST))
+    {
+        MONITORINFO mi = {};
+        mi.cbSize = sizeof(mi);
+        if (GetMonitorInfoW(hMon, &mi))
+            winWorkArea = mi.rcWork;
+    }
+
+    RECT targetBounds = {};
+    if (isMinimized)
+    {
+        WINDOWPLACEMENT placement = {};
+        placement.length = sizeof(placement);
+        if (GetWindowPlacement(hwnd, &placement) && !IsRectEmpty(&placement.rcNormalPosition))
+        {
+            targetBounds = placement.rcNormalPosition;
+            OffsetRect(&targetBounds, winWorkArea.left, winWorkArea.top);
+            if (placement.flags & WPF_RESTORETOMAXIMIZED)
+                targetBounds = winWorkArea;
+        }
+    }
+
+    if (IsRectEmpty(&targetBounds)
+        && FAILED(DwmGetWindowAttribute(targetWnd, DWMWA_EXTENDED_FRAME_BOUNDS, &targetBounds, sizeof(targetBounds))))
+    {
+        if (!GetWindowRect(targetWnd, &targetBounds))
+            return TRUE;
+    }
+
+    RECT targetClipped = {};
+    if (!IntersectRect(&targetClipped, &targetBounds, &winWorkArea))
+        return TRUE;
+
+    if ((targetClipped.right - targetClipped.left) < 40 || (targetClipped.bottom - targetClipped.top) < 40)
+        return TRUE;
+
+    for (const auto& existing : context->layouts)
+    {
+        if (existing.hwnd == targetWnd) return TRUE;
+    }
+
+    CapturedWindowLayout layout = {};
+    layout.targetRect   = targetClipped;
+    layout.monitorWork  = winWorkArea;
+    layout.isMinimized  = isMinimized;
+    layout.hwnd         = targetWnd;
+
+    if (isMinimized)
+    {
+        RECT minimizeRect = {};
+        const auto getWindowMinimizeRect = ResolveGetWindowMinimizeRect();
+        if (getWindowMinimizeRect != nullptr && getWindowMinimizeRect(hwnd, &minimizeRect) && !IsRectEmpty(&minimizeRect))
+        {
+            const float width = static_cast<float>(std::max(1L, targetClipped.right - targetClipped.left));
+            const float height = static_cast<float>(std::max(1L, targetClipped.bottom - targetClipped.top));
+            layout.originalRect = BuildFinalMinRect(minimizeRect, height / width);
+        }
+    }
+
+    if (IsRectEmpty(&layout.originalRect))
+    {
+        layout.originalRect = targetClipped;
+    }
+
+    context->layouts.push_back(layout);
+    return TRUE;
+}
+
+/*BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
+{
+    auto *context = reinterpret_cast<WindowLayoutCaptureContext *>(lParam);
+    if (!context || hwnd == context->skipHwnd)
     {
         return TRUE;
     }
 
+
+    wchar_t cls[256];
+    GetClassNameW(hwnd, cls, 256);
     const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
     const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
     if (!QualifiesForFlip3DProxyWindow(hwnd, style, exStyle))
@@ -338,7 +422,7 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
 
     context->layouts.push_back(layout);
     return TRUE;
-}
+}*/
 
 std::vector<CapturedWindowLayout> CapturePrimaryMonitorWindowRects(size_t limit, HWND skipHwnd)
 {
