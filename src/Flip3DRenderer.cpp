@@ -527,7 +527,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
 // ============================================================================
 // Per-frame update
 // ============================================================================
-void Flip3DRenderer::Update(float deltaSeconds)
+void Flip3DPrototypeApp::Update(float deltaSeconds)
 {
     if ((GetKeyState(VK_SHIFT) & 0x8000) != 0) deltaSeconds *= 0.05f;
     m_totalTime += deltaSeconds;
@@ -548,25 +548,12 @@ void Flip3DRenderer::Update(float deltaSeconds)
         TickRepeatedRotate();
     }
 
-    if ((m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) && m_enterTimeline.active)
+    /*if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        static float exitAlphaFactor = 1.0f;
-        
-        exitAlphaFactor -= deltaSeconds * 4.0f; 
-        if (exitAlphaFactor < 0.0f) exitAlphaFactor = 0.0f;
-        
-        BYTE currentAlpha = static_cast<BYTE>(exitAlphaFactor * exitAlphaFactor * 255);
-        
-        if (m_hwnd && IsWindow(m_hwnd))
-        {
-            SetLayeredWindowAttributes(m_hwnd, 0, currentAlpha, LWA_ALPHA);
-        }
-    }
-    else
-    {
-
-    }
-
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
+        return;
+    }*/
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
@@ -580,11 +567,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             m_selectedWindowActivationDispatched = false; 
         }
 
-        if (m_hwnd && IsWindow(m_hwnd)) 
-        {
-            DestroyWindow(m_hwnd);
-            m_hwnd = nullptr; 
-        }
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
@@ -596,23 +579,24 @@ void Flip3DRenderer::Update(float deltaSeconds)
         {
             SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
             SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
-            
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
-            
             m_selectedWindowActivationDispatched = false;
         }
 
-        if (m_hwnd && IsWindow(m_hwnd)) 
-        {
-            DestroyWindow(m_hwnd);
-            m_hwnd = nullptr; 
-        }
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
 
-    //----------------------------------------------
+    if (m_state == ViewState::ExitRepeatedRotate
+        && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
+    {
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
+        return;
+    }
+
     ContinueMouseWheelIfNeeded();
     ContinueKeyboardRepeatIfNeeded();
 }
@@ -883,16 +867,14 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     m_selectedWindowWasMinimized = selectedCard->isMinimized;
     m_selectedWindowWasShellDesktop = selectedCard->hwnd == GetShellWindow();
 
-    // new!
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
         SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
+
         SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
 
         ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
         ShowWindowAsync(m_selectedHWND, SW_RESTORE);
-        
-        RedrawWindow(m_selectedHWND, nullptr, nullptr, RDW_INVALIDATE | RDW_ALLCHILDREN);
         
         m_selectedWindowActivationDispatched = true;
     }
