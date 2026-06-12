@@ -1782,7 +1782,7 @@ void Flip3DRenderer::Render()
         for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(card.isMinimized); break; } ++pos; }
     }
 
-    for (const DrawItem &item : drawItems)
+    /*for (const DrawItem &item : drawItems)
     {
         ObjectConstants objectConstants = {};
         objectConstants.world = item.world;
@@ -1800,7 +1800,67 @@ void Flip3DRenderer::Render()
         m_context->VSSetConstantBuffers(1, 1, objectBuffers);
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         m_context->DrawIndexed(6, 0, 0);
+    }*/
+    for (const DrawItem &item : drawItems) //
+    {
+        ObjectConstants objectConstants = {}; //
+        objectConstants.world = item.world; //
+        
+        // ========================================================================
+        // 1. SCHRITT: Wir suchen die passende Karte, um ihren Status zu prüfen
+        // ========================================================================
+        size_t pos = 0; //
+        ID3D11ShaderResourceView *srv = nullptr; //
+        bool isCardMinimized = false;
+
+        for (auto &card : m_cards) 
+        { 
+            if (pos == static_cast<size_t>(item.cardPosition)) 
+            { 
+                srv = card.captureSRV; //
+                isCardMinimized = card.isMinimized; // Status merken!
+                break; 
+            } 
+            ++pos; //
+        }
+        if (!srv) continue; //
+
+        // ========================================================================
+        // 2. SCHRITT: CHEAT GEGEN ÜBERBELICHTUNG
+        // Wenn minimiert, dimmen wir die Farbe massiv runter (z.B. auf 35% Helligkeit)
+        // ========================================================================
+        if (isCardMinimized)
+        {
+            // Wir multiplizieren die RGB-Werte der Farbe, um sie stark abzudunkeln.
+            // Das gleicht den Gamma-Fehler/die Überbelichtung von Windows perfekt aus!
+            objectConstants.color = XMFLOAT4(
+                item.color.x * 0.35f, // Rotanteil runter
+                item.color.y * 0.35f, // Grünanteil runter
+                item.color.z * 0.35f, // Blauanteil runter
+                item.color.w * 0.80f  // Alpha/Deckkraft leicht senken, falls gewünscht
+            );
+            
+            // Optional: Auch den Akzent (Rahmen/Schatten) leicht abdunkeln
+            objectConstants.accent = XMFLOAT4(item.accent.x * 0.5f, item.accent.y * 0.5f, item.accent.z * 0.5f, item.accent.w);
+        }
+        else
+        {
+            // Normaler Zustand -> Volle Original-Helligkeit
+            objectConstants.color = item.color; //
+            objectConstants.accent = item.accent; //
+        }
+        // ========================================================================
+
+        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0); //
+
+        m_context->PSSetShaderResources(0, 1, &srv); //
+        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()}; //
+        m_context->VSSetConstantBuffers(1, 1, objectBuffers); //
+        m_context->PSSetConstantBuffers(1, 1, objectBuffers); //
+        m_context->DrawIndexed(6, 0, 0); //
     }
+
+    
 
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
