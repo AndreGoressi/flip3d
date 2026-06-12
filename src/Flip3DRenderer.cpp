@@ -1775,6 +1775,12 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
 {
     switch (message)
     {
+    case WM_CREATE:
+    {
+        PostMessageW(FindWindowW(L"Shell_TrayWnd", nullptr), WM_CANCELMODE, 0, 0);
+        return 0; 
+    }
+        
     case WM_ACTIVATE:
     {
         if (LOWORD(wParam) == WA_INACTIVE)
@@ -1787,10 +1793,6 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
             {
                 BeginExitView();
             }
-        }
-        else
-        {
-            PostMessageW(FindWindowW(L"Shell_TrayWnd", nullptr), WM_CANCELMODE, 0, 0);
         }
         return 0;
     }
