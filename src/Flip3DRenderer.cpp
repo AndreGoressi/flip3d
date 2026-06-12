@@ -1781,7 +1781,7 @@ void Flip3DRenderer::Render()
         for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
     }
 
-    for (const DrawItem &item : drawItems)
+    /*for (const DrawItem &item : drawItems)
     {
         ObjectConstants objectConstants = {};
         objectConstants.world = item.world;
@@ -1793,6 +1793,46 @@ void Flip3DRenderer::Render()
         ID3D11ShaderResourceView *srv = nullptr;
         for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; break; } ++pos; }
         if (!srv) continue;
+
+        m_context->PSSetShaderResources(0, 1, &srv);
+        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()};
+        m_context->VSSetConstantBuffers(1, 1, objectBuffers);
+        m_context->PSSetConstantBuffers(1, 1, objectBuffers);
+        m_context->DrawIndexed(6, 0, 0);
+    }*/
+    for (const DrawItem &item : drawItems)
+    {
+        ObjectConstants objectConstants = {};
+        objectConstants.world = item.world;
+        
+        size_t pos = 0;
+        ID3D11ShaderResourceView *srv = nullptr;
+        bool isCardMinimized = false;
+
+        for (auto &card : m_cards) 
+        { 
+            if (pos == static_cast<size_t>(item.cardPosition)) 
+            { 
+                srv = card.captureSRV; 
+                isCardMinimized = card.isMinimized; 
+                break; 
+            } 
+            ++pos; 
+        }
+
+        if (isCardMinimized)
+        {
+            objectConstants.color = XMFLOAT4(0.0f, 0.0f, 0.0f, item.color.w);
+            objectConstants.accent = item.accent;
+        }
+        else
+        {
+            if (!srv) continue;
+            objectConstants.color = item.color;
+            objectConstants.accent = item.accent;
+        }
+
+        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
 
         m_context->PSSetShaderResources(0, 1, &srv);
         ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()};
