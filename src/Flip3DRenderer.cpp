@@ -527,7 +527,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
 // ============================================================================
 // Per-frame update
 // ============================================================================
-void Flip3DPrototypeApp::Update(float deltaSeconds)
+void Flip3DRenderer::Update(float deltaSeconds)
 {
     if ((GetKeyState(VK_SHIFT) & 0x8000) != 0) deltaSeconds *= 0.05f;
     m_totalTime += deltaSeconds;
