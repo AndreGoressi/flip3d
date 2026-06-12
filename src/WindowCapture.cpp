@@ -322,15 +322,10 @@ HRESULT WindowCapture::StartWGCSession(
     }
 
     // Report-and-render dirty region mode (efficient partial updates).
-    /*if (auto s4 = TryUpgrade<ABI::Windows::Graphics::Capture::IGraphicsCaptureSession4>(m_session))
-    {
-        s4->put_DirtyRegionMode(
-            ABI::Windows::Graphics::Capture::GraphicsCaptureDirtyRegionMode_ReportAndRender);
-    }*/
     if (auto s4 = TryUpgrade<ABI::Windows::Graphics::Capture::IGraphicsCaptureSession4>(m_session))
     {
         s4->put_DirtyRegionMode(
-            ABI::Windows::Graphics::Capture::GraphicsCaptureDirtyRegionMode_CompleteBuffer);
+            ABI::Windows::Graphics::Capture::GraphicsCaptureDirtyRegionMode_ReportAndRender);
     }
 
     return S_OK;
