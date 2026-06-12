@@ -81,7 +81,7 @@ VSOut main(VSIn input)
 }
 )";
 
-inline constexpr const char *kCardPixelShader = R"(
+inline constexpr const char* kCardPixelShader = R"(
 Texture2D<float4> cardTexture : register(t0);
 SamplerState cardSampler : register(s0);
 
@@ -95,8 +95,26 @@ cbuffer FrameCB : register(b0)
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
-    float alpha = windowColor.a * color.a;
-    float3 lit = windowColor.rgb * washParams.w;  // ambient light
+    
+    uint width = 0;
+    uint height = 0;
+    cardTexture.GetDimensions(width, height);
+    float2 texSize = float2(width, height);
+    
+    float radius = (accent.x >= 1.0f && accent.x <= 128.0f) ? accent.x : 16.0f;
+    
+    float2 p = (uv - 0.5f) * texSize;
+    float2 halfSize = texSize * 0.5f;
+    
+    float2 q = abs(p) - halfSize + radius;
+    float sdfTex = min(max(q.x, q.y), 0.0f) + length(max(q, 0.0f)) - radius;
+    
+    float sdfScreen = sdfTex / max(fwidth(sdfTex), 0.00001f);
+    float edgeAlpha = saturate(0.5f - sdfScreen);
+
+    float alpha = windowColor.a * color.a * edgeAlpha;
+        
+    float3 lit = windowColor.rgb * washParams.w;
+         
     return float4(lit * alpha, alpha);
-}
-)";
+})";
