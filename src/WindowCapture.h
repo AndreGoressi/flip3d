@@ -38,7 +38,6 @@ public:
     void PollFrame();
 
 private:
-    HWND m_hwndCapture = nullptr;
     // DWM thumbnail visual → InteropCompositor → WGC(CreateFromVisual)
     HRESULT InitViaThumbnail(HWND hwndCapture, HWND hwndDestination);
 

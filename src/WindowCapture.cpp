@@ -18,7 +18,7 @@ IInteropCompositorFactoryPartner : IInspectable
 // Statics
 // ---------------------------------------------------------------------------
 DwmThumbApi WindowCapture::s_api;
-ComPtr<IDCompositionDesktopDevice> WindowCapture::s_dcompDevice;
+static ComPtr<IUnknown> s_winrtCompositor;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -129,7 +129,6 @@ HRESULT WindowCapture::Initialize(HWND hwndCapture, HWND hwndDest, ID3D11Device 
         return E_INVALIDARG;
 
     m_device = device;
-    m_hwndCapture = hwndCapture; //
     device->GetImmediateContext(&m_context);
 
     // Only one path: DWM thumbnail → InteropCompositor → WGC(CreateFromVisual)
@@ -138,126 +137,88 @@ HRESULT WindowCapture::Initialize(HWND hwndCapture, HWND hwndDest, ID3D11Device 
 
 HRESULT WindowCapture::InitViaThumbnail(HWND hwndCapture, HWND hwndDestination)
 {
-    // --- Lazy global init: InteropCompositor ---
-    if (!s_dcompDevice)
+    // --- Lazy global init: WinRT InteropCompositor ---
+    if (!s_winrtCompositor)
     {
         if (!s_api.Load())
             return HRESULT_FROM_WIN32(ERROR_PROC_NOT_FOUND);
 
         ComPtr<ID2D1Factory2> d2dFactory;
-        HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED,
-            IID_PPV_ARGS(&d2dFactory));
-        if (FAILED(hr))
-            return hr;
+        HRESULT hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, IID_PPV_ARGS(&d2dFactory));
+        if (FAILED(hr)) return hr;
 
         ComPtr<IDXGIDevice> dxgiDevice;
         m_device.As(&dxgiDevice);
-        if (!dxgiDevice)
-            return E_FAIL;
+        if (!dxgiDevice) return E_FAIL;
 
         ComPtr<ID2D1Device> d2dDevice;
         hr = d2dFactory->CreateDevice(dxgiDevice.Get(), &d2dDevice);
-        if (FAILED(hr))
-            return hr;
+        if (FAILED(hr)) return hr;
 
         ComPtr<IInteropCompositorFactoryPartner> interopFactory;
         {
             HSTRING hstr = nullptr;
             hr = WindowsCreateString(L"Windows.UI.Composition.Compositor", 33, &hstr);
-            if (FAILED(hr))
-                return hr;
+            if (FAILED(hr)) return hr;
             hr = RoGetActivationFactory(hstr, IID_PPV_ARGS(&interopFactory));
             WindowsDeleteString(hstr);
-            if (FAILED(hr))
-                return hr;
+            if (FAILED(hr)) return hr;
         }
 
-        ComPtr<IUnknown> compositor;
-        hr = interopFactory->CreateInteropCompositor(
-            d2dDevice.Get(), nullptr, IID_PPV_ARGS(&compositor));
-        if (FAILED(hr))
-            return hr;
-
-        hr = compositor.As(&s_dcompDevice);
-        if (FAILED(hr))
-            return hr;
+        // Store directly into our WinRT compositor instance
+        hr = interopFactory->CreateInteropCompositor(d2dDevice.Get(), nullptr, IID_PPV_ARGS(&s_winrtCompositor));
+        if (FAILED(hr)) return hr;
     }
 
     // --- Query source size ---
-    /*SIZE srcSize = {};
-    if (FAILED(s_api.QueryWindowThumbnailSourceSize(hwndCapture, FALSE, &srcSize))
-        || srcSize.cx <= 0 || srcSize.cy <= 0)
-    {
-        return E_FAIL;
-    }*/
-
     SIZE srcSize = {};
-    if (FAILED(s_api.QueryWindowThumbnailSourceSize(hwndCapture, FALSE, &srcSize))
-        || srcSize.cx <= 0 || srcSize.cy <= 0)
+    if (FAILED(s_api.QueryWindowThumbnailSourceSize(hwndCapture, FALSE, &srcSize)) || srcSize.cx <= 0 || srcSize.cy <= 0)
     {
-
-        if (FAILED(s_api.QueryWindowThumbnailSourceSize(hwndCapture, TRUE, &srcSize))
-            || srcSize.cx <= 0 || srcSize.cy <= 0)
+        if (FAILED(s_api.QueryWindowThumbnailSourceSize(hwndCapture, TRUE, &srcSize)) || srcSize.cx <= 0 || srcSize.cy <= 0)
         {
             RECT wr = {};
-            if (!GetWindowRect(hwndCapture, &wr))
-                return E_FAIL;
+            if (!GetWindowRect(hwndCapture, &wr)) return E_FAIL;
             srcSize.cx = wr.right - wr.left;
             srcSize.cy = wr.bottom - wr.top;
-            if (srcSize.cx <= 0 || srcSize.cy <= 0)
-                return E_FAIL;
+            if (srcSize.cx <= 0 || srcSize.cy <= 0) return E_FAIL;
         }
     }
 
     // --- Create DWM thumbnail visual ---
     DWM_THUMBNAIL_PROPERTIES thumbProps = {};
-    thumbProps.dwFlags        = DWM_TNP_VISIBLE
-                                | DWM_TNP_RECTDESTINATION 
-                                | DWM_TNP_ENABLE3D 
-                                | DWM_TNP_DISABLEFORCECVI
-                                | DWM_TNP_SOURCECLIENTAREAONLY;
-    thumbProps.fVisible       = TRUE;
-    thumbProps.rcDestination  = { 0, 0, srcSize.cx, srcSize.cy };
+    thumbProps.dwFlags = DWM_TNP_VISIBLE | DWM_TNP_RECTDESTINATION | DWM_TNP_ENABLE3D | DWM_TNP_DISABLEFORCECVI | DWM_TNP_SOURCECLIENTAREAONLY;
+    thumbProps.fVisible = TRUE;
+    thumbProps.rcDestination = { 0, 0, srcSize.cx, srcSize.cy };
 
     HTHUMBNAIL hThumb = nullptr;
     HRESULT hr = s_api.CreateSharedThumbnailVisual(
         hwndDestination, hwndCapture,
         TT_DEFAULT, &thumbProps,
-        s_dcompDevice.Get(),
-        (void**)m_thumbVisual.GetAddressOf(),
-        &hThumb);   
-    //
+        s_winrtCompositor.Get(),
+        (void**)m_thumbVisual.GetAddressOf(), 
+        &hThumb);
+
     if (FAILED(hr) || !m_thumbVisual)
         return hr;
     m_hThumbnail = hThumb;
 
-    // --- Wrap in container (needed for IVisual QI) ---
-    ComPtr<IDCompositionVisual2> container;
-    hr = s_dcompDevice->CreateVisual(&container);
-    if (FAILED(hr))
-        return hr;
-
-    container->AddVisual(m_thumbVisual.Get(), TRUE, nullptr);
-
-    ComPtr<ABI::Windows::UI::Composition::IVisual> compositionVisual;
-    hr = container.As(&compositionVisual);
-    if (FAILED(hr))
-        return hr;
-
-    // --- Create WGC capture item from the Visual ---
     auto itemStatics = GetFactory<ABI::Windows::Graphics::Capture::IGraphicsCaptureItemStatics>(
         L"Windows.Graphics.Capture.GraphicsCaptureItem");
     if (!itemStatics)
         return E_FAIL;
+    
+    ComPtr<ABI::Windows::UI::Composition::IVisual> winrtVisual;
+    hr = m_thumbVisual.As(&winrtVisual);
+    if (FAILED(hr))
+        return hr;
 
     ComPtr<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem> captureItem;
-    hr = itemStatics->CreateFromVisual(compositionVisual.Get(), &captureItem);
+    hr = itemStatics->CreateFromVisual(winrtVisual.Get(), &captureItem);
     if (FAILED(hr))
         return hr;
 
     // --- Start WGC session ---
-    return StartWGCSession(captureItem.Get(),
-        static_cast<UINT>(srcSize.cx), static_cast<UINT>(srcSize.cy));
+    return StartWGCSession(captureItem.Get(), static_cast<UINT>(srcSize.cx), static_cast<UINT>(srcSize.cy));
 }
 
 // ---------------------------------------------------------------------------
@@ -333,48 +294,12 @@ HRESULT WindowCapture::StartWGCSession(
 }
 
 // ---------------------------------------------------------------------------
-// Texture and SRV creation
-// ---------------------------------------------------------------------------
-HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
-{
-    D3D11_TEXTURE2D_DESC desc = {};
-    desc.Width     = width;
-    desc.Height    = height;
-    desc.MipLevels = 1;
-    desc.ArraySize = 1;
-    desc.Format    = DXGI_FORMAT_B8G8R8A8_UNORM;
-    desc.SampleDesc.Count = 1;
-    desc.Usage     = D3D11_USAGE_DEFAULT;
-    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-
-    HRESULT hr = m_device->CreateTexture2D(&desc, nullptr, &m_captureTexture);
-    if (FAILED(hr))
-        return hr;
-
-    // Zero-fill so there's no garbage before the first captured frame
-    {
-        std::vector<uint8_t> zeros(width * height * 4, 0);
-        m_context->UpdateSubresource(m_captureTexture.Get(), 0, nullptr,
-            zeros.data(), width * 4, 0);
-    }
-
-    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Format              = desc.Format;
-    srvDesc.ViewDimension       = D3D11_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MipLevels = 1;
-    return m_device->CreateShaderResourceView(
-        m_captureTexture.Get(), &srvDesc, &m_srv);
-}
-
-// ---------------------------------------------------------------------------
 // Per-frame capture polling
 // ---------------------------------------------------------------------------
-
-/*void WindowCapture::PollFrame()
-{
+void WindowCapture::PollFrame() {
     if (!m_framePool || !m_srv || !m_context)
         return;
-    
+
     using namespace ABI::Windows::Graphics::Capture;
 
     ComPtr<IDirect3D11CaptureFrame> frame;
@@ -396,83 +321,58 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
     hr = dxgiAccess->GetInterface(IID_PPV_ARGS(&capturedTexture));
     if (FAILED(hr) || !capturedTexture)
         return;
-    
-    m_context->CopyResource(m_captureTexture.Get(), capturedTexture.Get());
-}*/
 
-void WindowCapture::PollFrame()
-{
-    if (!m_framePool || !m_srv || !m_context)
+    ComPtr<ID3D11Resource> dstResource;
+    m_srv->GetResource(&dstResource);
+
+    ComPtr<ID3D11Texture2D> dstTexture;
+    hr = dstResource.As(&dstTexture);
+    if (FAILED(hr))
         return;
-    
-    using namespace ABI::Windows::Graphics::Capture;
 
-ComPtr<IDirect3D11CaptureFrame> frame;
-    HRESULT hr = m_framePool->TryGetNextFrame(&frame);
-    
-    bool wgcUpdateSuccessful = false;
+    m_context->CopySubresourceRegion(
+        dstTexture.Get(), 0,      
+        0, 0, 0,                  
+        capturedTexture.Get(), 0, 
+        nullptr                   
+    );
 
-    if (SUCCEEDED(hr) && frame)
+    m_context->GenerateMips(m_srv.Get());
+}
+
+// ---------------------------------------------------------------------------
+// Texture and SRV creation
+// ---------------------------------------------------------------------------
+HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
+{
+    D3D11_TEXTURE2D_DESC desc = {};
+    desc.Width = width;
+    desc.Height = height;
+    desc.MipLevels = 0; // 0 automatically generates a full mip chain down to 1x1
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    // CRITICAL: Must include RENDER_TARGET and GENERATE_MIPS flags
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+    desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+
+    HRESULT hr = m_device->CreateTexture2D(&desc, nullptr, &m_captureTexture);
+    if (FAILED(hr))
+        return hr;
+
+    // Zero-fill mip level 0
     {
-        ComPtr<ABI::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface> surface;
-        if (SUCCEEDED(frame->get_Surface(&surface)) && surface)
-        {
-            ComPtr<IDirect3DDxgiInterfaceAccess> dxgiAccess;
-            if (SUCCEEDED(surface.As(&dxgiAccess)))
-            {
-                ComPtr<ID3D11Texture2D> capturedTexture;
-                if (SUCCEEDED(dxgiAccess->GetInterface(IID_PPV_ARGS(&capturedTexture))) && capturedTexture)
-                {
-                    D3D11_TEXTURE2D_DESC frameDesc;
-                    capturedTexture->GetDesc(&frameDesc);
-
-                    if (frameDesc.Width > 0 && frameDesc.Height > 0)
-                    {
-                        m_context->CopyResource(m_captureTexture.Get(), capturedTexture.Get());
-                        wgcUpdateSuccessful = true;
-                    }
-                }
-            }
-        }
+        std::vector<uint8_t> zeros(width * height * 4, 0);
+        m_context->UpdateSubresource(m_captureTexture.Get(), 0, nullptr,
+            zeros.data(), width * 4, 0);
     }
 
-    if (!wgcUpdateSuccessful)
-    {
-        HWND targetHwnd = WindowFromDC(nullptr); 
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+    srvDesc.Format = desc.Format;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MipLevels = -1; // -1 means "use all mips from top to bottom"
 
-        if (targetHwnd && IsWindow(targetHwnd))
-        {
-            D3D11_TEXTURE2D_DESC desc = {};
-            m_captureTexture->GetDesc(&desc);
-
-            HDC hdcMem = CreateCompatibleDC(nullptr);
-            if (hdcMem)
-            {
-                BITMAPINFO bmi = {};
-                bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-                bmi.bmiHeader.biWidth = desc.Width;
-                bmi.bmiHeader.biHeight = -static_cast<LONG>(desc.Height); // Top-down
-                bmi.bmiHeader.biPlanes = 1;
-                bmi.bmiHeader.biBitCount = 32;
-                bmi.bmiHeader.biCompression = BI_RGB;
-
-                void* pBits = nullptr;
-                HBITMAP hBmp = CreateDIBSection(hdcMem, &bmi, DIB_RGB_COLORS, &pBits, nullptr, 0);
-                if (hBmp)
-                {
-                    HGDIOBJ hOldBmp = SelectObject(hdcMem, hBmp);
-
-                    if (PrintWindow(targetHwnd, hdcMem, 0x00000002))
-                    {
-                        m_context->UpdateSubresource(m_captureTexture.Get(), 0, nullptr, pBits, desc.Width * 4, 0);
-                        wgcUpdateSuccessful = true;
-                    }
-
-                    SelectObject(hdcMem, hOldBmp);
-                    DeleteObject(hBmp);
-                }
-                DeleteDC(hdcMem);
-            }
-        }
-    }
+    return m_device->CreateShaderResourceView(
+        m_captureTexture.Get(), &srvDesc, &m_srv);
 }
