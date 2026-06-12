@@ -548,22 +548,18 @@ void Flip3DRenderer::Update(float deltaSeconds)
         TickRepeatedRotate();
     }
 
-    /*if (m_state == ViewState::Exit && !m_enterTimeline.active)
+    if ((m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) && m_enterTimeline.active)
     {
-        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
-        CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
-        return;
+        float progress = m_enterTimeline.progress; 
+        
+        BYTE currentAlpha = static_cast<BYTE>(progress * progress * 255);
+        
+        if (m_hwnd && IsWindow(m_hwnd))
+        {
+            SetLayeredWindowAttributes(m_hwnd, 0, currentAlpha, LWA_ALPHA);
+        }
     }
 
-    if (m_state == ViewState::ExitRepeatedRotate
-        && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
-    {
-        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
-        CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
-        return;
-    }*/
-    
-    // --- 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
@@ -571,15 +567,17 @@ void Flip3DRenderer::Update(float deltaSeconds)
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
 
-            Sleep(10);
-            
             SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
             SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
             
             m_selectedWindowActivationDispatched = false; 
         }
 
-        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        if (m_hwnd && IsWindow(m_hwnd)) 
+        {
+            DestroyWindow(m_hwnd);
+            m_hwnd = nullptr; 
+        }
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
@@ -596,7 +594,11 @@ void Flip3DRenderer::Update(float deltaSeconds)
             m_selectedWindowActivationDispatched = false;
         }
 
-        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        if (m_hwnd && IsWindow(m_hwnd)) 
+        {
+            DestroyWindow(m_hwnd);
+            m_hwnd = nullptr; 
+        }
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
