@@ -329,7 +329,7 @@ HRESULT WindowCapture::StartWGCSession(
         s4->put_DirtyRegionMode(
             ABI::Windows::Graphics::Capture::GraphicsCaptureDirtyRegionMode_ReportAndRender);
     }*/
-    if (auto s4 = TryUpgrade<ABI::Windows::Graphics::Capture::IGraphicsCaptureSession4>(m_session))
+    /*if (auto s4 = TryUpgrade<ABI::Windows::Graphics::Capture::IGraphicsCaptureSession4>(m_session))
     {
         s4->put_DirtyRegionMode(
             ABI::Windows::Graphics::Capture::GraphicsCaptureDirtyRegionMode_CompleteBuffer);
@@ -338,7 +338,7 @@ HRESULT WindowCapture::StartWGCSession(
     if (auto s6 = TryUpgrade<ABI::Windows::Graphics::Capture::IGraphicsCaptureSession6>(m_session))
     {
         s6->put_IsBorderRequired(FALSE); 
-    }
+    }*/
 
     return S_OK;
 }
