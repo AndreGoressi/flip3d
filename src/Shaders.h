@@ -95,8 +95,7 @@ cbuffer FrameCB : register(b0)
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
 {
     // Sample captured window content; premultiply for DXGI_ALPHA_MODE_PREMULTIPLIED.
-    //float4 windowColor = cardTexture.Sample(cardSampler, uv);
-    float4 windowColor = float4(cardTexture.Sample(cardSampler, uv).rgb, 1.0f);
+    float4 windowColor = cardTexture.Sample(cardSampler, uv);
     float alpha = windowColor.a * color.a;
     float3 lit = windowColor.rgb * washParams.w;  // ambient light
     return float4(lit * alpha, alpha);
