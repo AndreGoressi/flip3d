@@ -550,25 +550,32 @@ void Flip3DRenderer::Update(float deltaSeconds)
 
     if ((m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) && m_enterTimeline.active)
     {
-        float progress = m_enterTimeline.progress; 
+        static float exitAlphaFactor = 1.0f;
         
-        BYTE currentAlpha = static_cast<BYTE>(progress * progress * 255);
+        exitAlphaFactor -= deltaSeconds * 4.0f; 
+        if (exitAlphaFactor < 0.0f) exitAlphaFactor = 0.0f;
+        
+        BYTE currentAlpha = static_cast<BYTE>(exitAlphaFactor * exitAlphaFactor * 255);
         
         if (m_hwnd && IsWindow(m_hwnd))
         {
             SetLayeredWindowAttributes(m_hwnd, 0, currentAlpha, LWA_ALPHA);
         }
     }
+    else
+    {
+
+    }
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            SetForegroundWindow(m_selectedHWND);
-            SetActiveWindow(m_selectedHWND);
-
             SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
             SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
+            
+            SetForegroundWindow(m_selectedHWND);
+            SetActiveWindow(m_selectedHWND);
             
             m_selectedWindowActivationDispatched = false; 
         }
@@ -589,8 +596,10 @@ void Flip3DRenderer::Update(float deltaSeconds)
         {
             SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
             SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
+            
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
+            
             m_selectedWindowActivationDispatched = false;
         }
 
