@@ -211,16 +211,16 @@ RECT BuildFinalMinRect(const RECT &minimizeRect, float aspectRatio)
 BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
 {
     auto *context = reinterpret_cast<WindowLayoutCaptureContext *>(lParam);
-    if (!context || hwnd == context->skipHwnd || !IsWindowVisible(hwnd))
+    if (!context || hwnd == context->skipHwnd)
     {
         return TRUE;
     }
 
     wchar_t cls[256];
-     GetClassNameW(hwnd, cls, 256);
+    GetClassNameW(hwnd, cls, 256);
 
-     if (wcscmp(cls, L"XamlWindow") == 0)
-     {
+    if (wcscmp(cls, L"XamlWindow") == 0)
+    {
         HWND realRenderWnd = FindWindowExW(hwnd, nullptr, L"Windows.UI.Composition.DesktopWindowCompositionIsland", nullptr);
         if (!realRenderWnd)
         {
@@ -231,6 +231,12 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         {
             hwnd = realRenderWnd; 
         }
+    }
+    // add more ?
+
+    if (!IsWindowVisible(hwnd))
+    {
+        return TRUE;
     }
 
     const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
