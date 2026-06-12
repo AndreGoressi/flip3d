@@ -216,7 +216,7 @@ HRESULT WindowCapture::InitViaThumbnail(HWND hwndCapture, HWND hwndDestination)
                                 | DWM_TNP_DISABLEFORCECVI
                                 | DWM_TNP_SOURCECLIENTAREAONLY
                                 //| 0x00000010;
-                                | 0x00000020
+                                | 0x00000020;
     thumbProps.fVisible       = TRUE;
     thumbProps.rcDestination  = { 0, 0, srcSize.cx, srcSize.cy };
 
