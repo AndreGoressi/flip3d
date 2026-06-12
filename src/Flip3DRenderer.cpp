@@ -1831,21 +1831,18 @@ void Flip3DRenderer::Render()
         // ========================================================================
         if (isCardMinimized)
         {
-            // Wir multiplizieren die RGB-Werte der Farbe, um sie stark abzudunkeln.
-            // Das gleicht den Gamma-Fehler/die Überbelichtung von Windows perfekt aus!
             objectConstants.color = XMFLOAT4(
-                item.color.x * 0.35f, // Rotanteil runter
-                item.color.y * 0.35f, // Grünanteil runter
-                item.color.z * 0.35f, // Blauanteil runter
-                item.color.w * 0.80f  // Alpha/Deckkraft leicht senken, falls gewünscht
+                powf(item.color.x, 2.2f) * 0.5f, 
+                powf(item.color.y, 2.2f) * 0.5f, 
+                powf(item.color.z, 2.2f) * 0.5f, 
+                item.color.w                     
             );
             
-            // Optional: Auch den Akzent (Rahmen/Schatten) leicht abdunkeln
-            objectConstants.accent = XMFLOAT4(item.accent.x * 0.5f, item.accent.y * 0.5f, item.accent.z * 0.5f, item.accent.w);
+            objectConstants.accent = item.accent;
         }
         else
         {
-            // Normaler Zustand -> Volle Original-Helligkeit
+            // Normaler Zustand -> Volle Original-Helligkeit und Farben
             objectConstants.color = item.color; //
             objectConstants.accent = item.accent; //
         }
