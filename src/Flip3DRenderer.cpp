@@ -1846,31 +1846,34 @@ void Flip3DRenderer::Render()
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         m_context->DrawIndexed(6, 0, 0);
     }
-    ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
+
+    
+    /*ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
 
-    /*{
+    {
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
             m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
     }*/
 
-
-
     
+    ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
+    m_context->PSSetShaderResources(0, 1, nullSRV);
+    m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
+
     {
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
         {
+            // MSAA ist aus: Wir kopieren das anisotrope Bild direkt 1:1!
             m_context->CopyResource(backBuffer.Get(), m_msaaRenderTarget.Get());
         }
-    }
-
-    
+    } // <-- Diese Klammer schließt den if-Block des Backbuffers
 
     m_swapChain->Present(1, 0);
-}
+} // <-- DIESE KLAMMER HAT GEFEHLT! Sie beendet die Render-Funktion sauber.
 
 // ============================================================================
 // Window message handling
