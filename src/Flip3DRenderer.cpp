@@ -877,7 +877,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
     }
 
-    size_t targetPos = 0;
+size_t targetPos = 0;
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
     HWND frontHwnd = m_cards.front().hwnd;
 
@@ -887,7 +887,8 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         if (dist > 0)
         {
             m_rotationTargetIndex = static_cast<int>(targetPos);
-            m_rRepeatedRotateRate = -(gEnterExitDurationSec / static_cast<float>(dist));
+            m_rRepeatedRotateRate = -gEnterExitDurationSec; 
+            
             m_state = ViewState::ExitRepeatedRotate;
             TickRepeatedRotate();
         }
