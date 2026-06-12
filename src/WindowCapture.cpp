@@ -373,19 +373,6 @@ void WindowCapture::PollFrame(bool isMinimized)
     if (!m_framePool || !m_srv || !m_context)
         return;
     
-    if (isMinimized)
-    {
-        ComPtr<ID3D11RenderTargetView> rtv;
-        ComPtr<ID3D11Device> device;
-        m_context->GetDevice(&device);
-        
-        if (SUCCEEDED(device->CreateRenderTargetView(m_captureTexture.Get(), nullptr, &rtv)))
-        {
-            float standbyColor[4] = { 0.1f, 0.15f, 0.2f, 1.0f }; 
-            m_context->ClearRenderTargetView(rtv.Get(), standbyColor);
-        }
-    }
-
     using namespace ABI::Windows::Graphics::Capture;
 
     ComPtr<IDirect3D11CaptureFrame> frame;
@@ -407,6 +394,23 @@ void WindowCapture::PollFrame(bool isMinimized)
     hr = dxgiAccess->GetInterface(IID_PPV_ARGS(&capturedTexture));
     if (FAILED(hr) || !capturedTexture)
         return;
+    
+    // ========================================================================
+    if (isMinimized)
+    {
+        ComPtr<ID3D11RenderTargetView> rtv;
+        ComPtr<ID3D11Device> device;
+        m_context->GetDevice(&device);
+        
+        if (SUCCEEDED(device->CreateRenderTargetView(m_captureTexture.Get(), nullptr, &rtv)))
+        {
+            // Eine solide Farbe, damit das Fenster sichtbar und anklickbar bleibt,
+            // aber kein eingefrorenes Grafik-Müll-Bild anzeigt.
+            float standbyColor[4] = { 0.15f, 0.2f, 0.3f, 1.0f }; 
+            m_context->ClearRenderTargetView(rtv.Get(), standbyColor);
+        }
+    }
+    // ========================================================================
 
     // GPU-side copy to our managed texture
     m_context->CopyResource(m_captureTexture.Get(), capturedTexture.Get());
