@@ -216,6 +216,7 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
+
     wchar_t cls[256];
     GetClassNameW(hwnd, cls, 256);
 
@@ -227,12 +228,28 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
             realRenderWnd = FindWindowExW(hwnd, nullptr, L"Windows.UI.Core.CoreWindow", L"DesktopWindowXamlSource");
         }
 
-        if (realRenderWnd)
+        HWND targetWnd = realRenderWnd ? realRenderWnd : hwnd;
+        RECT targetBounds = {};
+        
+        if (FAILED(DwmGetWindowAttribute(targetWnd, DWMWA_EXTENDED_FRAME_BOUNDS, &targetBounds, sizeof(targetBounds))))
         {
-            hwnd = realRenderWnd; 
+            GetWindowRect(targetWnd, &targetBounds);
+        }
+
+        if (!IsRectEmpty(&targetBounds) && (targetBounds.right - targetBounds.left) > 10)
+        {
+            CapturedWindowLayout layout = {};
+            layout.targetRect   = targetBounds;
+            layout.monitorWork  = context->workArea;
+            layout.isMinimized  = false;
+            layout.hwnd         = targetWnd; 
+            layout.originalRect = targetBounds;
+
+            context->layouts.push_back(layout);
+            
+            return TRUE; 
         }
     }
-    // add more ?
 
     if (!IsWindowVisible(hwnd))
     {
