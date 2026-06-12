@@ -1949,7 +1949,6 @@ void Flip3DRenderer::Render()
             // MSAA-Freie, direkte 1:1 Kopie in den Backbuffer
         m_context->CopyResource(backBuffer.Get(), m_msaaRenderTarget.Get());
     }
-}
     m_swapChain->Present(1, 0);
 }
 
