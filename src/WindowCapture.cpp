@@ -226,7 +226,8 @@ HRESULT WindowCapture::InitViaThumbnail(HWND hwndCapture, HWND hwndDestination)
         (void**)m_thumbVisual.GetAddressOf(),
         &hThumb);´*/
     HTHUMBNAIL hThumb = nullptr;
-    TT_VISUAL_TYPE thumbType = IsIconic(hwndCapture) ? TT_ANIMATE : TT_DEFAULT;
+    //TT_VISUAL_TYPE thumbType = IsIconic(hwndCapture) ? TT_ANIMATE : TT_DEFAULT;
+    const int thumbType = IsIconic(hwndCapture) ? 1 /* TT_ANIMATE */ : 0 /* TT_DEFAULT */;
     HRESULT hr = s_api.CreateSharedThumbnailVisual(
         hwndDestination, hwndCapture,
         thumbType, &thumbProps,
