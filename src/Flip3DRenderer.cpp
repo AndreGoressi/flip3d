@@ -568,11 +568,13 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
-            SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
-
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
+
+            Sleep(10);
+            
+            SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
+            SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
             
             m_selectedWindowActivationDispatched = false; 
         }
