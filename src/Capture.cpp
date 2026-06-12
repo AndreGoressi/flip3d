@@ -257,6 +257,11 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
             if (placement.flags & WPF_RESTORETOMAXIMIZED)
                 targetBounds = winWorkArea;
         }
+        BOOL forceIconic = TRUE;
+        DwmSetWindowAttribute(hwnd, 9, &forceIconic, sizeof(forceIconic));
+        DwmSetWindowAttribute(hwnd, 10, &forceIconic, sizeof(forceIconic));
+        DwmInvalidateIconicBitmaps(hwnd);
+        // ==========================================
     }
 
     if (IsRectEmpty(&targetBounds)
