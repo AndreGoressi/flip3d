@@ -375,15 +375,7 @@ void WindowCapture::PollFrame(bool isMinimized)
     
     if (isMinimized)
     {
-        ComPtr<ID3D11RenderTargetView> rtv;
-        ComPtr<ID3D11Device> device;
-        m_context->GetDevice(&device);
-        
-        if (SUCCEEDED(device->CreateRenderTargetView(m_captureTexture.Get(), nullptr, &rtv)))
-        {
-            float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-            m_context->ClearRenderTargetView(rtv.Get(), clearColor);
-        }
+        m_srv = nullptr;
         return; 
     }
 
