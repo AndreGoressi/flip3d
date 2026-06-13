@@ -861,27 +861,16 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
+        BOOL disable = TRUE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
 
-        // 1. Sag Windows, dass es eine ikonische Repräsentation nutzen soll (macht es "starr")
-        BOOL forceIconic = TRUE;
-        DwmSetWindowAttribute(m_selectedHWND, DWMWA_FORCE_ICONIC_REPRESENTATION, &forceIconic, sizeof(forceIconic));
-    
-    // 2. Sag Windows, dass wir ein Icon-Bitmap haben (verhindert oft den "Zoom"-Effekt)
-        BOOL hasIconic = TRUE;
-        DwmSetWindowAttribute(m_selectedHWND, DWMWA_HAS_ICONIC_BITMAP, &hasIconic, sizeof(hasIconic));
+        SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
+        SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
 
-    // 3. Erst jetzt das Fenster zeigen
         ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-        //
-        //SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
-        //SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
-        
-        //BOOL disable = TRUE;
-        //DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
 
-        //SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, 
-                 //SWP_NOACTIVATE);
-        //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+        SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, 
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
           
         m_selectedWindowActivationDispatched = true;
     }
