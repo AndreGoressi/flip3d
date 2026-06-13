@@ -107,22 +107,16 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
 
-    // 1. Basis-Helligkeit für ALLE Zustände (mit leichter Dämpfung gegen Röntgen)
-    // Wir nehmen 0.8f als festen Wert, damit keines der beiden Fenster "explodiert".
     float3 rgb = windowColor.rgb * 0.8f; 
 
-    // 2. Gamma-Korrektur für ALLE
     rgb = pow(max(rgb, 0.0001f), 0.4545f);
 
-    // 3. SEPARATE LOGIK:
     if (flagsIn.x > 0.5f)
     {
-         // Fenster ist MINIMIERT (Extrem dunkel)
          rgb *= 0.7f; 
     }
     else
     {
-         // Fenster ist MAXIMIERT (Normal hell)
          rgb *= 1.0f;
     }
 
@@ -141,7 +135,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
     float edgeAlpha = saturate(0.5f - sdfScreen);
 
     float alpha = windowColor.a * colorIn.a * edgeAlpha;
-    float3 lit = rgb * washParams.w; // washParams.w steuert hier jetzt nur noch die finale Helligkeit
+    float3 lit = rgb * washParams.w; 
 
     return float4(lit * alpha, alpha);
 }
