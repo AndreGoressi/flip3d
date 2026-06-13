@@ -861,7 +861,12 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+        ShowWindow(m_selectedHWND, SW_SHOWNOACTIVATE);
+        
+        PostMessage(m_selectedHWND, WM_ACTIVATE, WA_ACTIVE, 0);
+        PostMessage(m_selectedHWND, WM_ACTIVATE, WA_INACTIVE, 0);
+    
+        SetForegroundWindow(m_selectedHWND);
         m_selectedWindowActivationDispatched = true;
     }
     else
