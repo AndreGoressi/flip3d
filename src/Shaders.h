@@ -106,12 +106,17 @@ cbuffer ObjectCB : register(b1)
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn : COLOR0, float4 accentIn : COLOR1, float4 flagsIn : COLOR2) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
-
-    windowColor.rgb = saturate(windowColor.rgb);  
-
     if (flagsIn.x > 0.5f)
     {
-        windowColor.rgb = windowColor.rgb;  
+
+        float luma = dot(windowColor.rgb, float3(0.299f, 0.587f, 0.114f));
+    
+        if (luma > 0.001f) 
+        {
+
+            windowColor.rgb = windowColor.rgb / (0.1f + (windowColor.rgb * 0.5f));
+            windowColor.rgb = windowColor.rgb * 1.2f; 
+        }
     }
 
     uint width = 0;
