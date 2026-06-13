@@ -860,7 +860,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
         
         //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-        ShowWindowAsync(m_selectedHWND, SW_RESTORE);
+        ShowWindowAsync(m_selectedHWND, SW_SHOWNORMAL);
         
         m_selectedWindowActivationDispatched = true;
     }
