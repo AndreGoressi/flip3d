@@ -1681,30 +1681,6 @@ float Flip3DRenderer::UpdateDrawItemAlpha(
     return transitionOpacity * windowOpacity * stateOpacity;
 }
 
-/*bool Flip3DRenderer::TryBuildDrawItemForStructure(
-    const VisibleCardStructure &entry, const DrawBuildContext &context,
-    float enterProgress, DrawItem &item) const
-{
-    size_t pos = 0;
-    const CardModel *cardPtr = nullptr;
-    for (auto &card : m_cards) { if (pos == entry.cardPosition) { cardPtr = &card; break; } ++pos; }
-    if (!cardPtr) return false;
-
-    const CardAnimationState animationState = ResolveCardAnimationState(entry, context);
-    const CardWorldState worldState = GetWorldFromParametric(context, *cardPtr, entry.cardPosition, animationState, enterProgress);
-
-    item.world = worldState.world;
-    item.color = cardPtr->color;
-    item.color.w = UpdateDrawItemAlpha(entry, context, *cardPtr, animationState, enterProgress);
-    if (item.color.w <= 0.001f) return false;
-
-    item.accent = XMFLOAT4{0.16f, 0.90f, 0.92f, 0.98f};
-    item.accent.x *= std::clamp((item.color.w - 0.08f) / 0.72f, 0.0f, 1.0f);
-    item.depth = worldState.depth;
-    item.cardPosition = static_cast<int>(entry.cardPosition);
-    return true;
-}*/
-
 bool Flip3DRenderer::TryBuildDrawItemForStructure(
     const VisibleCardStructure &entry, const DrawBuildContext &context,
     float enterProgress, DrawItem &item) const
@@ -1713,35 +1689,20 @@ bool Flip3DRenderer::TryBuildDrawItemForStructure(
     const CardModel *cardPtr = nullptr;
     for (auto &card : m_cards) { if (pos == entry.cardPosition) { cardPtr = &card; break; } ++pos; }
     if (!cardPtr) return false;
+
     const CardAnimationState animationState = ResolveCardAnimationState(entry, context);
     const CardWorldState worldState = GetWorldFromParametric(context, *cardPtr, entry.cardPosition, animationState, enterProgress);
+
     item.world = worldState.world;
     item.color = cardPtr->color;
     item.color.w = UpdateDrawItemAlpha(entry, context, *cardPtr, animationState, enterProgress);
     if (item.color.w <= 0.001f) return false;
+
     item.accent = XMFLOAT4{0.16f, 0.90f, 0.92f, 0.98f};
     item.accent.x *= std::clamp((item.color.w - 0.08f) / 0.72f, 0.0f, 1.0f);
-    item.flags = XMFLOAT4{ cardPtr->isMinimized ? 1.0f : 0.0f, 0.0f, 0.0f, 0.0f };
     item.depth = worldState.depth;
     item.cardPosition = static_cast<int>(entry.cardPosition);
     return true;
-}
-
-std::vector<DrawItem> Flip3DRenderer::BuildDrawItems(float enterProgress) const
-{
-    const DrawBuildContext context = CreateDrawBuildContext();
-    std::vector<DrawItem> items;
-    items.reserve(m_cards.size());
-    if (context.countInt <= 0) return items;
-
-    const std::vector<VisibleCardStructure> structure = BuildVisibleCardStructure(context);
-    for (const VisibleCardStructure &entry : structure)
-    {
-        DrawItem item = {};
-        if (TryBuildDrawItemForStructure(entry, context, enterProgress, item))
-            items.push_back(item);
-    }
-    return items;
 }
 
 void Flip3DRenderer::Render()
@@ -1809,7 +1770,6 @@ void Flip3DRenderer::Render()
         objectConstants.world = item.world;
         objectConstants.color = item.color;
         objectConstants.accent = item.accent;
-        objectConstants.flags  = item.flags;
         m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
 
         size_t pos = 0;
