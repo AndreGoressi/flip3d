@@ -256,10 +256,10 @@ HRESULT WindowCapture::StartWGCSession(
         L"Windows.Graphics.Capture.Direct3D11CaptureFramePool");
     if (!poolStatics)
         return E_FAIL;
-
+    
     HRESULT hr = poolStatics->Create(
         d3dDevice.Get(),
-        DirectXPixelFormat::DirectXPixelFormat_B8G8R8A8UIntNormalized, // B8G8R8A8UIntNormalized
+        DirectXPixelFormat::DirectXPixelFormat_R16G16B16A16Float, 
         2,
         itemSize,
         &m_framePool);
@@ -354,7 +354,10 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
     desc.Height = height;
     desc.MipLevels = 0; // 0 automatically generates a full mip chain down to 1x1
     desc.ArraySize = 1;
-    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    
+    // UMBESTELLT AUF OPTION B: 16-Bit-Float Format für HDR-Daten
+    desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+    
     desc.SampleDesc.Count = 1;
     desc.Usage = D3D11_USAGE_DEFAULT;
     // CRITICAL: Must include RENDER_TARGET and GENERATE_MIPS flags
@@ -365,15 +368,15 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
     if (FAILED(hr))
         return hr;
 
-    // Zero-fill mip level 0
+    // Zero-fill mip level 0 (WICHTIG: 8 Bytes pro Pixel für FLOAT!)
     {
-        std::vector<uint8_t> zeros(width * height * 4, 0);
+        std::vector<uint8_t> zeros(width * height * 8, 0);
         m_context->UpdateSubresource(m_captureTexture.Get(), 0, nullptr,
-            zeros.data(), width * 4, 0);
+            zeros.data(), width * 8, 0);
     }
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Format = desc.Format;
+    srvDesc.Format = desc.Format; // Nutzt jetzt automatisch das R16G16B16A16_FLOAT
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = -1; // -1 means "use all mips from top to bottom"
 
