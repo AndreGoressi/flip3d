@@ -222,16 +222,6 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     {
         return TRUE;
     }
-    
-    wchar_t className[256]; wchar_t windowTitle[256];
-    GetClassNameW(hWnd, className, 256); GetWindowTextW(hWnd, windowTitle, 256);
-    //
-    if (wcscmp(className, L"XamlWindow") == 0) 
-    {
-        if (wcscmp(windowTitle, L"Snipping Tool") != 0 && wcscmp(windowTitle, L"") != 0) {
-            return TRUE; 
-        }
-    }
 
     DWORD cloaked = 0;
     if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) && cloaked != 0)
