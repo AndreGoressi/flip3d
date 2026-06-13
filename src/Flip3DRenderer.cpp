@@ -864,7 +864,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         BOOL disable = TRUE;
         DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
             
-        PostMessage(m_selectedHWND, WM_SYSCOMMAND, 0x8000, 0);
+        PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE | 0x8000, 0);
     
         SetForegroundWindow(m_selectedHWND);
     
