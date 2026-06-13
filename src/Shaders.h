@@ -107,9 +107,18 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
 
+    // 1. Linearisierung: Wir nehmen die HDR-Werte und bringen sie in einen berechenbaren Bereich
+    // Wir lassen das krasse Reinhard-Mapping weg, das macht das Röntgen-Bild!
+    float3 rgb = windowColor.rgb;
+
+    // 2. Dynamische Gamma-Korrektur (1.0 / 2.2) für ALLE Zustände
+    // Das löst das "zu dunkel" bei den Schwarzwerten!
+    rgb = pow(max(rgb, 0.0001f), 0.4545f); // 0.4545 ist 1/2.2
+
+    // 3. Wenn minimiert, dann einfach nur das Helligkeits-Dimming
     if (flagsIn.x > 0.5f)
     {
-        windowColor.rgb = windowColor.rgb / (1.0f + windowColor.rgb);
+         rgb *= 0.6f; 
     }
 
     uint width = 0;
@@ -118,10 +127,8 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
     float2 texSize = float2(width, height);
 
     float radius = (accentIn.x >= 1.0f && accentIn.x <= 128.0f) ? accentIn.x : 16.0f;
-
     float2 p = (uv - 0.5f) * texSize;
     float2 halfSize = texSize * 0.5f;
-
     float2 q = abs(p) - halfSize + radius;
     float sdfTex = min(max(q.x, q.y), 0.0f) + length(max(q, 0.0f)) - radius;
 
@@ -129,8 +136,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
     float edgeAlpha = saturate(0.5f - sdfScreen);
 
     float alpha = windowColor.a * colorIn.a * edgeAlpha;
-
-    float3 lit = windowColor.rgb * washParams.w;
+    float3 lit = rgb * washParams.w; // washParams.w steuert hier jetzt nur noch die finale Helligkeit
 
     return float4(lit * alpha, alpha);
-})";
+}
