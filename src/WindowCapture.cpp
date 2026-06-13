@@ -408,23 +408,17 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
     D3D11_TEXTURE2D_DESC desc = {};
     desc.Width = width;
     desc.Height = height;
-    desc.MipLevels = 0; // 0 automatically generates a full mip chain down to 1x1
+    desc.MipLevels = 0;
     desc.ArraySize = 1;
-    
-    // UMBESTELLT AUF OPTION B: 16-Bit-Float Format für HDR-Daten
     desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-    
     desc.SampleDesc.Count = 1;
     desc.Usage = D3D11_USAGE_DEFAULT;
-    // CRITICAL: Must include RENDER_TARGET and GENERATE_MIPS flags
     desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
     desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
-
     HRESULT hr = m_device->CreateTexture2D(&desc, nullptr, &m_captureTexture);
     if (FAILED(hr))
         return hr;
 
-    // Zero-fill mip level 0 (WICHTIG: 8 Bytes pro Pixel für FLOAT!)
     {
         std::vector<uint8_t> zeros(width * height * 8, 0);
         m_context->UpdateSubresource(m_captureTexture.Get(), 0, nullptr,
@@ -432,10 +426,9 @@ HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
     }
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Format = desc.Format; // Nutzt jetzt automatisch das R16G16B16A16_FLOAT
+    srvDesc.Format = desc.Format;
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MipLevels = -1; // -1 means "use all mips from top to bottom"
-
+    srvDesc.Texture2D.MipLevels = -1;
     return m_device->CreateShaderResourceView(
         m_captureTexture.Get(), &srvDesc, &m_srv);
 }
