@@ -228,6 +228,15 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     {
         return TRUE;
     }
+    
+    wchar_t className[256];
+    if (GetClassNameW(hwnd, className, 256) > 0) 
+    {
+        if (wcscmp(className, L"RecordingAreaIndicatorWindow") == 0) 
+        {
+            return TRUE; 
+        }
+    }
 
     const bool isMinimized = IsIconic(hwnd) != FALSE;
 
