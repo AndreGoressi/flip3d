@@ -861,32 +861,18 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        //BOOL disable = TRUE;
-        //DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
-
-        //SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
+        BOOL cloak = TRUE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_CLOAK, &cloak, sizeof(cloak));
         
-        m_restoreAlpha += 0.1f; 
-        if (m_restoreAlpha >= 1.0f)
-        {
-            SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
-            SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
-        
-            SetForegroundWindow(m_selectedHWND);
-            SetActiveWindow(m_selectedHWND);
-
-            m_restoreAlpha = 0.0f;
-            m_selectedWindowActivationDispatched = false; 
-        }
-        else
-        {
-            int alpha = static_cast<int>(m_restoreAlpha * 255);
-            SetLayeredWindowAttributes(m_selectedHWND, 0, alpha, LWA_ALPHA);
-        }
-
         SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, 
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
-          
+                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+        
+        cloak = FALSE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_CLOAK, &cloak, sizeof(cloak));
+    
+        SetForegroundWindow(m_selectedHWND);
+        SetActiveWindow(m_selectedHWND);
+        
         m_selectedWindowActivationDispatched = true;
     }
     else
