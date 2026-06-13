@@ -226,7 +226,7 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     wchar_t className[256]; wchar_t windowTitle[256];
     GetClassNameW(hWnd, className, 256); GetWindowTextW(hWnd, windowTitle, 256);
     //
-    if (wcscmp(exeName, L"SnippingTool.exe") == 0 && wcscmp(className, L"XamlWindow") == 0) 
+    if (wcscmp(className, L"XamlWindow") == 0) 
     {
         if (wcscmp(windowTitle, L"Snipping Tool") != 0 && wcscmp(windowTitle, L"") != 0) {
             return TRUE; 
