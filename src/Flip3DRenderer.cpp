@@ -861,14 +861,16 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        LONG_PTR style = GetWindowLongPtrW(m_selectedHWND, GWL_STYLE);
-        SetWindowLongPtrW(m_selectedHWND, GWL_STYLE, style & ~WS_MINIMIZE);
-    
-        SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_FRAMECHANGED);
+        BOOL disable = TRUE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
+            
+        PostMessage(m_selectedHWND, WM_SYSCOMMAND, 0x8000, 0);
     
         SetForegroundWindow(m_selectedHWND);
     
+        BOOL enable = FALSE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &enable, sizeof(enable));
+
         m_selectedWindowActivationDispatched = true;
     }
     else
