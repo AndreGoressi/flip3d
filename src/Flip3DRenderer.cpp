@@ -869,10 +869,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
     
         PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE | 0x8000, 0);
-    
-        BOOL enable = FALSE;
-        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &enable, sizeof(enable));
-    
+        
         RECT &r = wp.rcNormalPosition;
         MoveWindow(m_selectedHWND, r.left, r.top,
             r.right - r.left, r.bottom - r.top, TRUE);
