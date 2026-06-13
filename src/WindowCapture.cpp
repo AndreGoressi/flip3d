@@ -347,7 +347,7 @@ void WindowCapture::PollFrame() {
 // ---------------------------------------------------------------------------
 // Texture and SRV creation
 // ---------------------------------------------------------------------------
-/*HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
+HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
 {
     D3D11_TEXTURE2D_DESC desc = {};
     desc.Width = width;
@@ -377,36 +377,6 @@ void WindowCapture::PollFrame() {
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
     srvDesc.Texture2D.MipLevels = -1; // -1 means "use all mips from top to bottom"
 
-    return m_device->CreateShaderResourceView(
-        m_captureTexture.Get(), &srvDesc, &m_srv);
-}*/
-
-HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
-{
-    D3D11_TEXTURE2D_DESC desc = {};
-    desc.Width = width;
-    desc.Height = height;
-    desc.MipLevels = 0;
-    desc.ArraySize = 1;
-    desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-    desc.SampleDesc.Count = 1;
-    desc.Usage = D3D11_USAGE_DEFAULT;
-    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-    desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
-    HRESULT hr = m_device->CreateTexture2D(&desc, nullptr, &m_captureTexture);
-    if (FAILED(hr))
-        return hr;
-
-    {
-        std::vector<uint8_t> zeros(width * height * 8, 0);
-        m_context->UpdateSubresource(m_captureTexture.Get(), 0, nullptr,
-            zeros.data(), width * 8, 0);
-    }
-
-    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-    srvDesc.Format = desc.Format;
-    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MipLevels = -1;
     return m_device->CreateShaderResourceView(
         m_captureTexture.Get(), &srvDesc, &m_srv);
 }
