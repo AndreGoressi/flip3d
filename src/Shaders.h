@@ -135,6 +135,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 
     float3 correctedColor = pow(max(lit, 0.0001f), 1.0f / 2.2f);
 
-    return float4(correctedColor * alpha, alpha);
+    //return float4(correctedColor * alpha, alpha);
+    return float4(1.0f, 0.0f, 0.0f, 1.0f);
 }
 )";
