@@ -877,8 +877,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         MoveWindow(m_selectedHWND, r.left, r.top,
             r.right - r.left, r.bottom - r.top, TRUE);
     
-        m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
-            m_selectedHWND, false, m_selectedWindowWasShellDesktop);
+        m_selectedWindowActivationDispatched = true;
     }
     else
     {
