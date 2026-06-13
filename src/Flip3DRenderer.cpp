@@ -857,8 +857,8 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
         //ShowWindowAsync(m_selectedHWND, SW_SHOWNA);
-        SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, 
-                 SWP_NOACTIVATE);
+        BOOL disable = TRUE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
         //
         SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
         SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
