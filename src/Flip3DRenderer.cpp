@@ -560,7 +560,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
 
-            //m_selectedWindowWasMinimized = false;
+            m_selectedWindowWasMinimized = false;
             m_selectedWindowActivationDispatched = false; 
         }
 
@@ -583,7 +583,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
 
-            //m_selectedWindowWasMinimized = false;
+            m_selectedWindowWasMinimized = false;
             m_selectedWindowActivationDispatched = false;
         }
 
