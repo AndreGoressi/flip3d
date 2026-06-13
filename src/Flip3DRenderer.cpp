@@ -861,19 +861,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        WINDOWPLACEMENT wp = {};
-        wp.length = sizeof(wp);
-        GetWindowPlacement(m_selectedHWND, &wp);
-    
-        BOOL disable = TRUE;
-        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
-    
-        PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE | 0x8000, 0);
-        
-        RECT &r = wp.rcNormalPosition;
-        MoveWindow(m_selectedHWND, r.left, r.top,
-            r.right - r.left, r.bottom - r.top, TRUE);
-    
+        ShowWindowsAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
         m_selectedWindowActivationDispatched = true;
     }
     else
