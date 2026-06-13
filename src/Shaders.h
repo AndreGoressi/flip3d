@@ -100,11 +100,12 @@ cbuffer ObjectCB : register(b1)
     row_major float4x4 world;
     float4 color;
     float4 accent;
-    float4 flags;
 }
 
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn : COLOR0, float4 accentIn : COLOR1, float4 flagsIn : COLOR2) : SV_TARGET
 {
+    float4 windowColor = cardTexture.Sample(cardSampler, uv);
+
     uint width = 0;
     uint height = 0;
     cardTexture.GetDimensions(width, height);
@@ -123,6 +124,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 
     float alpha = windowColor.a * colorIn.a * edgeAlpha;
 
+    // Nutzt die originale Pixelfarbe multipliziert mit der Helligkeit des Renderers
     float3 lit = windowColor.rgb * washParams.w;
 
     return float4(lit * alpha, alpha);
