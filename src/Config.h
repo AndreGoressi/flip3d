@@ -205,12 +205,21 @@ struct FrameConstants
     DirectX::XMFLOAT4   viewport;
 };
 
+/*struct ObjectConstants
+{
+    XMFLOAT4X4 world;
+    XMFLOAT4 color;
+    XMFLOAT4 accent;
+};*/
+
 struct ObjectConstants
 {
     XMFLOAT4X4 world;
     XMFLOAT4 color;
     XMFLOAT4 accent;
+    XMFLOAT4 flags;
 };
+
 
 struct CardModel
 {
@@ -227,11 +236,21 @@ struct CardModel
     std::unique_ptr<WindowCapture> capture;
 };
 
+/*struct DrawItem
+{
+    XMFLOAT4X4 world;
+    XMFLOAT4 color;
+    XMFLOAT4 accent;
+    float depth = 0.0f;
+    int cardPosition = -1;
+};*/
+
 struct DrawItem
 {
     XMFLOAT4X4 world;
     XMFLOAT4 color;
     XMFLOAT4 accent;
+    XMFLOAT4 flags{};   // x = isMinimized (1.0/0.0)
     float depth = 0.0f;
     int cardPosition = -1;
 };
