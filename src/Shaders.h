@@ -117,11 +117,13 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
     // 3. SEPARATE LOGIK:
     if (flagsIn.x > 0.5f)
     {
-         rgb *= 0.5f; 
+         // Fenster ist MINIMIERT (Extrem dunkel)
+         rgb *= 0.7f; 
     }
     else
     {
-         rgb *= 0.7f;
+         // Fenster ist MAXIMIERT (Normal hell)
+         rgb *= 1.0f;
     }
 
     uint width = 0;
