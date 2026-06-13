@@ -107,9 +107,9 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
 
-    if (flagsIn.x > 0.5f)
+    if (flagsIn.x > 0.1f)
     {
-        windowColor.rgb = windowColor.rgb * 0.0f;  // testweise neutral
+        windowColor.rgb = windowColor.rgb / (1.0f + windowColor.rgb);
     }
 
     uint width = 0;
