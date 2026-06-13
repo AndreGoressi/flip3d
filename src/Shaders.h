@@ -107,18 +107,21 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
 
-    // 1. Linearisierung: Wir nehmen die HDR-Werte und bringen sie in einen berechenbaren Bereich
-    // Wir lassen das krasse Reinhard-Mapping weg, das macht das Röntgen-Bild!
-    float3 rgb = windowColor.rgb;
+    // 1. Basis-Helligkeit für ALLE Zustände (mit leichter Dämpfung gegen Röntgen)
+    // Wir nehmen 0.8f als festen Wert, damit keines der beiden Fenster "explodiert".
+    float3 rgb = windowColor.rgb * 0.8f; 
 
-    // 2. Dynamische Gamma-Korrektur (1.0 / 2.2) für ALLE Zustände
-    // Das löst das "zu dunkel" bei den Schwarzwerten!
-    rgb = pow(max(rgb, 0.0001f), 0.4545f); // 0.4545 ist 1/2.2
+    // 2. Gamma-Korrektur für ALLE
+    rgb = pow(max(rgb, 0.0001f), 0.4545f);
 
-    // 3. Wenn minimiert, dann einfach nur das Helligkeits-Dimming
+    // 3. SEPARATE LOGIK:
     if (flagsIn.x > 0.5f)
     {
-         rgb *= 0.9f; 
+         rgb *= 0.5f; 
+    }
+    else
+    {
+         rgb *= 0.7f;
     }
 
     uint width = 0;
