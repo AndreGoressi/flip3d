@@ -110,7 +110,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 
     if (flagsIn.x > 0.5f)
     {
-         windowColor.rgb = windowColor.rgb * 0.6f;  // minimierte zusätzlich abdunkeln
+         windowColor.rgb = windowColor.rgb * 0.6f;  
     }
 
     uint width = 0;
@@ -131,8 +131,9 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 
     float alpha = windowColor.a * colorIn.a * edgeAlpha;
 
-    // Nutzt die originale Pixelfarbe multipliziert mit der Helligkeit des Renderers
     float3 lit = windowColor.rgb * washParams.w;
 
-    return float4(lit * alpha, alpha);
-})";
+    float3 correctedColor = pow(max(lit, 0.0001f), 1.0f / 2.2f);
+
+    return float4(correctedColor * alpha, alpha);
+}
