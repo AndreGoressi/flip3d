@@ -861,19 +861,17 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        BOOL cloak = TRUE;
-        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &cloak, sizeof(cloak));
-        
+        BOOL disable = TRUE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
+    
+        ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
+    
         SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, 
-                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
-        
-        cloak = FALSE;
-        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &cloak, sizeof(cloak));
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
     
         SetForegroundWindow(m_selectedHWND);
-        SetActiveWindow(m_selectedHWND);
         
-        m_selectedWindowActivationDispatched = false;
+        m_selectedWindowActivationDispatched = true;
     }
     else
     {
