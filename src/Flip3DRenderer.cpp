@@ -551,12 +551,9 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {            
-            //SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
-            SendMessage(m_selectedHWND, WM_SETREDRAW, FALSE, 0);
-            SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
-
-            SendMessage(m_selectedHWND, WM_SETREDRAW, TRUE, 0);
-            RedrawWindow(m_selectedHWND, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_FRAME | RDW_UPDATENOW);
+            SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
+            //SendMessage(m_selectedHWND, WM_SETREDRAW, FALSE, 0);
+            //SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
             
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
@@ -574,12 +571,12 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            //SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
-            SendMessage(m_selectedHWND, WM_SETREDRAW, FALSE, 0);
-            SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
+            SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
+            //SendMessage(m_selectedHWND, WM_SETREDRAW, FALSE, 0);
+            //SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
 
-            SendMessage(m_selectedHWND, WM_SETREDRAW, TRUE, 0);
-            RedrawWindow(m_selectedHWND, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_FRAME | RDW_UPDATENOW);
+            //SendMessage(m_selectedHWND, WM_SETREDRAW, TRUE, 0);
+            //RedrawWindow(m_selectedHWND, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_FRAME | RDW_UPDATENOW);
             
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
