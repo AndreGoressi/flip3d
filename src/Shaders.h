@@ -137,3 +137,4 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 
     return float4(correctedColor * alpha, alpha);
 }
+)";
