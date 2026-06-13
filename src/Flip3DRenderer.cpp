@@ -866,14 +866,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     {
         SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
         SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
-
-        //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-        //ShowWindowAsync(m_selectedHWND, SW_RESTORE);
-        /*if (!IsZoomed(m_selectedHWND))
-        {
-            ShowWindowAsync(m_selectedHWND, SW_RESTORE); 
-        }*/
-        
+        //
         m_selectedWindowActivationDispatched = true;
     }
     else
