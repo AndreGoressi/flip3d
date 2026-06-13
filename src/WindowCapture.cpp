@@ -257,19 +257,12 @@ HRESULT WindowCapture::StartWGCSession(
     if (!poolStatics)
         return E_FAIL;
 
-    /*HRESULT hr = poolStatics->Create(
+    HRESULT hr = poolStatics->Create(
         d3dDevice.Get(),
         DirectXPixelFormat::DirectXPixelFormat_B8G8R8A8UIntNormalized, // B8G8R8A8UIntNormalized
         2,
         itemSize,
-        &m_framePool);*/
-      HRESULT hr = poolStatics->Create(
-        d3dDevice.Get(),
-        DirectXPixelFormat::DirectXPixelFormat_R16G16B16A16Float, // B8G8R8A8UIntNormalized
-        2,
-        itemSize,
         &m_framePool);
-
     if (FAILED(hr))
         return hr;
 
