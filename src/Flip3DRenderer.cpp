@@ -547,7 +547,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
         TickRepeatedRotate();
     }
 
-    if (m_state == ViewState::Exit && !m_enterTimeline.active)
+    /*if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {            
@@ -563,6 +563,24 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
+    }*/
+    if (m_state == ViewState::Exit && !m_enterTimeline.active)
+    {
+        if (m_pendingRestore && m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
+        {            
+            SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
+            SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
+        
+            SetForegroundWindow(m_selectedHWND);
+            SetActiveWindow(m_selectedHWND);
+
+            m_selectedWindowActivationDispatched = false;
+            m_pendingRestore = false;
+        }
+
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+            CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
+            return;
     }
 
     if (m_state == ViewState::ExitRepeatedRotate
@@ -858,10 +876,10 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     {
         SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
         SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
-        
-        //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-        ShowWindowAsync(m_selectedHWND, SW_SHOWNORMAL);
-        
+    
+        m_pendingRestoreHWND = m_selectedHWND; 
+        m_pendingRestore = true;               
+    
         m_selectedWindowActivationDispatched = true;
     }
     else
