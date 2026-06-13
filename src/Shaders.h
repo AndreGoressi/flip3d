@@ -133,8 +133,5 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 
     float3 lit = windowColor.rgb * washParams.w;
 
-    float3 correctedColor = pow(max(lit, 0.0001f), 1.0f / 2.2f);
-
-    return float4(correctedColor * alpha, alpha);
-}
-)";
+    return float4(lit * alpha, alpha);
+})";
