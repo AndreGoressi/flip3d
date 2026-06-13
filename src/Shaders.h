@@ -53,6 +53,7 @@ cbuffer ObjectCB : register(b1)
     row_major float4x4 world;
     float4 color;
     float4 accent;
+    float4 flags;
 };
 
 struct VSIn
@@ -67,6 +68,7 @@ struct VSOut
     float2 uv : TEXCOORD0;
     float4 color : COLOR0;
     float4 accent : COLOR1;
+    float4 flags : COLOR2;
 };
 
 VSOut main(VSIn input)
@@ -77,11 +79,12 @@ VSOut main(VSIn input)
     output.uv = input.uv;
     output.color = color;
     output.accent = accent;
+    output.flags = flags;
     return output;
 }
 )";
 
-inline constexpr const char* kCardPixelShader = R"(
+inline constexpr const char *kCardPixelShader = R"(
 Texture2D<float4> cardTexture : register(t0);
 SamplerState cardSampler : register(s0);
 
@@ -90,10 +93,25 @@ cbuffer FrameCB : register(b0)
     row_major float4x4 viewProj;
     float4 washParams;
     float4 viewport;
-};
+}
 
-float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 color : COLOR0, float4 accent : COLOR1) : SV_TARGET
+cbuffer ObjectCB : register(b1)
 {
+    row_major float4x4 world;
+    float4 color;
+    float4 accent;
+    float4 flags;
+}
+
+float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn : COLOR0, float4 accentIn : COLOR1, float4 flagsIn : COLOR2) : SV_TARGET
+{
+    float4 windowColor = cardTexture.Sample(cardSampler, uv);
+
+    if (flagsIn.x > 0.5f)
+    {
+        windowColor.rgb = windowColor.rgb / (1.0f + windowColor.rgb);
+    }
+
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
     
     uint width = 0;
