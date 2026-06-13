@@ -1681,30 +1681,6 @@ float Flip3DRenderer::UpdateDrawItemAlpha(
     return transitionOpacity * windowOpacity * stateOpacity;
 }
 
-/*bool Flip3DRenderer::TryBuildDrawItemForStructure(
-    const VisibleCardStructure &entry, const DrawBuildContext &context,
-    float enterProgress, DrawItem &item) const
-{
-    size_t pos = 0;
-    const CardModel *cardPtr = nullptr;
-    for (auto &card : m_cards) { if (pos == entry.cardPosition) { cardPtr = &card; break; } ++pos; }
-    if (!cardPtr) return false;
-
-    const CardAnimationState animationState = ResolveCardAnimationState(entry, context);
-    const CardWorldState worldState = GetWorldFromParametric(context, *cardPtr, entry.cardPosition, animationState, enterProgress);
-
-    item.world = worldState.world;
-    item.color = cardPtr->color;
-    item.color.w = UpdateDrawItemAlpha(entry, context, *cardPtr, animationState, enterProgress);
-    if (item.color.w <= 0.001f) return false;
-
-    item.accent = XMFLOAT4{0.16f, 0.90f, 0.92f, 0.98f};
-    item.accent.x *= std::clamp((item.color.w - 0.08f) / 0.72f, 0.0f, 1.0f);
-    item.depth = worldState.depth;
-    item.cardPosition = static_cast<int>(entry.cardPosition);
-    return true;
-}*/
-
 bool Flip3DRenderer::TryBuildDrawItemForStructure(
     const VisibleCardStructure &entry, const DrawBuildContext &context,
     float enterProgress, DrawItem &item) const
@@ -1826,37 +1802,6 @@ void Flip3DRenderer::Render()
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         m_context->DrawIndexed(6, 0, 0);
     }
-    /*for (const DrawItem &item : drawItems) 
-    {
-        ObjectConstants objectConstants = {}; 
-        objectConstants.world = item.world; 
-        
-        objectConstants.color = item.color; 
-        objectConstants.accent = item.accent; 
-        
-        size_t pos = 0; 
-        ID3D11ShaderResourceView *srv = nullptr; 
-
-        for (auto &card : m_cards) 
-        { 
-            if (pos == static_cast<size_t>(item.cardPosition)) 
-            { 
-                srv = card.captureSRV; 
-                break; 
-            } 
-            ++pos; 
-        }
-
-        if (!srv) continue; 
-
-        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0); 
-
-        m_context->PSSetShaderResources(0, 1, &srv); 
-        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()}; 
-        m_context->VSSetConstantBuffers(1, 1, objectBuffers); 
-        m_context->PSSetConstantBuffers(1, 1, objectBuffers); 
-        m_context->DrawIndexed(6, 0, 0); 
-    }*/
 
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
