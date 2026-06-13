@@ -137,6 +137,10 @@ HRESULT WindowCapture::Initialize(HWND hwndCapture, HWND hwndDest, ID3D11Device 
 
 HRESULT WindowCapture::InitViaThumbnail(HWND hwndCapture, HWND hwndDestination)
 {
+    BOOL bv0 = TRUE;
+    //
+    DwmSetWindowAttribute(hwndCapture, DWMWA_FORCE_ICONIC_REPRESENTATION, &bv0, sizeof(bv0));
+    DwmSetWindowAttribute(hwndCapture, DWMWA_HAS_ICONIC_BITMAP, &bv0, sizeof(bv0));
     // --- Lazy global init: WinRT InteropCompositor ---
     if (!s_winrtCompositor)
     {
