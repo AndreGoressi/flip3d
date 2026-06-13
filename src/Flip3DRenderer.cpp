@@ -866,7 +866,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         PostMessage(m_selectedHWND, WM_ACTIVATE, WA_ACTIVE, 0);
         PostMessage(m_selectedHWND, WM_ACTIVATE, WA_INACTIVE, 0);
     
-        SetForegroundWindow(m_selectedHWND);
+        //SetForegroundWindow(m_selectedHWND);
         m_selectedWindowActivationDispatched = true;
     }
     else
