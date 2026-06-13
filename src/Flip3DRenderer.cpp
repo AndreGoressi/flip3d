@@ -1705,6 +1705,23 @@ bool Flip3DRenderer::TryBuildDrawItemForStructure(
     return true;
 }
 
+std::vector<DrawItem> Flip3DRenderer::BuildDrawItems(float enterProgress) const
+{
+    const DrawBuildContext context = CreateDrawBuildContext();
+    std::vector<DrawItem> items;
+    items.reserve(m_cards.size());
+    if (context.countInt <= 0) return items;
+
+    const std::vector<VisibleCardStructure> structure = BuildVisibleCardStructure(context);
+    for (const VisibleCardStructure &entry : structure)
+    {
+        DrawItem item = {};
+        if (TryBuildDrawItemForStructure(entry, context, enterProgress, item))
+            items.push_back(item);
+    }
+    return items;
+}
+
 void Flip3DRenderer::Render()
 {
     if (!m_swapChain || !m_renderTargetView || !m_depthStencilView) return;
