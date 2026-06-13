@@ -106,7 +106,11 @@ cbuffer ObjectCB : register(b1)
 float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn : COLOR0, float4 accentIn : COLOR1, float4 flagsIn : COLOR2) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
-    windowColor.rgb = saturate(windowColor.rgb);
+    if (flagsIn.x > 0.5f)
+    {
+        float3 tonemapped = windowColor.rgb / (1.0f + windowColor.rgb);
+        windowColor.rgb = lerp(windowColor.rgb, tonemapped, 0.5f);
+    }
 
     uint width = 0;
     uint height = 0;
