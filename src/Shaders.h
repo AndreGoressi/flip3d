@@ -111,7 +111,7 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn
 
     if (flagsIn.x > 0.5f)
     {
-        windowColor.rgb = windowColor.rgb * 0.6f;  
+        windowColor.rgb = windowColor.rgb;  
     }
 
     uint width = 0;
