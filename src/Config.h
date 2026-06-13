@@ -210,6 +210,7 @@ struct ObjectConstants
     XMFLOAT4X4 world;
     XMFLOAT4 color;
     XMFLOAT4 accent;
+    XMFLOAT4 flags;
 };
 
 struct CardModel
@@ -232,10 +233,10 @@ struct DrawItem
     XMFLOAT4X4 world;
     XMFLOAT4 color;
     XMFLOAT4 accent;
+    XMFLOAT4 flags{};   // x = isMinimized (1.0/0.0)
     float depth = 0.0f;
     int cardPosition = -1;
 };
-
 struct DrawBuildContext
 {
     int countInt = 0;
