@@ -551,8 +551,8 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-            //ShowWindowAsync(m_selectedHWND, SW_RESTORE);
+            //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+            ShowWindowAsync(m_selectedHWND, SW_RESTORE);
             
             SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
             SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
@@ -574,8 +574,8 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-            //ShowWindowAsync(m_selectedHWND, SW_RESTORE);
+            //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+            ShowWindowAsync(m_selectedHWND, SW_RESTORE);
             
             SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
             SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
