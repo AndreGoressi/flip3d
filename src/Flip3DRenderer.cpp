@@ -550,17 +550,13 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
-        {
-            //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-            ShowWindowAsync(m_selectedHWND, SW_RESTORE);
-            
+        {            
             SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
             SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
             
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
 
-            //m_selectedWindowWasMinimized = false;
             m_selectedWindowActivationDispatched = false; 
         }
 
@@ -574,16 +570,12 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-            ShowWindowAsync(m_selectedHWND, SW_RESTORE);
-            
             SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
             SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
             
             SetForegroundWindow(m_selectedHWND);
             SetActiveWindow(m_selectedHWND);
-
-            //m_selectedWindowWasMinimized = false;
+            
             m_selectedWindowActivationDispatched = false;
         }
 
@@ -866,7 +858,10 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     {
         SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) | WS_EX_LAYERED);
         SetLayeredWindowAttributes(m_selectedHWND, 0, 0, LWA_ALPHA);
-        //
+        
+        ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+        //ShowWindowAsync(m_selectedHWND, SW_RESTORE);
+        
         m_selectedWindowActivationDispatched = true;
     }
     else
