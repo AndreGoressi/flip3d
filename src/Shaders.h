@@ -103,7 +103,7 @@ cbuffer ObjectCB : register(b1)
     float4 flags;
 }
 
-/*float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn : COLOR0, float4 accentIn : COLOR1, float4 flagsIn : COLOR2) : SV_TARGET
+float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn : COLOR0, float4 accentIn : COLOR1, float4 flagsIn : COLOR2) : SV_TARGET
 {
     float4 windowColor = cardTexture.Sample(cardSampler, uv);
 
@@ -118,7 +118,7 @@ cbuffer ObjectCB : register(b1)
     // 3. Wenn minimiert, dann einfach nur das Helligkeits-Dimming
     if (flagsIn.x > 0.5f)
     {
-         rgb *= 0.6f; 
+         rgb *= 0.9f; 
     }
 
     uint width = 0;
@@ -137,47 +137,6 @@ cbuffer ObjectCB : register(b1)
 
     float alpha = windowColor.a * colorIn.a * edgeAlpha;
     float3 lit = rgb * washParams.w; // washParams.w steuert hier jetzt nur noch die finale Helligkeit
-
-    return float4(lit * alpha, alpha);
-}*/
-
-float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0, float4 colorIn : COLOR0, float4 accentIn : COLOR1, float4 flagsIn : COLOR2) : SV_TARGET
-{
-    float4 windowColor = cardTexture.Sample(cardSampler, uv);
-
-    // 1. DÄMPFUNG: Wenn Werte über 1.0 schießen (HDR-Übersteuerung), 
-    // ziehen wir sie sanft in den Bereich [0, 1] zurück, bevor Gamma greift.
-    // Das stoppt das "Röntgen-Leuchten" bei maximierten Fenstern.
-    float3 rgb = saturate(windowColor.rgb); 
-
-    // 2. GAMMA-KORREKTUR: Jetzt erst die Helligkeit korrekt einstellen.
-    rgb = pow(max(rgb, 0.0001f), 0.4545f);
-
-    // 3. FLAG-LOGIK: Abdunkeln bei minimierten Fenstern.
-    if (flagsIn.x > 0.5f)
-    {
-         rgb *= 0.6f; 
-    }
-
-    uint width = 0;
-    uint height = 0;
-    cardTexture.GetDimensions(width, height);
-    float2 texSize = float2(width, height);
-
-    float radius = (accentIn.x >= 1.0f && accentIn.x <= 128.0f) ? accentIn.x : 16.0f;
-    float2 p = (uv - 0.5f) * texSize;
-    float2 halfSize = texSize * 0.5f;
-    float2 q = abs(p) - halfSize + radius;
-    float sdfTex = min(max(q.x, q.y), 0.0f) + length(max(q, 0.0f)) - radius;
-
-    float sdfScreen = sdfTex / max(fwidth(sdfTex), 0.00001f);
-    float edgeAlpha = saturate(0.5f - sdfScreen);
-
-    float alpha = windowColor.a * colorIn.a * edgeAlpha;
-    
-    // 4. FINALER MIX: Hier nehmen wir washParams.w als "Master-Slider".
-    // Wenn es immer noch zu hell ist, kannst du im C++ Code washParams.w leicht reduzieren.
-    float3 lit = rgb * washParams.w;
 
     return float4(lit * alpha, alpha);
 }
