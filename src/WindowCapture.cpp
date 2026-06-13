@@ -300,7 +300,7 @@ HRESULT WindowCapture::StartWGCSession(
 // ---------------------------------------------------------------------------
 // Per-frame capture polling
 // ---------------------------------------------------------------------------
-void WindowCapture::PollFrame() {
+/*void WindowCapture::PollFrame() {
     if (!m_framePool || !m_srv || !m_context)
         return;
 
@@ -339,6 +339,62 @@ void WindowCapture::PollFrame() {
         0, 0, 0,                  
         capturedTexture.Get(), 0, 
         nullptr                   
+    );
+
+    m_context->GenerateMips(m_srv.Get());
+}*/
+
+void WindowCapture::PollFrame() {
+    if (!m_framePool || !m_srv || !m_context)
+        return;
+
+    using namespace ABI::Windows::Graphics::Capture;
+
+    ComPtr<IDirect3D11CaptureFrame> frame;
+    HRESULT hr = m_framePool->TryGetNextFrame(&frame);
+    if (FAILED(hr) || !frame)
+        return;
+
+    ComPtr<ABI::Windows::Graphics::DirectX::Direct3D11::IDirect3DSurface> surface;
+    hr = frame->get_Surface(&surface);
+    if (FAILED(hr) || !surface)
+        return;
+
+    ComPtr<IDirect3DDxgiInterfaceAccess> dxgiAccess;
+    hr = surface.As(&dxgiAccess);
+    if (FAILED(hr))
+        return;
+
+    ComPtr<ID3D11Texture2D> capturedTexture;
+    hr = dxgiAccess->GetInterface(IID_PPV_ARGS(&capturedTexture));
+    if (FAILED(hr) || !capturedTexture)
+        return;
+
+    ComPtr<ID3D11Resource> dstResource;
+    m_srv->GetResource(&dstResource);
+
+    ComPtr<ID3D11Texture2D> dstTexture;
+    hr = dstResource.As(&dstTexture);
+    if (FAILED(hr))
+        return;
+
+    D3D11_TEXTURE2D_DESC dstDesc;
+    dstTexture->GetDesc(&dstDesc);
+
+    D3D11_BOX srcBox;
+    srcBox.left = 0;
+    srcBox.top = 0;
+    srcBox.front = 0;
+    srcBox.right = dstDesc.Width;   
+    srcBox.bottom = dstDesc.Height; 
+    srcBox.back = 1;
+
+
+    m_context->CopySubresourceRegion(
+        dstTexture.Get(), 0,      
+        0, 0, 0,                  
+        capturedTexture.Get(), 0, 
+        &srcBox 
     );
 
     m_context->GenerateMips(m_srv.Get());
