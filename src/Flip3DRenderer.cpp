@@ -861,14 +861,15 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
-        
-        SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+        ANIMATIONINFO ai = { sizeof(ANIMATIONINFO), 0 };  
+        SystemParametersInfoW(SPI_SETANIMATION, sizeof(ai), &ai, 0);
     
-        AnimateWindow(m_selectedHWND, 150, AW_BLEND);
-        
+        ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
         SetForegroundWindow(m_selectedHWND);
+    
+        ai.iMinAnimate = 1;
+        SystemParametersInfoW(SPI_SETANIMATION, sizeof(ai), &ai, 0);
+    
         m_selectedWindowActivationDispatched = true;
     }
     else
