@@ -278,9 +278,15 @@ bool Flip3DRenderer::Render3Dstack()
     
     if (m_hwnd)
     {
+        //ApplyAcrylic(m_hwnd);
+        //
+        HWND progmanHwnd = FindWindow(L"Progman", NULL);
+        if (progmanHwnd != NULL)
+        {
+            SetForegroundWindow(progmanHwnd);
+        }
         ApplyAcrylic(m_hwnd);
     }
-
     return m_hwnd != nullptr;
 }
 
