@@ -20,8 +20,6 @@ private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
     HANDLE m_frameLatencyWaitableObject = nullptr;
-    bool m_pendingRestore = false;
-    HWND m_pendingRestoreHWND = NULL;
 
     // Card / window model — uses std::list matching uDWM's linked-list architecture
     void BuildCardModels();
