@@ -861,16 +861,17 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        ANIMATIONINFO ai = { sizeof(ANIMATIONINFO), 0 };  
+        ANIMATIONINFO ai = { sizeof(ANIMATIONINFO), 0 };
         SystemParametersInfoW(SPI_SETANIMATION, sizeof(ai), &ai, 0);
     
         ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
-        SetForegroundWindow(m_selectedHWND);
     
         ai.iMinAnimate = 1;
         SystemParametersInfoW(SPI_SETANIMATION, sizeof(ai), &ai, 0);
     
-        m_selectedWindowActivationDispatched = true;
+        m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
+            m_selectedHWND, false, m_selectedWindowWasShellDesktop);
+
     }
     else
     {
