@@ -950,6 +950,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     }
     else 
     {
+        ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
         m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
     }
