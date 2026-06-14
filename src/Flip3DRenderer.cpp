@@ -588,15 +588,10 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
-        {            
-            //SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
-            //SendMessage(m_selectedHWND, WM_SETREDRAW, FALSE, 0);
-            //SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
-            
+        {
+            ShowWindow(m_selectedHWND, SW_RESTORE);
             SetForegroundWindow(m_selectedHWND);
-            SetActiveWindow(m_selectedHWND);
-
-            m_selectedWindowActivationDispatched = false; 
+            m_selectedWindowActivationDispatched = true;
         }
 
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
@@ -609,17 +604,9 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            SetLayeredWindowAttributes(m_selectedHWND, 0, 255, LWA_ALPHA);
-            //SendMessage(m_selectedHWND, WM_SETREDRAW, FALSE, 0);
-            //SetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtrW(m_selectedHWND, GWL_EXSTYLE) & ~WS_EX_LAYERED);
-
-            //SendMessage(m_selectedHWND, WM_SETREDRAW, TRUE, 0);
-            //RedrawWindow(m_selectedHWND, NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_FRAME | RDW_UPDATENOW);
-            
+            ShowWindow(m_selectedHWND, SW_RESTORE);
             SetForegroundWindow(m_selectedHWND);
-            SetActiveWindow(m_selectedHWND);
-            
-            m_selectedWindowActivationDispatched = false;
+            m_selectedWindowActivationDispatched = true;
         }
 
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
@@ -944,11 +931,6 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        ShowWindow(m_selectedHWND, SW_HIDE);
-        SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-        UpdateWindow(m_selectedHWND);  
-        ShowWindow(m_selectedHWND, SW_SHOWNA);
-        SetFocus(GetActiveWindow());
         m_selectedWindowActivationDispatched = true;
     }
     else 
