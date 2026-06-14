@@ -783,6 +783,52 @@ void Flip3DRenderer::BeginExitView()
     m_enterTimeline.Restart(1.0f, 0.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
 }
 
+bool ShowWindowSmoothNoRestoreAnim(HWND hwnd, bool wasMinimized)
+{
+    if (!IsWindow(hwnd))
+        return false;
+
+    WINDOWPLACEMENT wp{};
+    wp.length = sizeof(wp);
+
+    if (!GetWindowPlacement(hwnd, &wp))
+        return false;
+
+    if (wasMinimized)
+    {
+        wp.showCmd = SW_SHOWNORMAL;
+
+        SetWindowPlacement(hwnd, &wp);
+
+        SetWindowPos(
+            hwnd,
+            HWND_TOP,
+            0, 0, 0, 0,
+            SWP_NOMOVE |
+            SWP_NOSIZE |
+            SWP_NOACTIVATE |
+            SWP_SHOWWINDOW
+        );
+    }
+    else
+    {
+        ShowWindow(hwnd, SW_SHOWNA);
+    }
+
+    DwmFlush();
+    RedrawWindow(
+        hwnd,
+        nullptr,
+        nullptr,
+        RDW_INVALIDATE |
+        RDW_UPDATENOW |
+        RDW_FRAME |
+        RDW_ALLCHILDREN
+    );
+
+    return true;
+}
+
 void Flip3DRenderer::BeginExitAnimation() { BeginExitView(); }
 // ============================================================================
 // Selection
@@ -860,9 +906,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-        SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+        ShowWindowSmoothNoRestoreAnim(m_selectedHWND, m_selectedWindowWasMinimized);
         //
         m_selectedWindowActivationDispatched = true;
     }
