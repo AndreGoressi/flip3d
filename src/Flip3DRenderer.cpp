@@ -477,7 +477,8 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
     rsDesc.DepthClipEnable = TRUE;
-    rsDesc.MultisampleEnable = FALSE;
+    rsDesc.MultisampleEnable = TRUE;
+    rsDesc.AntialiasedLineEnable = TRUE;  // <-- new
     hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
     if (FAILED(hr)) return hr;
 
