@@ -536,6 +536,15 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     return S_OK;
 }
 
+void DwmSetWindowAttributeAsync(HWND hWnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD cbAttribute) {
+    auto hDwm = GetModuleHandleW(L"dwmapi.dll");
+    if (hDwm) {
+        typedef HRESULT (WINAPI *DwmSetWindowAttribute_t)(HWND, DWORD, LPCVOID, DWORD);
+        auto pFunc = (DwmSetWindowAttribute_t)GetProcAddress(hDwm, "DwmSetWindowAttribute");
+        if (pFunc) pFunc(hWnd, dwAttribute, pvAttribute, cbAttribute);
+    }
+}
+
 // ============================================================================
 // Per-frame update
 // ============================================================================
@@ -564,18 +573,26 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
+            BOOL forceDisable = TRUE;
+            DwmSetWindowAttributeAsync(hWnd, 3, &forceDisable, sizeof(forceDisable));
+            //
+            BOOL forceEnable = FALSE;
+            DwmSetWindowAttributeAsync(hWnd, 3, &forceEnable, sizeof(forceEnable));
             //ShowWindow(m_selectedHWND, SW_RESTORE);
             /*ShowWindow(m_selectedHWND, SW_HIDE);
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);*/
             //
-            ShowWindow(m_selectedHWND, SW_HIDE);
+
+
+            
+            /*ShowWindow(m_selectedHWND, SW_HIDE);
             SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
             
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
-            SetForegroundWindow(m_selectedHWND);
+            SetForegroundWindow(m_selectedHWND);*/
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -589,18 +606,27 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
+
+            BOOL forceDisable = TRUE;
+            DwmSetWindowAttributeAsync(hWnd, 3, &forceDisable, sizeof(forceDisable));
+            //
+            BOOL forceEnable = FALSE;
+            DwmSetWindowAttributeAsync(hWnd, 3, &forceEnable, sizeof(forceEnable));
+
             //ShowWindow(m_selectedHWND, SW_RESTORE);
             /*ShowWindow(m_selectedHWND, SW_HIDE);
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);*/
             //
-            ShowWindow(m_selectedHWND, SW_HIDE);
+
+            
+            /*ShowWindow(m_selectedHWND, SW_HIDE);
             SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
             
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
-            SetForegroundWindow(m_selectedHWND);
+            SetForegroundWindow(m_selectedHWND);*/
             m_selectedWindowActivationDispatched = true;
         }
 
