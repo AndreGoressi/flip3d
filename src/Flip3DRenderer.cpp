@@ -477,7 +477,7 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     rsDesc.FillMode = D3D11_FILL_SOLID;
     rsDesc.CullMode = D3D11_CULL_NONE;
     rsDesc.DepthClipEnable = TRUE;
-    rsDesc.MultisampleEnable = TRUE;
+    rsDesc.MultisampleEnable = FALSE;
     hr = m_device->CreateRasterizerState(&rsDesc, &m_rasterizerState);
     if (FAILED(hr)) return hr;
 
@@ -557,7 +557,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     m_depthStencilTexture.Reset(); m_depthStencilView.Reset();
     m_context->OMSetRenderTargets(0, nullptr, nullptr);
 
-    static constexpr UINT kSampleCount = 2;
+    static constexpr UINT kSampleCount = 1;
     if (resizeBuffers)
     {
         HRESULT hr = m_swapChain->ResizeBuffers(0, m_width, m_height, DXGI_FORMAT_UNKNOWN, 0);
