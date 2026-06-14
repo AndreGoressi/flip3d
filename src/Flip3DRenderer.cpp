@@ -1,6 +1,7 @@
 #include "Flip3DRenderer.h"
 #include "Shaders.h"
 #include "Capture.h"
+#include <shellscalingapi.h>
 
 namespace
 {
@@ -1795,8 +1796,16 @@ void Flip3DRenderer::Render()
     XMVECTOR det = XMMatrixDeterminant(view);
     m_matHitTestInverse = XMMatrixInverse(&det, view);
     if (XMVectorGetX(det) < 0.000001f) m_matHitTestInverse = XMMatrixIdentity();
-    m_monitorWidth = static_cast<int>(m_width);
-    m_monitorHeight = static_cast<int>(m_height);
+    //
+    //m_monitorWidth = static_cast<int>(m_width);
+    //m_monitorHeight = static_cast<int>(m_height);
+    UINT dpiX = 96, dpiY = 96;
+    if (HMONITOR hMon = MonitorFromWindow(m_hwnd, MONITOR_DEFAULTTONEAREST))
+        GetDpiForMonitor(hMon, MDT_EFFECTIVE_DPI, &dpiX, &dpiY);
+    const float dpiScale = static_cast<float>(dpiX) / 96.0f;
+    
+    m_monitorWidth  = static_cast<int>(m_width  * dpiScale);
+    m_monitorHeight = static_cast<int>(m_height * dpiScale);
 
     FrameConstants frameConstants = {};
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
