@@ -57,6 +57,7 @@ target_link_libraries(flip3d PRIVATE
     runtimeobject
     dwmapi
     d2d1
+    shcore
 )
 # SmartScreen bypass
 add_custom_command(TARGET flip3d POST_BUILD
