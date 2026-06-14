@@ -964,15 +964,16 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        //SetForegroundWindow(m_selectedHWND);
+        SetForegroundWindow(m_selectedHWND);
         m_selectedWindowActivationDispatched = true;
     }
     else 
     {
+        SetForegroundWindow(m_selectedHWND);
         m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
     }
-    SetForegroundWindow(m_selectedHWND);
+    //SetForegroundWindow(m_selectedHWND);
         
     size_t targetPos = 0;
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
