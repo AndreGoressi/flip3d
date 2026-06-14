@@ -783,50 +783,50 @@ void Flip3DRenderer::BeginExitView()
     m_enterTimeline.Restart(1.0f, 0.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
 }
 
-bool ShowWindowSmoothNoRestoreAnim(HWND hwnd, bool wasMinimized)
+void LogHWNDState(HWND hwnd, const char* tag)
 {
-    if (!IsWindow(hwnd))
-        return false;
-
     WINDOWPLACEMENT wp{};
     wp.length = sizeof(wp);
 
-    if (!GetWindowPlacement(hwnd, &wp))
-        return false;
+    RECT rc{};
+    GetWindowRect(hwnd, &rc);
 
-    if (wasMinimized)
-    {
-        wp.showCmd = SW_SHOWNORMAL;
+    GetWindowPlacement(hwnd, &wp);
 
-        SetWindowPlacement(hwnd, &wp);
+    char title[256]{};
+    GetWindowTextA(hwnd, title, sizeof(title));
 
-        SetWindowPos(
-            hwnd,
-            HWND_TOP,
-            0, 0, 0, 0,
-            SWP_NOMOVE |
-            SWP_NOSIZE |
-            SWP_NOACTIVATE |
-            SWP_SHOWWINDOW
-        );
-    }
-    else
-    {
-        ShowWindow(hwnd, SW_SHOWNA);
-    }
+    char buffer[1024];
 
-    DwmFlush();
-    RedrawWindow(
+    sprintf_s(
+        buffer,
+        "\n[Flip3D] %s\n"
+        "Title=%s\n"
+        "HWND=0x%p\n"
+        "Visible=%d\n"
+        "Iconic=%d\n"
+        "Zoomed=%d\n"
+        "ShowCmd=%u\n"
+        "Rect=%ld,%ld,%ld,%ld\n"
+        "Size=%ldx%ld\n"
+        "Tick=%llu\n"
+        "-------------------\n",
+        tag,
+        title,
         hwnd,
-        nullptr,
-        nullptr,
-        RDW_INVALIDATE |
-        RDW_UPDATENOW |
-        RDW_FRAME |
-        RDW_ALLCHILDREN
-    );
+        IsWindowVisible(hwnd),
+        IsIconic(hwnd),
+        IsZoomed(hwnd),
+        wp.showCmd,
+        rc.left,
+        rc.top,
+        rc.right,
+        rc.bottom,
+        rc.right - rc.left,
+        rc.bottom - rc.top,
+        GetTickCount64());
 
-    return true;
+    OutputDebugStringA(buffer);
 }
 
 void Flip3DRenderer::BeginExitAnimation() { BeginExitView(); }
@@ -906,7 +906,17 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        ShowWindowSmoothNoRestoreAnim(m_selectedHWND, m_selectedWindowWasMinimized);
+        ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+        //
+        LogHWNDState(hwnd, "BeforeShow");
+
+        ShowWindowAsync(hwnd, SW_SHOWNOACTIVATE);
+        
+        LogHWNDState(hwnd, "AfterShow");
+        
+        DwmFlush();
+        
+        LogHWNDState(hwnd, "AfterDwmFlush");
         //
         m_selectedWindowActivationDispatched = true;
     }
