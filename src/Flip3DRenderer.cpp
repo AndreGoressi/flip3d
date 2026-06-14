@@ -908,28 +908,10 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     {
         SetWindowLongPtr(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtr(m_selectedHWND, GWL_EXSTYLE) | WS_EX_NOACTIVATE);
         //
-        RECT rect;
-        GetWindowRect(m_selectedHWND, &rect);
-        
-        int stackX = rect.left;
-        int stackY = rect.top;
-        int stackWidth = rect.right - rect.left;
-        int stackHeight = rect.bottom - rect.top;
-        
-        WINDOWPLACEMENT wp;
-        wp.length = sizeof(WINDOWPLACEMENT);
-        if (GetWindowPlacement(m_selectedHWND, &wp)) {
-            wp.rcNormalPosition.left = stackX;
-            wp.rcNormalPosition.top = stackY;
-            wp.rcNormalPosition.right = stackX + stackWidth;
-            wp.rcNormalPosition.bottom = stackY + stackHeight;
-            wp.showCmd = SW_SHOWNORMAL;
-            SetWindowPlacement(m_selectedHWND, &wp);
-        }
-        //
         ShowWindow(m_selectedHWND, SW_HIDE);
         //
-        MoveWindow(m_selectedHWND, stackX, stackY, stackWidth, stackHeight, FALSE);
+        SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
+             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
         //
         PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
         Sleep(15);
