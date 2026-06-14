@@ -872,7 +872,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     }
     else
     {
-        BOOL v0 = FALSE; 
+        BOOL v1 = FALSE; 
         DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &v1, sizeof v1);//re-enable
         m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
