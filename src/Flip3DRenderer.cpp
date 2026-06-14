@@ -785,18 +785,6 @@ void Flip3DRenderer::BeginExitView()
 
 void Flip3DRenderer::BeginExitAnimation() { BeginExitView(); }
 
-void UpdateDWMAnimationState(HWND hwnd, bool disableAnimations)
-{
-    BOOL value = disableAnimations ? TRUE : FALSE;
-    DwmSetWindowAttribute(hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &value, sizeof(value));
-
-    ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
-
-    SetWindowPos(hwnd, NULL, 0, 0, 0, 0, 
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | 
-                 SWP_NOACTIVATE | SWP_FRAMECHANGED);
-}
-
 // ============================================================================
 // Selection
 // ============================================================================
@@ -876,7 +864,8 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         BOOL vt = TRUE;
         DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &vt, sizeof(vt));
         ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
-        SetWindowPos(hwnd, NULL, 0, 0, 0, 0, 
+        
+        SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                      SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | 
                      SWP_NOACTIVATE | SWP_FRAMECHANGED);
     }
@@ -885,7 +874,8 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         BOOL vf = FALSE;
         DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &vf, sizeof(vf));
         ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
-        SetWindowPos(hwnd, NULL, 0, 0, 0, 0, 
+        SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
+            
                      SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | 
                      SWP_NOACTIVATE | SWP_FRAMECHANGED);
         //
