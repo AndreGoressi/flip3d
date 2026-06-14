@@ -860,7 +860,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        ShowWindowAsync(m_selectedHWND, SW_SHOWNORMAL);
+        ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
         SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0,
             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
         //
