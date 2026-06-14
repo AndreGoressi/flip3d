@@ -907,14 +907,27 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
         SetWindowLongPtr(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtr(m_selectedHWND, GWL_EXSTYLE) | WS_EX_NOACTIVATE);
+        //
+        WINDOWPLACEMENT wp;
+        wp.length = sizeof(WINDOWPLACEMENT);
+        //
+        if (GetWindowPlacement(m_selectedHWND, &wp)) {
+            wp.rcNormalPosition.left = stackX;
+            wp.rcNormalPosition.top = stackY;
+            wp.rcNormalPosition.right = stackX + stackWidth;
+            wp.rcNormalPosition.bottom = stackY + stackHeight;
+            wp.showCmd = SW_SHOWNORMAL;
+            SetWindowPlacement(m_selectedHWND, &wp);
+        }
+        //
         ShowWindow(m_selectedHWND, SW_HIDE);
         //
-        SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-                     //
+        MoveWindow(m_selectedHWND, stackX, stackY, stackWidth, stackHeight, FALSE);
+        //
         PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-        Sleep(10);
-        ShowWindow(m_selectedHWND, SW_SHOWNA);     
+        Sleep(15);
+        ShowWindow(m_selectedHWND, SW_SHOWNA); 
+        //
         m_selectedWindowActivationDispatched = true; 
     }
     else 
