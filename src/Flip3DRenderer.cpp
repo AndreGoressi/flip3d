@@ -860,11 +860,14 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     m_selectedWindowWasShellDesktop = selectedCard->hwnd == GetShellWindow();
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
-    {
+    {            
+        BOOL cloak = TRUE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_CLOAK, &cloak, sizeof(cloak));
+        
         ShowWindow(m_selectedHWND, SW_SHOWNOACTIVATE);
-            
-        SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0,
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
+        
+        BOOL uncloak = FALSE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_CLOAK, &uncloak, sizeof(uncloak));
         
         m_selectedWindowActivationDispatched = true;
     }
