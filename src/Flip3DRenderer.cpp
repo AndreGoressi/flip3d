@@ -906,15 +906,16 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        m_selectedWindowActivationDispatched = true; 
+        SetWindowLongPtr(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtr(m_selectedHWND, GWL_EXSTYLE) | WS_EX_NOACTIVATE);
         ShowWindow(m_selectedHWND, SW_HIDE);
         //
         SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                      SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
                      //
         PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-        Sleep(50);
+        Sleep(10);
         ShowWindow(m_selectedHWND, SW_SHOWNA);     
+        m_selectedWindowActivationDispatched = true; 
     }
     else 
     {
