@@ -1149,22 +1149,29 @@ bool Flip3DRenderer::ProcessMouseWheelInput(int mouseWheelAmount, bool horizonta
 bool Flip3DRenderer::ProcessMouseButtonInput(LONG x, LONG y, bool pressed)
 {
     if (!IsSelectionInputState()) return false;
+    //
     if (pressed)
     {
         m_mousePressedCardIndex = HitTest3DScene(x, y);
         return true;
     }
-    const int pressedIdx = m_mousePressedCardIndex;
+    
+    /*const*/ int releasedIdx = HitTest3DScene(x, y);
+    /*const*/ int pressedIdx = m_mousePressedCardIndex;
     m_mousePressedCardIndex = -1;
-    const int releasedIdx = HitTest3DScene(x, y);
+    
     if (pressedIdx >= 0 && pressedIdx == releasedIdx)
     {
         size_t i = 0;
         for (auto &card : m_cards) { if (i == static_cast<size_t>(pressedIdx)) { SelectThumbnail(card.hwnd); break; } ++i; }
     }
-    else
+    /*else
     {
         BeginExitView();
+    }*/
+    else if (releasedIdx < 0) 
+    { 
+        BeginExitView(); 
     }
     return true;
 }
