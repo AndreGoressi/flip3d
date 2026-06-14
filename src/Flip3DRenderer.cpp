@@ -784,20 +784,6 @@ void Flip3DRenderer::BeginExitView()
 }
 
 void Flip3DRenderer::BeginExitAnimation() { BeginExitView(); }
-
-
-void ForceDWMUpdate(HWND hwnd, BOOL disable)
-{
-    DwmSetWindowAttribute(hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
-    ShowWindow(hwnd, SW_SHOWNORMAL);
-
-    LONG_PTR style = GetWindowLongPtr(hwnd, GWL_STYLE);
-    SetWindowLongPtr(hwnd, GWL_STYLE, style | WS_DISABLED);
-    SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-    SetWindowLongPtr(hwnd, GWL_STYLE, style); 
-    SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-}
-
 // ============================================================================
 // Selection
 // ============================================================================
@@ -872,53 +858,17 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     m_selectedWindowWasMinimized = selectedCard->isMinimized;
     m_selectedWindowWasShellDesktop = selectedCard->hwnd == GetShellWindow();
 
-    /*if (m_selectedWindowWasMinimized && m_selectedHWND)
+    if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        BOOL vt = TRUE;
-        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &vt, sizeof(vt));
-        ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
-
-        LONG_PTR style0 = GetWindowLongPtr(m_selectedHWND, GWL_STYLE);
-        SetWindowLongPtr(m_selectedHWND, GWL_STYLE, style0 ^ WS_POPUP); 
-        SetWindowLongPtr(m_selectedHWND, GWL_STYLE, style0);            
-        
-        SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | 
-                     SWP_NOACTIVATE | SWP_FRAMECHANGED);
+        ShowWindowAsync(m_selectedHWND, SW_SHOWNORMAL);
+        m_selectedWindowActivationDispatched = true;
     }
     else 
     {
-        BOOL vf = FALSE;
-        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &vf, sizeof(vf));
-        ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
-
-        LONG_PTR style1 = GetWindowLongPtr(m_selectedHWND, GWL_STYLE);
-        SetWindowLongPtr(m_selectedHWND, GWL_STYLE, style1 ^ WS_POPUP); 
-        SetWindowLongPtr(m_selectedHWND, GWL_STYLE, style1); 
-        
-        SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | 
-                     SWP_NOACTIVATE | SWP_FRAMECHANGED);
-        //
         m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
-    }*/
-
-    if (m_selectedHWND)
-    {
-        ForceDWMUpdate(m_selectedHWND, m_selectedWindowWasMinimized ? TRUE : FALSE);
-        //
-        if (!m_selectedWindowWasMinimized)
-        {
-            m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
-                m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
-        }
-        else
-        {
-            m_selectedWindowActivationDispatched = true;
-        }
     }
-    
+        
     size_t targetPos = 0;
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
     HWND frontHwnd = m_cards.front().hwnd;
