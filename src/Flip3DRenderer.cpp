@@ -908,9 +908,16 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     {
         SetWindowLongPtr(m_selectedHWND, GWL_EXSTYLE, GetWindowLongPtr(m_selectedHWND, GWL_EXSTYLE) | WS_EX_NOACTIVATE);
         //
+        RECT rect;
+        GetWindowRect(m_selectedHWND, &rect);
+        
+        int stackX = rect.left;
+        int stackY = rect.top;
+        int stackWidth = rect.right - rect.left;
+        int stackHeight = rect.bottom - rect.top;
+        
         WINDOWPLACEMENT wp;
         wp.length = sizeof(WINDOWPLACEMENT);
-        //
         if (GetWindowPlacement(m_selectedHWND, &wp)) {
             wp.rcNormalPosition.left = stackX;
             wp.rcNormalPosition.top = stackY;
