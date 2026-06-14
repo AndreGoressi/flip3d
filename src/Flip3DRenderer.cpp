@@ -906,25 +906,19 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        //
-        LogHWNDState(m_selectedHWND, "BeforeShow");
+        BOOL disable = TRUE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
     
-        // ÄNDERUNG: SW_RESTORE anstatt SW_SHOWNOACTIVATE
-        // SW_RESTORE ist der Befehl, der die Animation explizit anfordert.
-        ShowWindow(m_selectedHWND, SW_RESTORE); 
+        ShowWindow(m_selectedHWND, SW_HIDE);
+        ShowWindow(m_selectedHWND, SW_RESTORE);
         
-        // Nach dem RESTORE kurz warten, damit Windows den Zustand "Iconic=0" 
-        // in die Message-Queue schreiben kann.
-        // Ein kurzes Sleep(0) gibt der Message-Queue Zeit, den State zu flushen.
-        Sleep(0); 
-        
-        LogHWNDState(m_selectedHWND, "AfterShow");
-        
+        Sleep(0);
+    
+        disable = FALSE;
+        DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &disable, sizeof(disable));
+  
+        ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
         DwmFlush();
-        
-        LogHWNDState(m_selectedHWND, "AfterDwmFlush");
-        
-        m_selectedWindowActivationDispatched = true;
     }
     else 
     {
