@@ -69,7 +69,8 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance)
     m_previousFrameTime = std::chrono::steady_clock::now();
     return true;
 }
-/*int Flip3DRenderer::Run()
+
+int Flip3DRenderer::Run()
 {
     MSG msg = {};
     while (msg.message != WM_QUIT)
@@ -93,45 +94,6 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance)
             m_previousFrameTime = now;
             Update(std::min(deltaSeconds, 0.05f));
             Render(); 
-        }
-        else
-        {
-            WaitMessage();
-            m_previousFrameTime = std::chrono::steady_clock::now();
-        }
-    }
-    return static_cast<int>(msg.wParam);
-}*/
-
-int Flip3DRenderer::Run()
-{
-    MSG msg = {};
-    while (msg.message != WM_QUIT)
-    {
-        while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
-        {
-            TranslateMessage(&msg);
-            DispatchMessageW(&msg);
-            if (msg.message == WM_QUIT) return static_cast<int>(msg.wParam);
-        }
-
-        if (!m_minimized)
-        {
-            if (m_frameLatencyWaitableObject != nullptr)
-            {
-                DWORD result = MsgWaitForMultipleObjectsEx(
-                    1, &m_frameLatencyWaitableObject,
-                    1000, QS_ALLINPUT, MWMO_ALERTABLE);
-                
-                if (result == WAIT_OBJECT_0 + 1)
-                    continue; 
-            }
-
-            const auto now = std::chrono::steady_clock::now();
-            const float deltaSeconds = std::chrono::duration<float>(now - m_previousFrameTime).count();
-            m_previousFrameTime = now;
-            Update(std::min(deltaSeconds, 0.05f));
-            Render();
         }
         else
         {
