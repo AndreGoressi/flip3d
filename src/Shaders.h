@@ -191,7 +191,8 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
     float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
     float lumaRange = lumaMax - lumaMin;
 
-    if (lumaRange < max(0.0312f, lumaMax * 0.125f))
+    //if (lumaRange < max(0.0312f, lumaMax * 0.125f))
+    if (lumaRange < max(0.0833f, lumaMax * 0.25f))
         return screenTexture.Sample(screenSampler, uv);
 
     float2 dir = float2(
