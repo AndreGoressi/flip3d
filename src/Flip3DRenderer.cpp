@@ -500,12 +500,24 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     hr = m_device->CreateBlendState(&blendDesc, &m_blendState);
     if (FAILED(hr)) return hr;
 
-    D3D11_SAMPLER_DESC sampDesc = {};
+    /*D3D11_SAMPLER_DESC sampDesc = {};
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
     sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
+    return hr;*/
+    
+    D3D11_SAMPLER_DESC sampDesc = {};
+    sampDesc.Filter         = D3D11_FILTER_ANISOTROPIC;  // Anisotropic rather than linear 
+    sampDesc.AddressU       = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressV       = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.AddressW       = D3D11_TEXTURE_ADDRESS_CLAMP;
+    sampDesc.MaxAnisotropy  = 16;                         // 16x
+    sampDesc.MaxLOD         = D3D11_FLOAT32_MAX;
+    sampDesc.MinLOD         = 0.0f;
+    sampDesc.MipLODBias     = 0.0f;
     hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
     return hr;
 }
