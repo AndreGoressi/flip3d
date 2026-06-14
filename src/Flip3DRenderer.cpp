@@ -908,8 +908,8 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     {
         ShowWindow(m_selectedHWND, SW_HIDE);
     
-        SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, 
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_FRAMECHANGED);
+        SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS | SWP_FRAMECHANGED | SWP_NOZORDER);
                      
         PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
         ShowWindow(m_selectedHWND, SW_SHOWNA); 
