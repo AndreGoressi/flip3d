@@ -16,9 +16,6 @@ jobs:
       run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-    - name: Unblock exe
-      run: Unblock-File "${{github.workspace}}/build/Release/flip3d.exe"
-      shell: pwsh
     - name: Upload flip3d.exe
       uses: actions/upload-artifact@v4
       with:
