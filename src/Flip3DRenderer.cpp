@@ -603,11 +603,17 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             //ShowWindow(m_selectedHWND, SW_RESTORE);
-            ShowWindow(m_selectedHWND, SW_HIDE);
-            ShowWindow(m_selectedHWND, SW_RESTORE);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
+            /*ShowWindow(m_selectedHWND, SW_HIDE);
+            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+            ShowWindow(m_selectedHWND, SW_SHOWNA);*/
             //
-            SetForegroundWindow(m_selectedHWND);
+            ShowWindow(m_selectedHWND, SW_HIDE);
+            SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
+                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
+            
+            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+            ShowWindow(m_selectedHWND, SW_SHOWNA);
+            //SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -622,11 +628,17 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             //ShowWindow(m_selectedHWND, SW_RESTORE);
-            ShowWindow(m_selectedHWND, SW_HIDE);
-            ShowWindow(m_selectedHWND, SW_RESTORE);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
+            /*ShowWindow(m_selectedHWND, SW_HIDE);
+            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+            ShowWindow(m_selectedHWND, SW_SHOWNA);*/
             //
-            SetForegroundWindow(m_selectedHWND);
+            ShowWindow(m_selectedHWND, SW_HIDE);
+            SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
+                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
+            
+            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+            ShowWindow(m_selectedHWND, SW_SHOWNA);
+            //SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -952,6 +964,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
+        //SetForegroundWindow(m_selectedHWND);
         m_selectedWindowActivationDispatched = true;
     }
     else 
@@ -959,6 +972,7 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
     }
+    SetForegroundWindow(m_selectedHWND);
         
     size_t targetPos = 0;
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
