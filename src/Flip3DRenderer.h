@@ -162,6 +162,15 @@ private:
     ComPtr<ID3D11Texture2D> m_depthStencilTexture;
     ComPtr<ID3D11DepthStencilView> m_depthStencilView;
 
+    // FXAA resources
+    ComPtr<ID3D11VertexShader> m_fxaaVertexShader;
+    ComPtr<ID3D11PixelShader>  m_fxaaPixelShader;
+    ComPtr<ID3D11Texture2D>    m_fxaaTexture;
+    ComPtr<ID3D11RenderTargetView> m_fxaaRTV;
+    ComPtr<ID3D11ShaderResourceView> m_fxaaSRV;
+    ComPtr<ID3D11Buffer>       m_fxaaConstantBuffer;
+    ComPtr<ID3D11SamplerState> m_fxaaSampler;
+
     ComPtr<ID3D11VertexShader> m_backgroundVertexShader;
     ComPtr<ID3D11PixelShader> m_backgroundPixelShader;
     ComPtr<ID3D11VertexShader> m_cardVertexShader;
