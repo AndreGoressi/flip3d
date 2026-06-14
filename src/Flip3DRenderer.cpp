@@ -589,7 +589,8 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindow(m_selectedHWND, SW_RESTORE);
+            //ShowWindow(m_selectedHWND, SW_RESTORE);
+            ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
             SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
@@ -604,7 +605,8 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindow(m_selectedHWND, SW_RESTORE);
+            //ShowWindow(m_selectedHWND, SW_RESTORE);
+            ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
             SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
