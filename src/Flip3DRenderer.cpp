@@ -519,6 +519,34 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
     sampDesc.MinLOD         = 0.0f;
     sampDesc.MipLODBias     = 0.0f;
     hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
+    //return hr;
+    // create FXAA Shader
+    ComPtr<ID3DBlob> fxaaVS, fxaaPS;
+    hr = CompileShader(kFxaaVertexShader, "main", "vs_5_0", fxaaVS);
+    if (FAILED(hr)) return hr;
+    hr = CompileShader(kFxaaPixelShader, "main", "ps_5_0", fxaaPS);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateVertexShader(fxaaVS->GetBufferPointer(), fxaaVS->GetBufferSize(), nullptr, &m_fxaaVertexShader);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreatePixelShader(fxaaPS->GetBufferPointer(), fxaaPS->GetBufferSize(), nullptr, &m_fxaaPixelShader);
+    if (FAILED(hr)) return hr;
+    
+    // FXAA Constant Buffer
+    D3D11_BUFFER_DESC fxaaCbDesc = {};
+    fxaaCbDesc.ByteWidth = 16; // float4
+    fxaaCbDesc.Usage = D3D11_USAGE_DEFAULT;
+    fxaaCbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    hr = m_device->CreateBuffer(&fxaaCbDesc, nullptr, &m_fxaaConstantBuffer);
+    if (FAILED(hr)) return hr;
+    
+    // FXAA Sampler (linear Interpolation)
+    D3D11_SAMPLER_DESC fxaaSampDesc = {};
+    fxaaSampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    fxaaSampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    fxaaSampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    fxaaSampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    fxaaSampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    hr = m_device->CreateSamplerState(&fxaaSampDesc, &m_fxaaSampler);
     return hr;
 }
 
@@ -571,7 +599,31 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     if (FAILED(hr)) return hr;
 
     m_viewport = {0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
+    // FXAA Texture (non-MSAA, as Render-Target + SRV)
+    m_fxaaRTV.Reset();
+    m_fxaaSRV.Reset();
+    m_fxaaTexture.Reset();
+    
+    D3D11_TEXTURE2D_DESC fxaaTexDesc = {};
+    fxaaTexDesc.Width = m_width;
+    fxaaTexDesc.Height = m_height;
+    fxaaTexDesc.MipLevels = 1;
+    fxaaTexDesc.ArraySize = 1;
+    fxaaTexDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    fxaaTexDesc.SampleDesc.Count = 1; // kein MSAA hier!
+    fxaaTexDesc.Usage = D3D11_USAGE_DEFAULT;
+    fxaaTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+    hr = m_device->CreateTexture2D(&fxaaTexDesc, nullptr, &m_fxaaTexture);
+    if (FAILED(hr)) return hr;
+    
+    hr = m_device->CreateRenderTargetView(m_fxaaTexture.Get(), nullptr, &m_fxaaRTV);
+    if (FAILED(hr)) return hr;
+    
+    hr = m_device->CreateShaderResourceView(m_fxaaTexture.Get(), nullptr, &m_fxaaSRV);
+    if (FAILED(hr)) return hr;
+    
     return S_OK;
+    //return S_OK;
 }
 
 // ============================================================================
@@ -1884,7 +1936,7 @@ void Flip3DRenderer::Render()
         m_context->DrawIndexed(6, 0, 0);
     }
 
-    ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
+    /*ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
     m_context->PSSetShaderResources(0, 1, nullSRV);
     m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
 
@@ -1892,6 +1944,47 @@ void Flip3DRenderer::Render()
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
             m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
+    }
+
+    m_swapChain->Present(1, 0);*/
+    ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
+    m_context->PSSetShaderResources(0, 1, nullSRV);
+    m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
+
+    // MSAA → FXAA Texture (instead of directly in the back buffer)
+    m_context->ResolveSubresource(m_fxaaTexture.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
+
+    // FXAA Pass → Backbuffer
+    ComPtr<ID3D11Texture2D> backBuffer;
+    if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
+    {
+        ComPtr<ID3D11RenderTargetView> backBufferRTV;
+        m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, &backBufferRTV);
+
+        m_context->OMSetRenderTargets(1, backBufferRTV.GetAddressOf(), nullptr);
+        m_context->OMSetDepthStencilState(nullptr, 0);
+        m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
+        m_context->RSSetViewports(1, &m_viewport);
+        m_context->IASetInputLayout(nullptr);
+        m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+        // FXAA update
+        XMFLOAT4 fxaaViewport = {
+            static_cast<float>(m_width),
+            static_cast<float>(m_height),
+            1.0f / static_cast<float>(m_width),
+            1.0f / static_cast<float>(m_height)
+        };
+        m_context->UpdateSubresource(m_fxaaConstantBuffer.Get(), 0, nullptr, &fxaaViewport, 0, 0);
+
+        m_context->VSSetShader(m_fxaaVertexShader.Get(), nullptr, 0);
+        m_context->PSSetShader(m_fxaaPixelShader.Get(), nullptr, 0);
+        m_context->PSSetConstantBuffers(0, 1, m_fxaaConstantBuffer.GetAddressOf());
+        m_context->PSSetShaderResources(0, 1, m_fxaaSRV.GetAddressOf());
+        m_context->PSSetSamplers(0, 1, m_fxaaSampler.GetAddressOf());
+        m_context->Draw(3, 0);
+
+        m_context->PSSetShaderResources(0, 1, nullSRV);
     }
 
     m_swapChain->Present(1, 0);
