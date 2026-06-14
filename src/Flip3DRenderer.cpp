@@ -906,17 +906,17 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+        //ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
         //
-        LogHWNDState(hwnd, "BeforeShow");
+        LogHWNDState(m_selectedHWND, "BeforeShow");
 
-        ShowWindowAsync(hwnd, SW_SHOWNOACTIVATE);
+        ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
         
-        LogHWNDState(hwnd, "AfterShow");
+        LogHWNDState(m_selectedHWND, "AfterShow");
         
         DwmFlush();
         
-        LogHWNDState(hwnd, "AfterDwmFlush");
+        LogHWNDState(m_selectedHWND, "AfterDwmFlush");
         //
         m_selectedWindowActivationDispatched = true;
     }
