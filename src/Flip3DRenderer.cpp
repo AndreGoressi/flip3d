@@ -911,12 +911,12 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     
         //ShowWindow(m_selectedHWND, SW_HIDE);
         //ShowWindow(m_selectedHWND, SW_RESTORE);
+
+                SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, 
+                     SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
         
         BOOL enable = FALSE;
         DwmSetWindowAttribute(m_selectedHWND, DWMWA_TRANSITIONS_FORCEDISABLED, &enable, sizeof(enable));
-  
-        SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, 
-                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_ASYNCWINDOWPOS);
         
         DwmFlush();
     }
