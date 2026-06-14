@@ -603,7 +603,10 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             //ShowWindow(m_selectedHWND, SW_RESTORE);
-            ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+            ShowWindow(m_selectedHWND, SW_HIDE);
+            ShowWindow(m_selectedHWND, SW_RESTORE);
+            ShowWindow(m_selectedHWND, SW_SHOWNA);
+            //
             SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
@@ -619,7 +622,10 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             //ShowWindow(m_selectedHWND, SW_RESTORE);
-            ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
+            ShowWindow(m_selectedHWND, SW_HIDE);
+            ShowWindow(m_selectedHWND, SW_RESTORE);
+            ShowWindow(m_selectedHWND, SW_SHOWNA);
+            //
             SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
@@ -953,7 +959,6 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
         m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
     }
-    ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
         
     size_t targetPos = 0;
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
