@@ -785,6 +785,18 @@ void Flip3DRenderer::BeginExitView()
 
 void Flip3DRenderer::BeginExitAnimation() { BeginExitView(); }
 
+void UpdateDWMAnimationState(HWND hwnd, bool disableAnimations)
+{
+    BOOL value = disableAnimations ? TRUE : FALSE;
+    DwmSetWindowAttribute(hwnd, DWMWA_TRANSITIONS_FORCEDISABLED, &value, sizeof(value));
+
+    ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
+
+    SetWindowPos(hwnd, NULL, 0, 0, 0, 0, 
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | 
+                 SWP_NOACTIVATE | SWP_FRAMECHANGED);
+}
+
 // ============================================================================
 // Selection
 // ============================================================================
@@ -860,22 +872,17 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
     m_selectedWindowWasShellDesktop = selectedCard->hwnd == GetShellWindow();
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
-    {                    
-        if (IsIconic(m_selectedHWND))
-        {
-            ShowWindowAsync(m_selectedHWND, SW_SHOWNOACTIVATE);
-        }
-        else{
-            ShowWindow(m_selectedHWND, SW_SHOWNORMAL);
-        }
-        //m_selectedWindowActivationDispatched = false;
+    {
+        UpdateDWMAnimationState(m_selectedHWND, true); //disable
+        m_selectedWindowActivationDispatched = true;
     }
     else 
     {
+        UpdateDWMAnimationState(m_selectedHWND, false); //enable
         m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
     }
-
+    
     size_t targetPos = 0;
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
     HWND frontHwnd = m_cards.front().hwnd;
