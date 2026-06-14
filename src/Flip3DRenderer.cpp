@@ -613,7 +613,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
-            //SetForegroundWindow(m_selectedHWND);
+            SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -638,7 +638,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
-            //SetForegroundWindow(m_selectedHWND);
+            SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -964,12 +964,10 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
-        SetForegroundWindow(m_selectedHWND);
         m_selectedWindowActivationDispatched = true;
     }
     else 
     {
-        SetForegroundWindow(m_selectedHWND);
         m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
             m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
     }
