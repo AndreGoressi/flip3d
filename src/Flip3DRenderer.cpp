@@ -254,13 +254,51 @@ void Flip3DRenderer::AeroPeekActivate(HWND hwnd)
                 GetProcAddress(dwmapi, (PCSTR)113));
     }
     if (m_pDwmpActivateLivePreview)
-        m_pDwmpActivateLivePreview(TRUE, hwnd, GetTopWindow(hwnd), 3, (HWND)32, 0x3244);
+        m_pDwmpActivateLivePreview(TRUE, hwnd, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
 }
 //...
 void Flip3DRenderer::AeroPeekDeactivateAll()
 {
     if (m_pDwmpActivateLivePreview)
         m_pDwmpActivateLivePreview(FALSE, nullptr, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
+}
+
+void TEST_X()
+{
+    WNDCLASSEXW host_DwmpActivateLivePreview_Class = {};
+    host_DwmpActivateLivePreview_Class.cbSize        = sizeof(host_DwmpActivateLivePreview_Class);
+    host_DwmpActivateLivePreview_Class.hInstance     = m_instance_DwmpActivateLivePreview;
+    host_DwmpActivateLivePreview_Class.lpfnWndProc   = DefWindowProcW; 
+    host_DwmpActivateLivePreview_Class.lpszClassName = L"DwmpActivateLivePreview";
+    RegisterClassExW(&host_DwmpActivateLivePreview_Class);
+    
+    if (!GetClassInfoExW(m_instance_DwmpActivateLivePreview, L"DwmpActivateLivePreview", &host_DwmpActivateLivePreview_Class)) {
+        if (!RegisterClassExW(&host_DwmpActivateLivePreview_Class)) return false;
+    }
+
+    RECT lvp{};
+    SystemParametersInfoW(SPI_GETWORKAREA, 0, &lvp, 0);
+    const int lvp_x       = lvp.left;
+    const int lvp_y       = lvp.top;
+    const int lvp_screenW = lvp.right  - lvp.left;
+    const int lvp_screenH = lvp.bottom - lvp.top;
+
+    m_hwnd_m_DwmpActivateLivePreview = CreateWindowExW(
+        0,
+        L"DwmpActivateLivePreview",
+        L"",
+        WS_OVERLAPPEDWINDOW,
+        lvp_x, lvp_y, lvp_screenW, lvp_screenH,
+        nullptr, nullptr, m_instance_DwmpActivateLivePreview, nullptr
+    );
+    //....
+    
+    if (m_hwnd_m_DwmpActivateLivePreview)
+    {
+        AeroPeekActivate(m_hwnd_m_DwmpActivateLivePreview);
+    }
+    
+    return m_hwnd_m_DwmpActivateLivePreview != nullptr;
 }
 
 // ============================================================================
@@ -302,37 +340,14 @@ bool Flip3DRenderer::Render3Dstack()
         m_instance, 
         this
     );
+    
+    TEST_X();
 
-    
-    //
-    WNDCLASSEXW host_DwmpActivateLivePreview_Class = {};
-    host_DwmpActivateLivePreview_Class.cbSize        = sizeof(host_DwmpActivateLivePreview_Class);
-    host_DwmpActivateLivePreview_Class.hInstance     = m_instance_DwmpActivateLivePreview;
-    host_DwmpActivateLivePreview_Class.lpfnWndProc   = DefWindowProcW; 
-    host_DwmpActivateLivePreview_Class.lpszClassName = L"DwmpActivateLivePreview";
-    RegisterClassExW(&host_DwmpActivateLivePreview_Class);
-    
-    m_hwnd_m_DwmpActivateLivePreview = CreateWindowExW(
-        0,
-        L"DwmpActivateLivePreview",
-        L"",
-        WS_OVERLAPPEDWINDOW,
-        w_x, w_y, w_screenW, w_screenH,
-        nullptr, nullptr, m_instance, nullptr
-    );
-    //....
-
-    
     if (m_hwnd)
     {
         ApplyAcrylic(m_hwnd);
     }
     
-    if (m_hwnd_m_DwmpActivateLivePreview)
-    {
-        AeroPeekActivate(m_hwnd_m_DwmpActivateLivePreview);
-        //return m_hwnd_m_DwmpActivateLivePreview != nullptr;
-    }
     return m_hwnd != nullptr;
 }
 
