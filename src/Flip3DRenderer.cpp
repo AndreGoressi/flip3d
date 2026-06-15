@@ -63,6 +63,12 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance)
     if (FAILED(InitializeD3D())) return false;
     CreateWindowCaptures();
 
+    for (auto &card : m_cards)
+    {
+        if (card.isMinimized && card.hwnd)
+            AeroPeekActivate(card.hwnd);
+    }
+
     m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
@@ -254,15 +260,14 @@ void Flip3DRenderer::AeroPeekActivate(HWND hwnd)
                 GetProcAddress(dwmapi, (PCSTR)113));
     }
     if (m_pDwmpActivateLivePreview)
-        m_pDwmpActivateLivePreview(TRUE, hwnd, m_hwnd, 1, (HWND)32, 0x3244);
+        m_pDwmpActivateLivePreview(TRUE, hwnd, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
 }
-//------------
+//...
 void Flip3DRenderer::AeroPeekDeactivateAll()
 {
     if (m_pDwmpActivateLivePreview)
-        m_pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, 1, (HWND)32, 0x3244);
+        m_pDwmpActivateLivePreview(FALSE, nullptr, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
 }
-
 
 // ============================================================================
 // Window creation
@@ -307,7 +312,7 @@ bool Flip3DRenderer::Render3Dstack()
     if (m_hwnd)
     {
         ApplyAcrylic(m_hwnd);
-        AeroPeekActivate(m_hwnd);
+        //AeroPeekActivate(m_hwnd);
     }
     return m_hwnd != nullptr;
 }
