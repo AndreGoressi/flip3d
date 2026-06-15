@@ -307,7 +307,7 @@ bool Flip3DRenderer::Render3Dstack()
     if (m_hwnd)
     {
         ApplyAcrylic(m_hwnd);
-        if (isMinimized) AeroPeekActivate(card.hwnd);
+        AeroPeekActivate(m_hwnd);
     }
     return m_hwnd != nullptr;
 }
