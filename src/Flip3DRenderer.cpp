@@ -331,7 +331,7 @@ bool Flip3DRenderer::Render3Dstack()
     if (m_hwnd_m_DwmpActivateLivePreview)
     {
         AeroPeekActivate(m_hwnd_m_DwmpActivateLivePreview);
-        return m_hwnd_m_DwmpActivateLivePreview != nullptr;
+        //return m_hwnd_m_DwmpActivateLivePreview != nullptr;
     }
     return m_hwnd != nullptr;
 }
