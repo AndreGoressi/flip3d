@@ -564,13 +564,6 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindow(m_selectedHWND, SW_HIDE);
-            SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-
-            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
-            SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -584,13 +577,6 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindow(m_selectedHWND, SW_HIDE);
-            SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-
-            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
-            SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -916,6 +902,13 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
 
     if (m_selectedWindowWasMinimized && m_selectedHWND)
     {
+        ShowWindow(m_selectedHWND, SW_HIDE);
+        SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
+                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
+
+        PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+        ShowWindow(m_selectedHWND, SW_SHOWNA);
+        SetForegroundWindow(m_selectedHWND);
         m_selectedWindowActivationDispatched = false;
     }
     else 
