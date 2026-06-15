@@ -254,13 +254,13 @@ void Flip3DRenderer::AeroPeekActivate(HWND hwnd)
                 GetProcAddress(dwmapi, (PCSTR)113));
     }
     if (m_pDwmpActivateLivePreview)
-        m_pDwmpActivateLivePreview(TRUE, hwnd, m_hwnd, 3, (HWND)32, 0x3244);
+        m_pDwmpActivateLivePreview(TRUE, hwnd, m_hwnd, 1, (HWND)32, 0x3244);
 }
 //------------
 void Flip3DRenderer::AeroPeekDeactivateAll()
 {
     if (m_pDwmpActivateLivePreview)
-        m_pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, 3, (HWND)32, 0x3244);
+        m_pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, 1, (HWND)32, 0x3244);
 }
 
 
