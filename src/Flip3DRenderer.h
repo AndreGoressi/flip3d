@@ -2,7 +2,6 @@
 
 #include "Config.h"
 #include "WindowCapture.h"
-#include <vector> // 
 
 // ============================================================================
 // Main Flip3D D3D11 prototype application class
@@ -82,8 +81,7 @@ private:
     bool IntersectRayTriangle(const XMFLOAT3 &origin, const XMFLOAT3 &dir,
         const XMFLOAT3 &v0, const XMFLOAT3 &v1, const XMFLOAT3 &v2,
         float &t, float &u) const;
-    //int HitTest3DScene(LONG x, LONG y) const;
-    std::vector<int> HitTest3DScene(LONG x, LONG y) const;
+    int HitTest3DScene(LONG x, LONG y) const;
 
 
 
