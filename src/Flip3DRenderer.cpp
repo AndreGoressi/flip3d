@@ -250,32 +250,30 @@ bool Flip3DRenderer::Render3Dstack()
     windowClass.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
     windowClass.style         = CS_HREDRAW | CS_VREDRAW;
     windowClass.hbrBackground = nullptr; 
-
-    if (!GetClassInfoExW(m_instance, kRenderClassName, &windowClass)) {
+    if (!RegisterClassExW(&windowClass)) return false;
+    
+    /*if (!GetClassInfoExW(m_instance, kRenderClassName, &windowClass)) {
         if (!RegisterClassExW(&windowClass)) return false;
-    }
+    }*/
 
-    RECT wc{};
+    /*RECT wc{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
     const int w_x       = wc.left;
     const int w_y       = wc.top;
     const int w_screenW = wc.right  - wc.left;
-    const int w_screenH = wc.bottom - wc.top;
-
+    const int w_screenH = wc.bottom - wc.top;*/
+    
+    const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    HWND shellTray = FindWindowW(L"Shell_TrayWnd", nullptr);
+    
     m_hwnd = CreateWindowExW(
-        WS_EX_TOOLWINDOW, 
+        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, 
         kRenderClassName, 
         kTitle,
         WS_POPUP | WS_VISIBLE, 
-        w_x, 
-        w_y, 
-        w_screenW, 
-        w_screenH, 
-        nullptr, 
-        nullptr, 
-        m_instance, 
-        this
-    );
+        0, 0, screenWidth, screenHeight, //w_x, w_y, w_screenW, w_screenH, 
+        shellTray, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
     
     if (m_hwnd)
     {
