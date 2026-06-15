@@ -35,8 +35,8 @@ private:
     // creation
     bool ApplyAcrylic(HWND hwnd);
     //new !
-    void AeroPeekActivate();
-    void AeroPeekDeactivateAll();
+    bool AeroPeekActivate();
+    void AeroPeekDeactivateAll(); 
     //
     bool Render3Dstack();
 
