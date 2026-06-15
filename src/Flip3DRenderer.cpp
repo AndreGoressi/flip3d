@@ -326,7 +326,6 @@ bool Flip3DRenderer::Render3Dstack()
     if (m_hwnd)
     {
         ApplyAcrylic(m_hwnd);
-        AeroPeekActivate(m_hwnd);
     }
     
     if (m_hwnd_m_DwmpActivateLivePreview)
