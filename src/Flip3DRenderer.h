@@ -21,6 +21,9 @@ private:
 
     HANDLE m_frameLatencyWaitableObject = nullptr;
     float m_restoreAlpha = 0.0f;
+    //new !
+    using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL, HWND, HWND, UINT, HWND, int);
+    DwmpActivateLivePreview_t m_pDwmpActivateLivePreview = nullptr;
 
     // Card / window model — uses std::list matching uDWM's linked-list architecture
     void BuildCardModels();
@@ -31,6 +34,10 @@ private:
 
     // creation
     bool ApplyAcrylic(HWND hwnd);
+    //new !
+    void AeroPeekActivate(HWND hwnd);
+    void AeroPeekDeactivateAll();
+    //
     bool Render3Dstack();
 
     // D3D initialization
