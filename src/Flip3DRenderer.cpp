@@ -181,7 +181,7 @@ void Flip3DRenderer::CreateWindowCaptures()
     {
         if (!card.hwnd) continue;
         //new !    
-        if (card.isMinimized) AeroPeekActivate(card.hwnd);
+        //if (card.isMinimized) AeroPeekActivate(card.hwnd);
         //-------
         auto cap = std::make_unique<WindowCapture>();
         HRESULT hr = cap->Initialize(card.hwnd, m_hwnd, m_device.Get());
@@ -307,6 +307,7 @@ bool Flip3DRenderer::Render3Dstack()
     if (m_hwnd)
     {
         ApplyAcrylic(m_hwnd);
+        if (card.isMinimized) AeroPeekActivate(card.hwnd);
     }
     return m_hwnd != nullptr;
 }
