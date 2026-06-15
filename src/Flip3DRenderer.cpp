@@ -306,7 +306,7 @@ bool Flip3DRenderer::Render3Dstack()
     
     //
     WNDCLASSEXW host_DwmpActivateLivePreview_Class = {};
-    host_DwmpActivateLivePreview_Class.cbSize        = sizeof(hostClass);
+    host_DwmpActivateLivePreview_Class.cbSize        = sizeof(host_DwmpActivateLivePreview_Class);
     host_DwmpActivateLivePreview_Class.hInstance     = m_instance_DwmpActivateLivePreview;
     host_DwmpActivateLivePreview_Class.lpfnWndProc   = DefWindowProcW; 
     host_DwmpActivateLivePreview_Class.lpszClassName = L"DwmpActivateLivePreview";
