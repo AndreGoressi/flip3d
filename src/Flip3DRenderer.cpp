@@ -238,67 +238,64 @@ bool Flip3DRenderer::ApplyAcrylic(HWND hwnd)
 
     return SetWCA(hwnd, &data) != FALSE;
 }
-
-
-
-
+ m_hwnd_m_DwmpActivateLivePreview != nullptr;
 
 //new !
-void Flip3DRenderer::AeroPeekActivate(HWND hwnd)
+bool Flip3DRenderer::AeroPeekActivate()
 {
-    if (!m_pDwmpActivateLivePreview)
-    {
-        HMODULE dwmapi = LoadLibraryExW(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if (dwmapi)
-            m_pDwmpActivateLivePreview = reinterpret_cast<DwmpActivateLivePreview_t>(
-                GetProcAddress(dwmapi, (PCSTR)113));
-    }
-    if (m_pDwmpActivateLivePreview)
-        m_pDwmpActivateLivePreview(TRUE, hwnd, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
-}
-//...
-void Flip3DRenderer::AeroPeekDeactivateAll()
-{
-    if (m_pDwmpActivateLivePreview)
-        m_pDwmpActivateLivePreview(FALSE, nullptr, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
-}
-
-void TEST_X()
-{
-    WNDCLASSEXW host_DwmpActivateLivePreview_Class = {};
-    host_DwmpActivateLivePreview_Class.cbSize        = sizeof(host_DwmpActivateLivePreview_Class);
-    host_DwmpActivateLivePreview_Class.hInstance     = m_instance_DwmpActivateLivePreview;
-    host_DwmpActivateLivePreview_Class.lpfnWndProc   = DefWindowProcW; 
-    host_DwmpActivateLivePreview_Class.lpszClassName = L"DwmpActivateLivePreview";
-    RegisterClassExW(&host_DwmpActivateLivePreview_Class);
-    
-    if (!GetClassInfoExW(m_instance_DwmpActivateLivePreview, L"DwmpActivateLivePreview", &host_DwmpActivateLivePreview_Class)) {
-        if (!RegisterClassExW(&host_DwmpActivateLivePreview_Class)) return false;
+    WNDCLASSEXW wcex = {};
+    wcex.cbSize        = sizeof(WNDCLASSEXW);
+    wcex.hInstance     = m_instance_DwmpActivateLivePreview;
+    wcex.lpfnWndProc   = DefWindowProcW; 
+    wcex.lpszClassName = L"DwmpActivateLivePreview";
+    if (!RegisterClassExW(&wcex) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
+        return false;
     }
 
     RECT lvp{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &lvp, 0);
-    const int lvp_x       = lvp.left;
-    const int lvp_y       = lvp.top;
-    const int lvp_screenW = lvp.right  - lvp.left;
-    const int lvp_screenH = lvp.bottom - lvp.top;
-
     m_hwnd_m_DwmpActivateLivePreview = CreateWindowExW(
         0,
         L"DwmpActivateLivePreview",
         L"",
         WS_OVERLAPPEDWINDOW,
-        lvp_x, lvp_y, lvp_screenW, lvp_screenH,
+        lvp.left, lvp.top, 
+        lvp.right - lvp.left, lvp.bottom - lvp.top,
         nullptr, nullptr, m_instance_DwmpActivateLivePreview, nullptr
     );
-    //....
-    
+
+    if (!m_hwnd_m_DwmpActivateLivePreview) return false;
+    if (!m_pDwmpActivateLivePreview)
+    {
+        HMODULE dwmapi = LoadLibraryExW(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (dwmapi)
+        {
+            m_pDwmpActivateLivePreview = reinterpret_cast<DwmpActivateLivePreview_t>(
+                GetProcAddress(dwmapi, (PCSTR)113));
+        }
+    }
+
+    if (m_pDwmpActivateLivePreview)
+    {
+        // call undocumented API
+        m_pDwmpActivateLivePreview(TRUE, m_hwnd_m_DwmpActivateLivePreview, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
+    }
+
+    return true;
+}
+//...
+void Flip3DRenderer::AeroPeekDeactivateAll()
+{
+    if (m_pDwmpActivateLivePreview)
+    {
+        m_pDwmpActivateLivePreview(FALSE, nullptr, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
+    }
+
     if (m_hwnd_m_DwmpActivateLivePreview)
     {
-        AeroPeekActivate(m_hwnd_m_DwmpActivateLivePreview);
+        DestroyWindow(m_hwnd_m_DwmpActivateLivePreview);
+        m_hwnd_m_DwmpActivateLivePreview = nullptr; 
     }
-    
-    return m_hwnd_m_DwmpActivateLivePreview != nullptr;
 }
 
 // ============================================================================
@@ -341,7 +338,7 @@ bool Flip3DRenderer::Render3Dstack()
         this
     );
     
-    TEST_X();
+    AeroPeekActivate();
 
     if (m_hwnd)
     {
