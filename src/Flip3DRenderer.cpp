@@ -1135,10 +1135,10 @@ bool Flip3DRenderer::IntersectRayTriangle(
     return -1;
 }*/
 
-int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
+std::vector<int> Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
 {
-    if (!IsSelectionInputState() || m_cards.empty()) return -1;
-    if (m_monitorWidth <= 0 || m_monitorHeight <= 0) return -1;
+    if (!IsSelectionInputState() || m_cards.empty()) return {}; 
+    if (m_monitorWidth <= 0 || m_monitorHeight <= 0) return {};
 
     const float monitorW = static_cast<float>(m_monitorWidth);
     const float monitorH = static_cast<float>(m_monitorHeight);
@@ -1161,12 +1161,11 @@ int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
     XMStoreFloat3(&dir, rayDir);
 
     const DrawBuildContext context = CreateDrawBuildContext();
-    if (context.countInt <= 0) return -1;
+    if (context.countInt <= 0) return {};
 
     const std::vector<VisibleCardStructure> structure = BuildVisibleCardStructure(context);
     
-    int bestCard = -1;
-    float minT = FLT_MAX; 
+    std::vector<std::pair<float, int>> hits;
 
     for (const auto &entry : structure)
     {
@@ -1189,7 +1188,6 @@ int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
         XMStoreFloat3(&v[0], p0); XMStoreFloat3(&v[1], p1);
         XMStoreFloat3(&v[2], p2); XMStoreFloat3(&v[3], p3);
 
-        // Raycast-Intersection Tests
         float t0 = 0, u0 = 0, t1 = 0, u1 = 0;
         bool hit0 = IntersectRayTriangle(origin, dir, v[0], v[1], v[2], t0, u0);
         bool hit1 = IntersectRayTriangle(origin, dir, v[0], v[1], v[3], t1, u1);
@@ -1199,16 +1197,19 @@ int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
             float currentT = FLT_MAX;
             if (hit0) currentT = std::min(currentT, t0);
             if (hit1) currentT = std::min(currentT, t1);
-
-            if (currentT < minT)
-            {
-                minT = currentT;
-                bestCard = static_cast<int>(entry.cardPosition);
-            }
+            
+            hits.push_back({currentT, static_cast<int>(entry.cardPosition)});
         }
     }
 
-    return bestCard;
+    std::sort(hits.begin(), hits.end());
+
+    std::vector<int> result;
+    for (const auto& h : hits) {
+        result.push_back(h.second);
+    }
+    
+    return result;
 }
 
 
