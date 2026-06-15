@@ -584,8 +584,9 @@ void Flip3DRenderer::Update(float deltaSeconds)
             ShowWindow(m_selectedHWND, SW_SHOWNA);*/
             //
 
-           ShowWindow(m_selectedHWND, SW_RESTORE);
-           SetActiveWindow(m_selectedHWND);
+           //ShowWindow(m_selectedHWND, SW_RESTORE);
+            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+            SetActiveWindow(m_selectedHWND);
         //SetForegroundWindow(m_selectedHWND);
             
             /*ShowWindow(m_selectedHWND, SW_HIDE);
@@ -621,7 +622,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);*/
             //
-            ShowWindow(m_selectedHWND, SW_RESTORE);
+            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             SetActiveWindow(m_selectedHWND);
             
             /*ShowWindow(m_selectedHWND, SW_HIDE);
