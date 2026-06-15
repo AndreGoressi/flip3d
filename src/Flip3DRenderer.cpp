@@ -585,11 +585,6 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_hwnd && IsWindow(m_hwnd)) 
             DestroyWindow(m_hwnd);
         //
-        ShowWindow(m_selectedHWND, SW_HIDE);
-        PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-        ShowWindow(m_selectedHWND, SW_SHOWNA);
-        ForceWindowToForeground(m_selectedHWND);
-        //
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
@@ -599,11 +594,6 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_hwnd && IsWindow(m_hwnd)) 
             DestroyWindow(m_hwnd);
-        //
-        ShowWindow(m_selectedHWND, SW_HIDE);
-        PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-        ShowWindow(m_selectedHWND, SW_SHOWNA);
-        ForceWindowToForeground(m_selectedHWND);
         //
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
