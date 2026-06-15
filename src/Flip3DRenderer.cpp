@@ -180,6 +180,9 @@ void Flip3DRenderer::CreateWindowCaptures()
     for (auto &card : m_cards)
     {
         if (!card.hwnd) continue;
+        //new !    
+        if (card.isMinimized) AeroPeekActivate(card.hwnd);
+        //-------
         auto cap = std::make_unique<WindowCapture>();
         HRESULT hr = cap->Initialize(card.hwnd, m_hwnd, m_device.Get());
         if (SUCCEEDED(hr))
@@ -235,6 +238,31 @@ bool Flip3DRenderer::ApplyAcrylic(HWND hwnd)
 
     return SetWCA(hwnd, &data) != FALSE;
 }
+
+
+
+
+
+//new !
+void Flip3DRenderer::AeroPeekActivate(HWND hwnd)
+{
+    if (!m_pDwmpActivateLivePreview)
+    {
+        HMODULE dwmapi = LoadLibraryExW(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (dwmapi)
+            m_pDwmpActivateLivePreview = reinterpret_cast<DwmpActivateLivePreview_t>(
+                GetProcAddress(dwmapi, (PCSTR)113));
+    }
+    if (m_pDwmpActivateLivePreview)
+        m_pDwmpActivateLivePreview(TRUE, hwnd, m_hwnd, 3, (HWND)32, 0x3244);
+}
+//------------
+void Flip3DRenderer::AeroPeekDeactivateAll()
+{
+    if (m_pDwmpActivateLivePreview)
+        m_pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, 3, (HWND)32, 0x3244);
+}
+
 
 // ============================================================================
 // Window creation
@@ -799,7 +827,9 @@ void Flip3DRenderer::BeginExitView()
         DestroyWindow(m_hwnd);
         return;
     }
-
+    //new !
+    AeroPeekDeactivateAll();
+    //-----
     m_state = ViewState::Exit;
     m_bufferedRotateDelta = 0;
     m_cMouseWheelLeftOver = 0;
