@@ -536,7 +536,7 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     return S_OK;
 }
 
-void DwmSetWindowAttributeAsync(HWND hWnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD cbAttribute) {
+void DwmSetWindowAttributeDynamic(HWND hWnd, DWORD dwAttribute, LPCVOID pvAttribute, DWORD cbAttribute) {
     auto hDwm = GetModuleHandleW(L"dwmapi.dll");
     if (hDwm) {
         typedef HRESULT (WINAPI *DwmSetWindowAttribute_t)(HWND, DWORD, LPCVOID, DWORD);
@@ -574,10 +574,10 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             BOOL forceDisable = TRUE;
-            DwmSetWindowAttributeAsync(m_selectedHWND, 3, &forceDisable, sizeof(forceDisable));
+            DwmSetWindowAttributeDynamic(m_selectedHWND, 3, &forceDisable, sizeof(forceDisable));
             //
             BOOL forceEnable = FALSE;
-            DwmSetWindowAttributeAsync(m_selectedHWND, 3, &forceEnable, sizeof(forceEnable));
+            DwmSetWindowAttributeDynamic(m_selectedHWND, 3, &forceEnable, sizeof(forceEnable));
             //ShowWindow(m_selectedHWND, SW_RESTORE);
             /*ShowWindow(m_selectedHWND, SW_HIDE);
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
@@ -593,6 +593,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
             SetForegroundWindow(m_selectedHWND);*/
+            SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -608,10 +609,10 @@ void Flip3DRenderer::Update(float deltaSeconds)
         {
 
             BOOL forceDisable = TRUE;
-            DwmSetWindowAttributeAsync(m_selectedHWND, 3, &forceDisable, sizeof(forceDisable));
+            DwmSetWindowAttributeDynamic(m_selectedHWND, 3, &forceDisable, sizeof(forceDisable));
             //
             BOOL forceEnable = FALSE;
-            DwmSetWindowAttributeAsync(m_selectedHWND, 3, &forceEnable, sizeof(forceEnable));
+            DwmSetWindowAttributeDynamic(m_selectedHWND, 3, &forceEnable, sizeof(forceEnable));
 
             //ShowWindow(m_selectedHWND, SW_RESTORE);
             /*ShowWindow(m_selectedHWND, SW_HIDE);
@@ -627,6 +628,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
             SetForegroundWindow(m_selectedHWND);*/
+            SetForegroundWindow(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
