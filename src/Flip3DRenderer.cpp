@@ -536,20 +536,24 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     return S_OK;
 }
 
-typedef BOOL(WINAPI* PFN_SHOWWINDOWASYNC)(HWND, int);
-BOOL ShowWindowAsyncDynamic(HWND hWnd, int nCmdShow)
+void ForceWindowToForeground(HWND hWnd)
 {
-    HMODULE hUser32 = GetModuleHandle(L"user32.dll");
-    if (hUser32)
-    {
-        PFN_SHOWWINDOWASYNC pShowWindowAsync = (PFN_SHOWWINDOWASYNC)GetProcAddress(hUser32, "ShowWindowAsync");
-        
-        if (pShowWindowAsync)
-        {
-            return pShowWindowAsync(hWnd, nCmdShow);
-        }
+    if (!IsWindow(hWnd)) return;
+
+    if (IsIconic(hWnd)) {
+        ShowWindowAsync(hWnd, SW_RESTORE);
     }
-    return FALSE;
+
+    DWORD dwProcessId = 0;
+    GetWindowThreadProcessId(hWnd, &dwProcessId);
+    AttachThreadInput(GetCurrentThreadId(), GetWindowThreadProcessId(hWnd, NULL), TRUE);
+
+    SetForegroundWindow(hWnd);
+    SetFocus(hWnd);
+    SetActiveWindow(hWnd);
+    BringWindowToTop(hWnd);
+
+    AttachThreadInput(GetCurrentThreadId(), GetWindowThreadProcessId(hWnd, NULL), FALSE);
 }
 
 // ============================================================================
@@ -586,7 +590,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
-            SetForegroundWindow(m_selectedHWND);
+            ForceWindowToForeground(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -606,7 +610,8 @@ void Flip3DRenderer::Update(float deltaSeconds)
     
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
-            SetForegroundWindow(m_selectedHWND);
+            //SetForegroundWindow(m_selectedHWND);
+            ForceWindowToForeground(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
