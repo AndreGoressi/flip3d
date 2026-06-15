@@ -238,7 +238,6 @@ bool Flip3DRenderer::ApplyAcrylic(HWND hwnd)
 
     return SetWCA(hwnd, &data) != FALSE;
 }
- m_hwnd_m_DwmpActivateLivePreview != nullptr;
 
 //new !
 bool Flip3DRenderer::AeroPeekActivate()
