@@ -63,12 +63,6 @@ bool Flip3DRenderer::Initialize(HINSTANCE instance)
     if (FAILED(InitializeD3D())) return false;
     CreateWindowCaptures();
 
-    for (auto &card : m_cards)
-    {
-        if (card.isMinimized && card.hwnd)
-            AeroPeekActivate(card.hwnd);
-    }
-
     m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
@@ -308,11 +302,37 @@ bool Flip3DRenderer::Render3Dstack()
         m_instance, 
         this
     );
+
+    
+    //
+    WNDCLASSEXW host_DwmpActivateLivePreview_Class = {};
+    host_DwmpActivateLivePreview_Class.cbSize        = sizeof(hostClass);
+    host_DwmpActivateLivePreview_Class.hInstance     = m_instance_DwmpActivateLivePreview;
+    host_DwmpActivateLivePreview_Class.lpfnWndProc   = DefWindowProcW; 
+    host_DwmpActivateLivePreview_Class.lpszClassName = L"DwmpActivateLivePreview";
+    RegisterClassExW(&host_DwmpActivateLivePreview_Class);
+    
+    m_hwnd_m_DwmpActivateLivePreview = CreateWindowExW(
+        0,
+        L"DwmpActivateLivePreview",
+        L"",
+        WS_OVERLAPPEDWINDOW,
+        w_x, w_y, w_screenW, w_screenH,
+        nullptr, nullptr, m_instance, nullptr
+    );
+    //....
+
     
     if (m_hwnd)
     {
         ApplyAcrylic(m_hwnd);
-        //AeroPeekActivate(m_hwnd);
+        AeroPeekActivate(m_hwnd);
+    }
+    
+    if (m_hwnd_m_DwmpActivateLivePreview)
+    {
+        AeroPeekActivate(m_hwnd_m_DwmpActivateLivePreview);
+        return m_hwnd_m_DwmpActivateLivePreview != nullptr;
     }
     return m_hwnd != nullptr;
 }
