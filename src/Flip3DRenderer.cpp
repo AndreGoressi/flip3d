@@ -337,11 +337,10 @@ bool Flip3DRenderer::Render3Dstack()
         this
     );
     
-    AeroPeekActivate();
-
     if (m_hwnd)
     {
         ApplyAcrylic(m_hwnd);
+        AeroPeekActivate();
     }
     
     return m_hwnd != nullptr;
