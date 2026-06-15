@@ -1076,7 +1076,7 @@ bool Flip3DRenderer::IntersectRayTriangle(
     return u >= 0.0f && v >= 0.0f && (u + v) <= 1.0f && t > EPSILON;
 }
 
-int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
+/*int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
 {
     if (!IsSelectionInputState() || m_cards.empty()) return -1;
     if (m_monitorWidth <= 0 || m_monitorHeight <= 0) return -1;
@@ -1133,7 +1133,85 @@ int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
         if (IntersectRayTriangle(origin, dir, v[0], v[1], v[3], t1, u1)) return static_cast<int>(entry.cardPosition);
     }
     return -1;
+}*/
+
+int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
+{
+    if (!IsSelectionInputState() || m_cards.empty()) return -1;
+    if (m_monitorWidth <= 0 || m_monitorHeight <= 0) return -1;
+
+    const float monitorW = static_cast<float>(m_monitorWidth);
+    const float monitorH = static_cast<float>(m_monitorHeight);
+    float ndcX = static_cast<float>(x);
+    float ndcY = static_cast<float>(y);
+    if (m_fRTLMirror) ndcX = monitorW - ndcX;
+    ndcX = ndcX / monitorW - 0.5f;
+    ndcY = -(ndcY / monitorH - 0.5f);
+
+    const float enterProgress = EnterProgress();
+    const float nearPlaneExtent = gNearPlaneEdgeSize;
+
+    XMFLOAT3 rayOrigin = {0.0f, 0.0f, 0.0f};
+    XMVECTOR nearPoint = XMVectorSet(ndcX * nearPlaneExtent, ndcY * nearPlaneExtent, -1.0f, 0.0f);
+    XMVECTOR originWS = XMVector3TransformCoord(XMLoadFloat3(&rayOrigin), m_matHitTestInverse);
+    XMVECTOR nearWS = XMVector3TransformCoord(nearPoint, m_matHitTestInverse);
+    XMVECTOR rayDir = XMVector3Normalize(nearWS - originWS);
+    XMFLOAT3 origin = {}, dir = {};
+    XMStoreFloat3(&origin, originWS);
+    XMStoreFloat3(&dir, rayDir);
+
+    const DrawBuildContext context = CreateDrawBuildContext();
+    if (context.countInt <= 0) return -1;
+
+    const std::vector<VisibleCardStructure> structure = BuildVisibleCardStructure(context);
+    
+    int bestCard = -1;
+    float minT = FLT_MAX; 
+
+    for (const auto &entry : structure)
+    {
+        size_t pos = 0;
+        const CardModel *cardPtr = nullptr;
+        for (auto &card : m_cards) { if (pos == entry.cardPosition) { cardPtr = &card; break; } ++pos; }
+        if (!cardPtr) continue;
+
+        const CardAnimationState animState = ResolveCardAnimationState(entry, context);
+        const CardWorldState worldState = GetWorldFromParametric(context, *cardPtr, entry.cardPosition, animState, enterProgress);
+        const XMMATRIX world = XMLoadFloat4x4(&worldState.world);
+
+        XMFLOAT3 c;
+        c = {0.0f, 0.0f, 0.0f}; XMVECTOR p0 = XMVector3TransformCoord(XMLoadFloat3(&c), world);
+        c = {1.0f, 0.0f, 0.0f}; XMVECTOR p1 = XMVector3TransformCoord(XMLoadFloat3(&c), world);
+        c = {0.0f, 1.0f, 0.0f}; XMVECTOR p2 = XMVector3TransformCoord(XMLoadFloat3(&c), world);
+        c = {1.0f, 1.0f, 0.0f}; XMVECTOR p3 = XMVector3TransformCoord(XMLoadFloat3(&c), world);
+
+        XMFLOAT3 v[4];
+        XMStoreFloat3(&v[0], p0); XMStoreFloat3(&v[1], p1);
+        XMStoreFloat3(&v[2], p2); XMStoreFloat3(&v[3], p3);
+
+        // Raycast-Intersection Tests
+        float t0 = 0, u0 = 0, t1 = 0, u1 = 0;
+        bool hit0 = IntersectRayTriangle(origin, dir, v[0], v[1], v[2], t0, u0);
+        bool hit1 = IntersectRayTriangle(origin, dir, v[0], v[1], v[3], t1, u1);
+
+        if (hit0 || hit1)
+        {
+            float currentT = FLT_MAX;
+            if (hit0) currentT = std::min(currentT, t0);
+            if (hit1) currentT = std::min(currentT, t1);
+
+            if (currentT < minT)
+            {
+                minT = currentT;
+                bestCard = static_cast<int>(entry.cardPosition);
+            }
+        }
+    }
+
+    return bestCard;
 }
+
+
 
 bool Flip3DRenderer::SelectThumbnailAtPoint(LONG x, LONG y)
 {
