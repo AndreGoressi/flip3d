@@ -536,6 +536,22 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     return S_OK;
 }
 
+typedef BOOL(WINAPI* PFN_SHOWWINDOWASYNC)(HWND, int);
+BOOL ShowWindowAsyncDynamic(HWND hWnd, int nCmdShow)
+{
+    HMODULE hUser32 = GetModuleHandle(L"user32.dll");
+    if (hUser32)
+    {
+        PFN_SHOWWINDOWASYNC pShowWindowAsync = (PFN_SHOWWINDOWASYNC)GetProcAddress(hUser32, "ShowWindowAsync");
+        
+        if (pShowWindowAsync)
+        {
+            return pShowWindowAsync(hWnd, nCmdShow);
+        }
+    }
+    return FALSE;
+}
+
 // ============================================================================
 // Per-frame update
 // ============================================================================
@@ -564,7 +580,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindow(m_selectedHWND, SW_HIDE);
+            ShowWindowAsyncDynamic(m_selectedHWND, SW_SHOWNOACTIVATE);
             //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                              //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
     
@@ -584,7 +600,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindow(m_selectedHWND, SW_HIDE);
+            ShowWindowAsyncDynamic(m_selectedHWND, SW_SHOWNOACTIVATE);
             //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                              //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
     
