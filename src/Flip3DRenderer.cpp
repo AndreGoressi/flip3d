@@ -242,31 +242,33 @@ bool Flip3DRenderer::ApplyAcrylic(HWND hwnd)
 //new !
 bool Flip3DRenderer::AeroPeekActivate()
 {
+    if (m_hwnd_m_DwmpActivateLivePreview != nullptr) return true; 
+
     WNDCLASSEXW wcex = {};
     wcex.cbSize        = sizeof(WNDCLASSEXW);
-    wcex.hInstance     = m_instance_DwmpActivateLivePreview;
+    wcex.hInstance     = m_instance; 
     wcex.lpfnWndProc   = DefWindowProcW; 
     wcex.lpszClassName = L"DwmpActivateLivePreview";
+    
     if (!RegisterClassExW(&wcex) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
         return false;
     }
 
-    RECT lvp{};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &lvp, 0);
     m_hwnd_m_DwmpActivateLivePreview = CreateWindowExW(
-        0,
+        WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
         L"DwmpActivateLivePreview",
         L"",
-        WS_OVERLAPPEDWINDOW,
-        lvp.left, lvp.top, 
-        lvp.right - lvp.left, lvp.bottom - lvp.top,
-        nullptr, nullptr, m_instance_DwmpActivateLivePreview, nullptr
+        WS_POPUP, 
+        0, 0, 0, 0,
+        nullptr, nullptr, m_instance, nullptr
     );
 
     if (!m_hwnd_m_DwmpActivateLivePreview) return false;
+
     if (!m_pDwmpActivateLivePreview)
     {
-        HMODULE dwmapi = LoadLibraryExW(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        HMODULE dwmapi = GetModuleHandleW(L"dwmapi.dll");
+        if (!dwmapi) dwmapi = LoadLibraryW(L"dwmapi.dll");
         if (dwmapi)
         {
             m_pDwmpActivateLivePreview = reinterpret_cast<DwmpActivateLivePreview_t>(
@@ -276,7 +278,6 @@ bool Flip3DRenderer::AeroPeekActivate()
 
     if (m_pDwmpActivateLivePreview)
     {
-        // call undocumented API
         m_pDwmpActivateLivePreview(TRUE, m_hwnd_m_DwmpActivateLivePreview, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
     }
 
@@ -340,7 +341,11 @@ bool Flip3DRenderer::Render3Dstack()
     if (m_hwnd)
     {
         ApplyAcrylic(m_hwnd);
-        AeroPeekActivate();
+        //
+        if (!AeroPeekActivate()) 
+        {
+            OutputDebugStringW(L"[Flip3D] Error: failed to activate AeroPeek.\n");
+        }
     }
     
     return m_hwnd != nullptr;
