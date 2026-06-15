@@ -574,10 +574,10 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             BOOL forceDisable = TRUE;
-            DwmSetWindowAttributeAsync(hWnd, 3, &forceDisable, sizeof(forceDisable));
+            DwmSetWindowAttributeAsync(m_selectedHWND, 3, &forceDisable, sizeof(forceDisable));
             //
             BOOL forceEnable = FALSE;
-            DwmSetWindowAttributeAsync(hWnd, 3, &forceEnable, sizeof(forceEnable));
+            DwmSetWindowAttributeAsync(m_selectedHWND, 3, &forceEnable, sizeof(forceEnable));
             //ShowWindow(m_selectedHWND, SW_RESTORE);
             /*ShowWindow(m_selectedHWND, SW_HIDE);
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
@@ -608,10 +608,10 @@ void Flip3DRenderer::Update(float deltaSeconds)
         {
 
             BOOL forceDisable = TRUE;
-            DwmSetWindowAttributeAsync(hWnd, 3, &forceDisable, sizeof(forceDisable));
+            DwmSetWindowAttributeAsync(m_selectedHWND, 3, &forceDisable, sizeof(forceDisable));
             //
             BOOL forceEnable = FALSE;
-            DwmSetWindowAttributeAsync(hWnd, 3, &forceEnable, sizeof(forceEnable));
+            DwmSetWindowAttributeAsync(m_selectedHWND, 3, &forceEnable, sizeof(forceEnable));
 
             //ShowWindow(m_selectedHWND, SW_RESTORE);
             /*ShowWindow(m_selectedHWND, SW_HIDE);
