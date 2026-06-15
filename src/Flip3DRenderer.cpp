@@ -180,8 +180,6 @@ void Flip3DRenderer::CreateWindowCaptures()
     for (auto &card : m_cards)
     {
         if (!card.hwnd) continue;
-        //new !    
-        //if (card.isMinimized) AeroPeekActivate(card.hwnd);
         //-------
         auto cap = std::make_unique<WindowCapture>();
         HRESULT hr = cap->Initialize(card.hwnd, m_hwnd, m_device.Get());
@@ -239,65 +237,6 @@ bool Flip3DRenderer::ApplyAcrylic(HWND hwnd)
     return SetWCA(hwnd, &data) != FALSE;
 }
 
-//new !
-bool Flip3DRenderer::AeroPeekActivate()
-{
-    if (m_hwnd_m_DwmpActivateLivePreview != nullptr) return true; 
-
-    WNDCLASSEXW wcex = {};
-    wcex.cbSize        = sizeof(WNDCLASSEXW);
-    wcex.hInstance     = m_instance; 
-    wcex.lpfnWndProc   = DefWindowProcW; 
-    wcex.lpszClassName = L"DwmpActivateLivePreview";
-    
-    if (!RegisterClassExW(&wcex) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) {
-        return false;
-    }
-
-    m_hwnd_m_DwmpActivateLivePreview = CreateWindowExW(
-        WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
-        L"DwmpActivateLivePreview",
-        L"",
-        WS_POPUP, 
-        0, 0, 0, 0,
-        nullptr, nullptr, m_instance, nullptr
-    );
-
-    if (!m_hwnd_m_DwmpActivateLivePreview) return false;
-
-    if (!m_pDwmpActivateLivePreview)
-    {
-        HMODULE dwmapi = GetModuleHandleW(L"dwmapi.dll");
-        if (!dwmapi) dwmapi = LoadLibraryW(L"dwmapi.dll");
-        if (dwmapi)
-        {
-            m_pDwmpActivateLivePreview = reinterpret_cast<DwmpActivateLivePreview_t>(
-                GetProcAddress(dwmapi, (PCSTR)113));
-        }
-    }
-
-    if (m_pDwmpActivateLivePreview)
-    {
-        m_pDwmpActivateLivePreview(TRUE, m_hwnd_m_DwmpActivateLivePreview, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
-    }
-
-    return true;
-}
-//...
-void Flip3DRenderer::AeroPeekDeactivateAll()
-{
-    if (m_pDwmpActivateLivePreview)
-    {
-        m_pDwmpActivateLivePreview(FALSE, nullptr, GetTopWindow(nullptr), 3, (HWND)32, 0x3244);
-    }
-
-    if (m_hwnd_m_DwmpActivateLivePreview)
-    {
-        DestroyWindow(m_hwnd_m_DwmpActivateLivePreview);
-        m_hwnd_m_DwmpActivateLivePreview = nullptr; 
-    }
-}
-
 // ============================================================================
 // Window creation
 // ============================================================================
@@ -341,11 +280,6 @@ bool Flip3DRenderer::Render3Dstack()
     if (m_hwnd)
     {
         ApplyAcrylic(m_hwnd);
-        //
-        if (!AeroPeekActivate()) 
-        {
-            OutputDebugStringW(L"[Flip3D] Error: failed to activate AeroPeek.\n");
-        }
     }
     
     return m_hwnd != nullptr;
