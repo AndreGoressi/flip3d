@@ -191,7 +191,6 @@ bool QualifiesForFlip3DProxyWindow(HWND hwnd, LONG_PTR style, LONG_PTR exStyle)
     return true;
 }
 
-
 RECT BuildFinalMinRect(const RECT &minimizeRect, float aspectRatio)
 {
     RECT result = minimizeRect;
