@@ -580,7 +580,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindow(m_selectedHWND, SW_SHOWNOACTIVATE);
+            ShowWindow(m_selectedHWND, SW_HIDE);
             //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                              //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
     
@@ -600,7 +600,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     {
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ShowWindow(m_selectedHWND, SW_SHOWNOACTIVATE);
+            ShowWindow(m_selectedHWND, SW_HIDE);
             //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                              //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
     
