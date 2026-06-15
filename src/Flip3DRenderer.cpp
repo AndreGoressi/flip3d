@@ -582,19 +582,14 @@ void Flip3DRenderer::Update(float deltaSeconds)
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
-        {
-            ShowWindow(m_selectedHWND, SW_HIDE);
-            //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                             //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-    
-            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
-            ForceWindowToForeground(m_selectedHWND);
-            m_selectedWindowActivationDispatched = true;
-        }
-
-        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        if (m_hwnd && IsWindow(m_hwnd)) 
+            DestroyWindow(m_hwnd);
+        //
+        ShowWindow(m_selectedHWND, SW_HIDE);
+        PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+        ShowWindow(m_selectedHWND, SW_SHOWNA);
+        ForceWindowToForeground(m_selectedHWND);
+        //
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
@@ -602,20 +597,14 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
-        {
-            ShowWindow(m_selectedHWND, SW_HIDE);
-            //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                             //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-    
-            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
-            //SetForegroundWindow(m_selectedHWND);
-            ForceWindowToForeground(m_selectedHWND);
-            m_selectedWindowActivationDispatched = true;
-        }
-
-        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        if (m_hwnd && IsWindow(m_hwnd)) 
+            DestroyWindow(m_hwnd);
+        //
+        ShowWindow(m_selectedHWND, SW_HIDE);
+        PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+        ShowWindow(m_selectedHWND, SW_SHOWNA);
+        ForceWindowToForeground(m_selectedHWND);
+        //
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
@@ -623,6 +612,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     ContinueMouseWheelIfNeeded();
     ContinueKeyboardRepeatIfNeeded();
 }
+
 
 void Flip3DRenderer::OnGlobalTimeUpdated()
 {
@@ -927,43 +917,35 @@ void Flip3DRenderer::SelectThumbnail(HWND targetHwnd)
             }
         }
     }
-
+    
     BeginExitView();
     if (m_state != ViewState::Exit) return;
 
     m_selectedHWND = selectedCard->hwnd;
     m_selectedWindowWasMinimized = selectedCard->isMinimized;
     m_selectedWindowWasShellDesktop = selectedCard->hwnd == GetShellWindow();
+    m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
+        m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
 
-    if (m_selectedWindowWasMinimized && m_selectedHWND)
-    {
-        m_selectedWindowActivationDispatched = false;
-    }
-    else 
-    {
-        m_selectedWindowActivationDispatched = DispatchImmediateSelectedWindowActivation(
-            m_selectedHWND, m_selectedWindowWasMinimized, m_selectedWindowWasShellDesktop);
-    }
-    //SetForegroundWindow(m_selectedHWND);
-        
     size_t targetPos = 0;
     for (auto &card : m_cards) { if (card.hwnd == targetHwnd) break; ++targetPos; }
     HWND frontHwnd = m_cards.front().hwnd;
 
     if (frontHwnd != targetHwnd)
     {
+        // Old code: DistanceBetween(front, selected, true) where true→decrement→backward
         const int dist = DistanceBetween(0, targetPos, true);
         if (dist > 0)
         {
-            m_rotationTargetIndex = -1; 
-            m_rRepeatedRotateRate = 0.0f;
-
-            m_state = ViewState::Exit; 
-            
-            TickRepeatedRotate(); 
+            m_rotationTargetIndex = static_cast<int>(targetPos);
+            m_rRepeatedRotateRate = -(gEnterExitDurationSec / static_cast<float>(dist));
+            m_state = ViewState::ExitRepeatedRotate;
+            TickRepeatedRotate();
         }
     }
 }
+
+
 
 void Flip3DRenderer::SelectFrontThumbnail()
 {
