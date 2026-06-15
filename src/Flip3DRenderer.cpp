@@ -1134,7 +1134,8 @@ bool Flip3DRenderer::IntersectRayTriangle(
     }
     return -1;
 }*/
-
+#include <vector> // Stelle sicher, dass <vector> hier inkludiert ist!
+std::vector<int> HitTest3DScene(LONG x, LONG y) const;
 std::vector<int> Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
 {
     if (!IsSelectionInputState() || m_cards.empty()) return {}; 
