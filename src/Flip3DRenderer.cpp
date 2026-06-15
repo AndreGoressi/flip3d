@@ -565,12 +565,14 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             ShowWindow(m_selectedHWND, SW_HIDE);
+            
             SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
             
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
             SetForegroundWindow(m_selectedHWND);
+            
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -585,12 +587,14 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             ShowWindow(m_selectedHWND, SW_HIDE);
+            
             SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
                          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
             
             PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
             ShowWindow(m_selectedHWND, SW_SHOWNA);
             SetForegroundWindow(m_selectedHWND);
+            
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -1146,8 +1150,8 @@ bool Flip3DRenderer::ProcessMouseButtonInput(LONG x, LONG y, bool pressed)
         return true;
     }
     
-    /*const*/ int releasedIdx = HitTest3DScene(x, y);
-    /*const*/ int pressedIdx = m_mousePressedCardIndex;
+    const int releasedIdx = HitTest3DScene(x, y);
+    const int pressedIdx = m_mousePressedCardIndex;
     m_mousePressedCardIndex = -1;
     
     if (pressedIdx >= 0 && pressedIdx == releasedIdx)
@@ -1155,14 +1159,14 @@ bool Flip3DRenderer::ProcessMouseButtonInput(LONG x, LONG y, bool pressed)
         size_t i = 0;
         for (auto &card : m_cards) { if (i == static_cast<size_t>(pressedIdx)) { SelectThumbnail(card.hwnd); break; } ++i; }
     }
-    /*else
+    else
     {
         BeginExitView();
-    }*/
-    else if (releasedIdx < 0) 
+    }
+    /*else if (releasedIdx < 0) 
     { 
         BeginExitView(); 
-    }
+    }*/
     return true;
 }
 
