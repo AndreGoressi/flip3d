@@ -227,7 +227,7 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
     {
         return TRUE;
     }
-    
+
     const bool isMinimized = IsIconic(hwnd) != FALSE;
 
     // Get the window's *own* monitor work area (not the primary monitor).
@@ -250,7 +250,6 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
             // rcNormalPosition is in workspace coordinates.
             targetBounds = placement.rcNormalPosition;
             OffsetRect(&targetBounds, winWorkArea.left, winWorkArea.top);
-
             // If WPF_RESTORETOMAXIMIZED is set the window will restore to
             // maximised, not to rcNormalPosition.  Use the work area instead.
             if (placement.flags & WPF_RESTORETOMAXIMIZED)
@@ -273,7 +272,7 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         return TRUE;
 
     CapturedWindowLayout layout = {};
-    layout.targetRect   = targetClipped;
+    layout.targetRect   = targetBounds;
     layout.monitorWork  = winWorkArea;
     layout.isMinimized  = isMinimized;
     layout.hwnd         = hwnd;
@@ -284,15 +283,15 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         const auto getWindowMinimizeRect = ResolveGetWindowMinimizeRect();
         if (getWindowMinimizeRect != nullptr && getWindowMinimizeRect(hwnd, &minimizeRect) && !IsRectEmpty(&minimizeRect))
         {
-            const float width = static_cast<float>(std::max(1L, targetClipped.right - targetClipped.left));
-            const float height = static_cast<float>(std::max(1L, targetClipped.bottom - targetClipped.top));
+            const float width = static_cast<float>(std::max(1L, targetBounds.right - targetBounds.left));
+            const float height = static_cast<float>(std::max(1L, targetBounds.bottom - targetBounds.top));
             layout.originalRect = BuildFinalMinRect(minimizeRect, height / width);
         }
     }
 
     if (IsRectEmpty(&layout.originalRect))
     {
-        layout.originalRect = targetClipped;
+        layout.originalRect = targetBounds;
     }
 
     context->layouts.push_back(layout);
