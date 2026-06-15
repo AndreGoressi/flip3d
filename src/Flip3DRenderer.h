@@ -34,10 +34,6 @@ private:
 
     // creation
     bool ApplyAcrylic(HWND hwnd);
-    //new !
-    bool AeroPeekActivate();
-    void AeroPeekDeactivateAll(); 
-    //
     bool Render3Dstack();
 
     // D3D initialization
@@ -125,9 +121,6 @@ private:
     // Member variables
     HINSTANCE m_instance = nullptr;
     HWND m_hwnd = nullptr;
-    //
-    HINSTANCE m_instance_DwmpActivateLivePreview = nullptr;
-    HWND m_hwnd_m_DwmpActivateLivePreview = nullptr;
     //
     UINT m_width = kInitialWidth;
     UINT m_height = kInitialHeight;
