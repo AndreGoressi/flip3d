@@ -801,8 +801,6 @@ void Flip3DRenderer::BeginExitView()
         DestroyWindow(m_hwnd);
         return;
     }
-    //new !
-    AeroPeekDeactivateAll();
     //-----
     m_state = ViewState::Exit;
     m_bufferedRotateDelta = 0;
