@@ -52,8 +52,8 @@ constexpr int kInitialWidth = 1600;
 constexpr int kInitialHeight = 900;
 constexpr int kMaxVisibleCards = 10;
 constexpr size_t kMaxProxyCards = 24;
-constexpr wchar_t kRenderClassName[] = L"Flip3DRenderer";
-constexpr wchar_t kTitle[] = L"Flip3D";
+constexpr wchar_t kRenderClassName[] = nullptr;
+constexpr wchar_t kTitle[] = nullptr;
 constexpr std::array<float, 3> kNormalizationBezier = {1.0f, 0.85f, 0.75f};
 
 constexpr XMFLOAT3 kBezierControls[] = {
