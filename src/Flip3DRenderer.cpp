@@ -265,15 +265,15 @@ bool Flip3DRenderer::Render3Dstack()
     
     const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    HWND shellTray = FindWindowW(L"Shell_TrayWnd", nullptr);
+    HWND shell_Tray = FindWindowW(L"Shell_TrayWnd", nullptr);
     
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, 
         kRenderClassName, 
         kTitle,
-        WS_POPUP, 
+        WS_VISIBLE, 
         0, 0, screenWidth, screenHeight, //w_x, w_y, w_screenW, w_screenH, 
-        shellTray, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
+        shell_Tray, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
     
     if (m_hwnd)
     {
