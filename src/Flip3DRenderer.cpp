@@ -268,7 +268,7 @@ bool Flip3DRenderer::Render3Dstack()
     HWND shell_Tray = FindWindowW(L"Shell_TrayWnd", nullptr);
     
     m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, 
+        WS_EX_NOREDIRECTIONBITMAP | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, 
         kRenderClassName, 
         kTitle,
         WS_POPUP | WS_VISIBLE, 
