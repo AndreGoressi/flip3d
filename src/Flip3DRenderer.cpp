@@ -273,8 +273,8 @@ bool Flip3DRenderer::Render3Dstack()
     
     if (m_hwnd)
     {
-        BOOL cloak = TRUE; //disable
-        DwmSetWindowAttribute(m_hwnd, DWMWA_CLOAK, &cloak, sizeof(cloak));
+        BOOL exclude = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
         /*LONG_PTR exStyle = GetWindowLongPtr(m_hwnd, GWL_EXSTYLE);
         SetWindowLongPtr(m_hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
         SetWindowLongPtr(m_hwnd, GWL_HWNDPARENT, (LONG_PTR)FindWindowW(L"Progman", L"Program Manager"));*/
