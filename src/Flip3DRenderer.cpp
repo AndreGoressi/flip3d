@@ -271,7 +271,7 @@ bool Flip3DRenderer::Render3Dstack()
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST | WS_EX_TOOLWINDOW, 
         kRenderClassName, 
         kTitle,
-        WS_VISIBLE, 
+        WS_POPUP | WS_VISIBLE, 
         0, 0, screenWidth, screenHeight, //w_x, w_y, w_screenW, w_screenH, 
         shell_Tray, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
     
