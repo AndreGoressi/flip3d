@@ -1132,7 +1132,7 @@ int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
         float t0 = 0, u0 = 0;
         if (IntersectRayTriangle(origin, dir, v[0], v[1], v[2], t0, u0)) return static_cast<int>(entry.cardPosition);
         float t1 = 0, u1 = 0;
-        if (IntersectRayTriangle(origin, dir, v[0], v[1], v[3], t1, u1)) return static_cast<int>(entry.cardPosition);
+        if (IntersectRayTriangle(origin, dir, /*v[0], v[1], v[3]*/v[1], v[2], v[3], t1, u1)) return static_cast<int>(entry.cardPosition);
     }
     return -1;
 }
