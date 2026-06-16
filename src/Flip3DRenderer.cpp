@@ -242,15 +242,15 @@ bool Flip3DRenderer::ApplyAcrylic(HWND hwnd)
 // ============================================================================
 bool Flip3DRenderer::Render3Dstack()
 {
-    WNDCLASSEXW windowClass = {};
-    windowClass.cbSize        = sizeof(windowClass);
-    windowClass.hInstance     = m_instance;
-    windowClass.lpfnWndProc   = &Flip3DRenderer::WndProc;
-    windowClass.lpszClassName = kRenderClassName;
-    windowClass.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
-    windowClass.style         = CS_HREDRAW | CS_VREDRAW;
-    windowClass.hbrBackground = nullptr; 
-    if (!RegisterClassExW(&windowClass)) return false;
+    WNDCLASSEXW flip3d = {};
+    flip3d.cbSize        = sizeof(flip3d);
+    flip3d.hInstance     = m_instance;
+    flip3d.lpfnWndProc   = &Flip3DRenderer::WndProc;
+    flip3d.lpszClassName = kNoRenderClassName;
+    flip3d.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
+    flip3d.style         = CS_HREDRAW | CS_VREDRAW;
+    flip3d.hbrBackground = nullptr; 
+    if (!RegisterClassExW(&flip3d)) return false;
     
     /*if (!GetClassInfoExW(m_instance, kRenderClassName, &windowClass)) {
         if (!RegisterClassExW(&windowClass)) return false;
@@ -266,7 +266,7 @@ bool Flip3DRenderer::Render3Dstack()
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_LAYERED, 
         kRenderClassName, 
-        nullptr,
+        kNoTitle,
         WS_POPUP | WS_VISIBLE, 
         w_x, w_y, w_screenW, w_screenH, 
         nullptr, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
