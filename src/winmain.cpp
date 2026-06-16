@@ -10,7 +10,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     Flip3DRenderer rnd;
     if (!rnd.Initialize(instance))
     {
-        MessageBoxW(nullptr, L"Failed to initialize.", kNoTitle, MB_OK | MB_ICONERROR);
+        MessageBoxW(nullptr, L"Failed to initialize.", kTitle, MB_OK | MB_ICONERROR);
         CoUninitialize();
         return 1;
     }
