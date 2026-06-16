@@ -1902,22 +1902,16 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
     {
     case WM_ACTIVATE:
     {
-        if (LOWORD(wParam) != WA_INACTIVE) 
-        {
-            HWND hProgman = FindWindowW(L"Progman", L"Program Manager");
-            if (hProgman)
-            {
-                SetForegroundWindow(hProgman);
-            }
-            ShowWindow(m_hwnd, SW_SHOW);
-            SetForegroundWindow(m_hwnd);
-        }
-        else 
+        if (LOWORD(wParam) == WA_INACTIVE)
         {
             if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) 
+            {
                 DestroyWindow(m_hwnd);
+            }
             else 
+            {
                 BeginExitView();
+            }
         }
         return 0;
     }
