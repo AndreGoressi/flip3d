@@ -1904,13 +1904,12 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
     {
         if (LOWORD(wParam) != WA_INACTIVE) 
         {
-            AllowSetForegroundWindow(ASFW_ANY);
-            //
-            HWND hStart = FindWindowW(L"Windows.UI.Core.CoreWindow", L"Start");
-            if (hStart) 
+            HWND hProgman = FindWindowW(L"Progman", L"Program Manager");
+            if (hProgman)
             {
-                SendMessageW(hStart, WM_SYSCOMMAND, SC_CLOSE, 0);
+                SetForegroundWindow(hProgman);
             }
+            ShowWindow(m_hwnd, SW_SHOW);
             SetForegroundWindow(m_hwnd);
         }
         else 
