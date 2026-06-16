@@ -246,7 +246,7 @@ bool Flip3DRenderer::Render3Dstack()
     flip3d.cbSize        = sizeof(flip3d);
     flip3d.hInstance     = m_instance;
     flip3d.lpfnWndProc   = &Flip3DRenderer::WndProc;
-    flip3d.lpszClassName = kNoRenderClassName;
+    flip3d.lpszClassName = kRenderClassName;
     flip3d.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
     flip3d.style         = CS_HREDRAW | CS_VREDRAW;
     flip3d.hbrBackground = nullptr; 
@@ -265,8 +265,8 @@ bool Flip3DRenderer::Render3Dstack()
     
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_LAYERED, 
-        kNoRenderClassName, 
-        kNoTitle,
+        kRenderClassName, 
+        kTitle,
         WS_POPUP | WS_VISIBLE, 
         w_x, w_y, w_screenW, w_screenH, 
         nullptr, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
