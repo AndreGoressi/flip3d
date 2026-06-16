@@ -251,9 +251,9 @@ bool Flip3DRenderer::Render3Dstack()
     flip3d.style         = CS_HREDRAW | CS_VREDRAW;
     flip3d.hbrBackground = nullptr; 
     //
-    if (!GetClassInfoExW(m_instance, kRenderClassName, &windowClass))
+    if (!GetClassInfoExW(m_instance, kRenderClassName, &flip3d))
     {
-        if (!RegisterClassExW(&windowClass)) {
+        if (!RegisterClassExW(&flip3d)) {
             return false;
         }
     }
