@@ -279,6 +279,7 @@ bool Flip3DRenderer::Render3Dstack()
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
         ApplyAcrylic(m_hwnd);
+        
     }
     
     return m_hwnd != nullptr;
@@ -1903,11 +1904,14 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
     {
         if (LOWORD(wParam) != WA_INACTIVE) 
         {
+            AllowSetForegroundWindow(ASFW_ANY);
+            //
             HWND hStart = FindWindowW(L"Windows.UI.Core.CoreWindow", L"Start");
             if (hStart) 
             {
-                SendMessageW(hStart, WM_CANCELMODE, 0, 0);
+                SendMessageW(hStart, WM_SYSCOMMAND, SC_CLOSE, 0);
             }
+            SetForegroundWindow(m_hwnd);
         }
         else 
         {
