@@ -256,24 +256,20 @@ bool Flip3DRenderer::Render3Dstack()
         if (!RegisterClassExW(&windowClass)) return false;
     }*/
 
-    /*RECT wc{};
+    RECT wc{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
     const int w_x       = wc.left;
     const int w_y       = wc.top;
     const int w_screenW = wc.right  - wc.left;
-    const int w_screenH = wc.bottom - wc.top;*/
-    
-    const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    HWND shell_Tray = FindWindowW(L"Shell_TrayWnd", nullptr);
+    const int w_screenH = wc.bottom - wc.top;
     
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, 
         kRenderClassName, 
-        kTitle,
+        nullptr,
         WS_POPUP | WS_VISIBLE, 
-        0, 0, screenWidth, screenHeight, //w_x, w_y, w_screenW, w_screenH, 
-        shell_Tray, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
+        w_x, w_y, w_screenW, w_screenH, 
+        nullptr, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
     
     if (m_hwnd)
     {
