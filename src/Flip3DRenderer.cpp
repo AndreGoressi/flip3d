@@ -265,7 +265,7 @@ bool Flip3DRenderer::Render3Dstack()
     
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_LAYERED, 
-        kRenderClassName, 
+        kNoRenderClassName, 
         kNoTitle,
         WS_POPUP | WS_VISIBLE, 
         w_x, w_y, w_screenW, w_screenH, 
