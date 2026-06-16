@@ -278,12 +278,6 @@ bool Flip3DRenderer::Render3Dstack()
     {
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
-        //
-        HWND hStart = FindWindowW(L"Windows.UI.Core.CoreWindow", L"Start");
-        //
-        if (hStart) {
-            SendMessageW(hStart, WM_CANCELMODE, 0, 0);   
-        }
         ApplyAcrylic(m_hwnd);
     }
     
@@ -1907,16 +1901,20 @@ LRESULT Flip3DRenderer::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam
     {
     case WM_ACTIVATE:
     {
-        if (LOWORD(wParam) == WA_INACTIVE)
+        if (LOWORD(wParam) != WA_INACTIVE) 
+        {
+            HWND hStart = FindWindowW(L"Windows.UI.Core.CoreWindow", L"Start");
+            if (hStart) 
+            {
+                SendMessageW(hStart, WM_CANCELMODE, 0, 0);
+            }
+        }
+        else 
         {
             if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) 
-            {
                 DestroyWindow(m_hwnd);
-            }
             else 
-            {
                 BeginExitView();
-            }
         }
         return 0;
     }
