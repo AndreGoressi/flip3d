@@ -250,12 +250,15 @@ bool Flip3DRenderer::Render3Dstack()
     flip3d.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
     flip3d.style         = CS_HREDRAW | CS_VREDRAW;
     flip3d.hbrBackground = nullptr; 
-    if (!RegisterClassExW(&flip3d)) return false;
-    
-    /*if (!GetClassInfoExW(m_instance, kRenderClassName, &windowClass)) {
-        if (!RegisterClassExW(&windowClass)) return false;
-    }*/
-
+    //
+    if (!GetClassInfoExW(m_instance, kRenderClassName, &windowClass))
+    {
+        if (!RegisterClassExW(&windowClass)) {
+            return false;
+        }
+    }
+    //old// if (!RegisterClassExW(&flip3d)) return false;                                                                             
+    //
     RECT wc{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
     const int w_x       = wc.left;
@@ -270,14 +273,17 @@ bool Flip3DRenderer::Render3Dstack()
         WS_POPUP | WS_VISIBLE, 
         w_x, w_y, w_screenW, w_screenH, 
         nullptr, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
-    
+    //
     if (m_hwnd)
     {
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
-        /*LONG_PTR exStyle = GetWindowLongPtr(m_hwnd, GWL_EXSTYLE);
-        SetWindowLongPtr(m_hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
-        SetWindowLongPtr(m_hwnd, GWL_HWNDPARENT, (LONG_PTR)FindWindowW(L"Progman", L"Program Manager"));*/
+        //
+        HWND hStart = FindWindowW(L"Windows.UI.Core.CoreWindow", L"Start");
+        //
+        if (hStart) {
+            SendMessageW(hStart, WM_CANCELMODE, 0, 0);   
+        }
         ApplyAcrylic(m_hwnd);
     }
     
