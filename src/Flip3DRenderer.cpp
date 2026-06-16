@@ -262,17 +262,22 @@ bool Flip3DRenderer::Render3Dstack()
     const int w_y       = wc.top;
     const int w_screenW = wc.right  - wc.left;
     const int w_screenH = wc.bottom - wc.top;
+
+    HWND hProgman = FindWindowW(L"Progman", L"Program Manager");
     
     m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW, 
+        WS_EX_NOREDIRECTIONBITMAP | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_TRANSPARENT, 
         kRenderClassName, 
         nullptr,
         WS_POPUP | WS_VISIBLE, 
         w_x, w_y, w_screenW, w_screenH, 
-        nullptr, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
+        hProgman, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
     
     if (m_hwnd)
     {
+        /*LONG_PTR exStyle = GetWindowLongPtr(m_hwnd, GWL_EXSTYLE);
+        SetWindowLongPtr(m_hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
+        SetWindowLongPtr(m_hwnd, GWL_HWNDPARENT, (LONG_PTR)FindWindowW(L"Progman", L"Program Manager"));*/
         ApplyAcrylic(m_hwnd);
     }
     
