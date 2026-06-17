@@ -583,11 +583,11 @@ void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
     {
         if (enable)
         {
-            pDwmpActivateLivePreview(TRUE, m_selectedHWND, m_hwnd, PeekTypes::Window, (LPVOID)32, 0x3244);
+            pDwmpActivateLivePreview(TRUE, m_selectedHWND, m_hwnd, PeekTypes::Window, (LPVOID)0x3244);
         }
         else /*(disable)*/
         {
-            pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, PeekTypes::Window, (LPVOID)32, 0x3244);
+            pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, PeekTypes::Window, nullptr);
         }
         
         aeroPeekActive = enable;
