@@ -10,14 +10,14 @@ MicaPeek::~MicaPeek()
     m_windows.clear();
 }
 
-void MicaPeek::AttachThumbnail(HWND hwnd, Microsoft::WRL::ComPtr<IDCompositionVisual> visual)
+void MicaPeek::AttachThumbnail(HWND hwnd, Microsoft::WRL::ComPtr<IDCompositionVisual> visual, float originalX)
 {
     if (!m_device || !visual) return;
-
     WindowEntry w{};
     w.hwnd = hwnd;
     w.visual = visual;
-    visual->GetOffsetX(&w.originalOffsetX);
+    w.originalOffsetX = originalX; 
+    
     m_windows.push_back(w);
 }
 
@@ -37,12 +37,13 @@ void MicaPeek::ApplyPeek()
         if (w.hwnd == m_selected)
         {
             w.visual->SetOffsetX(w.originalOffsetX);
+            w.visual->SetOffsetY(0.0f); 
             D2D_MATRIX_3X2_F scale = { 1.01f, 0.0f, 0.0f, 1.01f, 0.0f, 0.0f };
             w.visual->SetTransform(scale);
         }
         else
         {
-            w.visual->SetOffsetX(w.originalOffsetX + 99999.0f);
+            w.visual->SetOffsetY(99999.0f);
         }
     }
 
@@ -57,6 +58,7 @@ void MicaPeek::ClearPeek()
     {
         if (!w.visual) continue;
         w.visual->SetOffsetX(w.originalOffsetX);
+        w.visual->SetOffsetY(0.0f);
         D2D_MATRIX_3X2_F identity = { 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f };
         w.visual->SetTransform(identity);
     }
