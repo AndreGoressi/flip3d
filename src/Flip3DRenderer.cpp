@@ -563,6 +563,7 @@ using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn,
                                                    HWND hTopmostWindow,
                                                    UINT peekType,
                                                    void* param5);
+//
 void Flip3DRenderer::AeroPeek(BOOL enable)
 {
     static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
@@ -576,7 +577,7 @@ void Flip3DRenderer::AeroPeek(BOOL enable)
         {
             pDwmpActivateLivePreview = (DwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
         }
-        isInitialized = true; 
+        isInitialized = true;
     }
 
     if (!pDwmpActivateLivePreview) return;
