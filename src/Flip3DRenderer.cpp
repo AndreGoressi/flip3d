@@ -541,16 +541,10 @@ void Flip3DRenderer::ThumbnailAsWindowToForeground(HWND hWnd)
 {
     if (!IsWindow(hWnd)) return;
 
-    BOOL bForceShowAnim = TRUE;
-    DwmSetWindowAttribute(hWnd, DWMWA_TRANSITION_FORCED_SHOWN_REMOVED, &bForceShowAnim, sizeof(bForceShowAnim));
-
     if (IsIconic(hWnd)) 
     {
         ShowWindowAsync(hWnd, SW_RESTORE);
     }
-
-    BOOL bAllowAnim = FALSE; 
-    DwmSetWindowAttribute(hWnd, DWMWA_TRANSITION_FORCED_SHOWN_REMOVED, &bAllowAnim, sizeof(bAllowAnim));
 
     DWORD dwTargetThreadId = GetWindowThreadProcessId(hWnd, NULL);
     DWORD dwCurrentThreadId = GetCurrentThreadId();
