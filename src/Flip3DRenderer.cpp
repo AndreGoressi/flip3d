@@ -557,10 +557,10 @@ void Flip3DRenderer::ThumbnailAsWindowToForeground(HWND hWnd)
 }
 
 using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn, 
-                                                         HWND  hPeekWindow, 
-                                                         HWND  hTopmostWindow, 
-                                                         PeekTypes peekType, 
-                                                         LPVOID param5);
+                                                   HWND  hPeekWindow, 
+                                                   HWND  hTopmostWindow, 
+                                                   PeekTypes peekType, 
+                                                   LPVOID param5);
 void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
 {
     static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
@@ -572,7 +572,7 @@ void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
         HMODULE dwmapiModule = LoadLibraryEx(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (dwmapiModule)
         {
-            pDwmpActivateLivePreview = (DwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
+            pDwmpActivateLivePreview = reinterpret_cast<DwmpActivateLivePreview_t>(GetProcAddress(dwmapiModule, reinterpret_cast<PCSTR>(113)));
         }
         isInitialized = true;
     }
@@ -583,11 +583,11 @@ void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
     {
         if (enable)
         {
-            pDwmpActivateLivePreview(TRUE, m_selectedHWND, m_hwnd, static_cast<UINT>(PeekTypes::Window), (LPVOID)0x3244);
+            pDwmpActivateLivePreview(TRUE, m_selectedHWND, m_hwnd, PeekTypes::Window, reinterpret_cast<LPVOID>(0x3244));
         }
         else
         {
-            pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, static_cast<UINT>(PeekTypes::Window), nullptr);
+            pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, PeekTypes::Window, nullptr);
         }
         
         aeroPeekActive = enable;
