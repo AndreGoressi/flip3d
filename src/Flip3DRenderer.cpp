@@ -581,7 +581,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
         m_showOutgoingDuringRotation = false;
         TickRepeatedRotate();
     }
-    
+
     static float s_exitAnimationTimer = 0.0f; 
 
     if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
@@ -606,6 +606,13 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        
+        if (m_selectedHWND && IsWindow(m_selectedHWND))
+        {
+            ForceWindowToForeground(m_selectedHWND);
+            SetForegroundWindow(m_selectedHWND); 
+        }
+
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
@@ -614,6 +621,13 @@ void Flip3DRenderer::Update(float deltaSeconds)
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        
+        if (m_selectedHWND && IsWindow(m_selectedHWND))
+        {
+            ForceWindowToForeground(m_selectedHWND);
+            SetForegroundWindow(m_selectedHWND);
+        }
+
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
