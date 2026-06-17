@@ -609,8 +609,23 @@ void Flip3DRenderer::Update(float deltaSeconds)
         
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ForceWindowToForeground(m_selectedHWND);
-            SetForegroundWindow(m_selectedHWND); 
+            DWORD foregroundThreadID = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
+            DWORD targetThreadID = GetWindowThreadProcessId(m_selectedHWND, NULL);
+            
+            if (foregroundThreadID != targetThreadID)
+            {
+                AttachThreadInput(foregroundThreadID, targetThreadID, TRUE);
+                SetForegroundWindow(m_selectedHWND);
+                SetFocus(m_selectedHWND);
+                AttachThreadInput(foregroundThreadID, targetThreadID, FALSE); 
+            }
+            else
+            {
+                SetForegroundWindow(m_selectedHWND);
+            }
+            
+            //ForceWindowToForeground(m_selectedHWND);
+            ShowWindow(m_selectedHWND, SW_SHOW); 
         }
 
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
@@ -624,8 +639,23 @@ void Flip3DRenderer::Update(float deltaSeconds)
         
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            ForceWindowToForeground(m_selectedHWND);
-            SetForegroundWindow(m_selectedHWND);
+            DWORD foregroundThreadID = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
+            DWORD targetThreadID = GetWindowThreadProcessId(m_selectedHWND, NULL);
+            
+            if (foregroundThreadID != targetThreadID)
+            {
+                AttachThreadInput(foregroundThreadID, targetThreadID, TRUE);
+                SetForegroundWindow(m_selectedHWND);
+                SetFocus(m_selectedHWND);
+                AttachThreadInput(foregroundThreadID, targetThreadID, FALSE);
+            }
+            else
+            {
+                SetForegroundWindow(m_selectedHWND);
+            }
+            
+            //ForceWindowToForeground(m_selectedHWND);
+            ShowWindow(m_selectedHWND, SW_SHOW);
         }
 
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
