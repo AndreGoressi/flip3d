@@ -571,36 +571,6 @@ void Flip3DCore::ThumbnailAsWindowToForeground(HWND hWnd)
     DwmFlush();
 }
 
-using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn, 
-                                                   HWND hPeekWindow, 
-                                                   HWND hTopmostWindow, 
-                                                   UINT peekType, 
-                                                   LPVOID param5);
-void Flip3DCore::DwmpActivateLivePreview(BOOL enable)
-{
-    static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
-    static BOOL aeroPeekActive = FALSE;
-    static bool isInitialized = false;
-
-    if (!isInitialized)
-    {
-        HMODULE dwmapiModule = LoadLibraryEx(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if (dwmapiModule)
-        {
-            pDwmpActivateLivePreview = (DwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
-        }
-        isInitialized = true;
-    }
-
-    if (!pDwmpActivateLivePreview) return;
-    //
-    if (aeroPeekActive != enable)
-    {
-        pDwmpActivateLivePreview(enable, m_selectedHWND, m_hwnd, 2/*undocumented*/, nullptr);
-        aeroPeekActive = enable;
-    }
-}
-
 // ============================================================================
 // Per-frame update
 // ============================================================================
@@ -619,18 +589,32 @@ void Flip3DCore::Update(float deltaSeconds)
     if (m_state == ViewState::Enter && !m_enterTimeline.active)
     {
         m_state = ViewState::Interactive;
-        DwmpActivateLivePreview(TRUE); // Aero Peek on !
+        
+        if (m_micaPeek)
+        {
+            m_micaPeek->SetSelected(m_selectedHWND);
+            m_micaPeek->ApplyPeek(); 
+        }
     }
 
     if (!m_rotateTimeline.active)
     {
         m_showOutgoingDuringRotation = false;
         TickRepeatedRotate();
+    
+        if (m_state == ViewState::Interactive && m_micaPeek)
+        {
+            m_micaPeek->SetSelected(m_selectedHWND);
+            m_micaPeek->ApplyPeek();
+        }
     }
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        DwmpActivateLivePreview(FALSE); // Aero Peek off
+        if (m_micaPeek)
+        {
+            m_micaPeek->ClearPeek();
+        }
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
@@ -641,7 +625,6 @@ void Flip3DCore::Update(float deltaSeconds)
             }
 
             ThumbnailAsWindowToForeground(m_selectedHWND);
-
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -653,7 +636,10 @@ void Flip3DCore::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        DwmpActivateLivePreview(FALSE); // Aero Peek off
+        if (m_micaPeek)
+        {
+            m_micaPeek->ClearPeek();
+        }
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
@@ -664,7 +650,6 @@ void Flip3DCore::Update(float deltaSeconds)
             }
 
             ThumbnailAsWindowToForeground(m_selectedHWND);
-
             m_selectedWindowActivationDispatched = true;
         }
 
