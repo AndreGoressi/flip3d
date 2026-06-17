@@ -581,19 +581,27 @@ void Flip3DRenderer::Update(float deltaSeconds)
         m_showOutgoingDuringRotation = false;
         TickRepeatedRotate();
     }
-
+    
+    float m_exitAnimationTimer = 0.0f;
+    //
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        if ((m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) && m_selectedWindowWasMinimized)
+        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
         {
-            float animationProgress = m_enterTimeline.progress; 
-            if (animationProgress >= 0.7f && !m_selectedWindowActivationDispatched)
+            if (m_enterTimeline.active)
             {
-                SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-                ForceWindowToForeground(m_selectedHWND);
-                
-                m_selectedWindowActivationDispatched = true;
+                m_exitAnimationTimer += 0.016f; 
+                if (m_exitAnimationTimer >= 0.2f && !m_selectedWindowActivationDispatched && m_selectedWindowWasMinimized)
+                {
+                    SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+                    ForceWindowToForeground(m_selectedHWND);
+                    m_selectedWindowActivationDispatched = true;
+                }
             }
+        }
+        else
+        {
+            m_exitAnimationTimer = 0.0f;
         }
     }
         /*if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
@@ -625,23 +633,24 @@ void Flip3DRenderer::Update(float deltaSeconds)
             ForceWindowToForeground(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }*/
-        // IN DEINEM UPDATE-LOOP (während die Animation noch läuft!):
-        if ((m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) && m_selectedWindowWasMinimized)
+        //float m_exitAnimationTimer = 0.0f;
+        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
         {
-
-            float animationProgress = m_enterTimeline.progress; 
-            if (animationProgress >= 0.7f && !m_selectedWindowActivationDispatched)
+            if (m_enterTimeline.active)
             {
-                SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-                ForceWindowToForeground(m_selectedHWND);
-                
-                m_selectedWindowActivationDispatched = true;
+                m_exitAnimationTimer += 0.016f; 
+                if (m_exitAnimationTimer >= 0.2f && !m_selectedWindowActivationDispatched && m_selectedWindowWasMinimized)
+                {
+                    SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+                    ForceWindowToForeground(m_selectedHWND);
+                    m_selectedWindowActivationDispatched = true;
+                }
             }
         }
-
-        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
-        CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
-        return;
+        else
+        {
+            m_exitAnimationTimer = 0.0f;
+        }
     }
 
     ContinueMouseWheelIfNeeded();
