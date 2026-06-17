@@ -15,13 +15,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
         return 1;
     }
 
-    HWND renderHwnd = rnd.CorreHandle();
+    HWND CoreHwnd = rnd.CorreHandle();
 
-    ShowWindow(renderHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
-    UpdateWindow(renderHwnd);
+    ShowWindow(CoreHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
+    UpdateWindow(CoreHwnd);
 
-    SetForegroundWindow(renderHwnd);
-    SetActiveWindow(renderHwnd);
+    SetForegroundWindow(CoreHwnd);
+    SetActiveWindow(CoreHwnd);
 
     int result = rnd.Run();
     CoUninitialize();
