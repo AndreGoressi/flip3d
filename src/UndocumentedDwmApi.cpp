@@ -30,7 +30,7 @@ void UndocumentedDwmApi::DwmpActivateLivePreview(HWND hwnd, HWND hTopmostWindow,
         }
         else /*(disable)*/
         {
-            pDwmpActivateLivePreview(FALSE, nullptr, hwnd, 3, nullptr);
+            pDwmpActivateLivePreview(FALSE, hwnd, nullptr, 3, nullptr);
         }
         
         aeroPeekActive = enable;
