@@ -563,7 +563,7 @@ using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL  peekOn,
                                                          LPVOID param5);
 void Flip3DRenderer::ApplyAeroPeek(BOOL enable)
 {
-    static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
+    static LocalDwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
     static BOOL aeroPeekActive = FALSE;
     static bool isInitialized = false;
 
@@ -572,7 +572,7 @@ void Flip3DRenderer::ApplyAeroPeek(BOOL enable)
         HMODULE dwmapiModule = LoadLibraryEx(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (dwmapiModule)
         {
-            pDwmpActivateLivePreview = (DwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
+            pDwmpActivateLivePreview = (LocalDwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
         }
         isInitialized = true;
     }
@@ -581,15 +581,7 @@ void Flip3DRenderer::ApplyAeroPeek(BOOL enable)
 
     if (aeroPeekActive != enable)
     {
-        if (enable)
-        {
-            pDwmpActivateLivePreview(TRUE, m_selectedHWND, m_hwnd, 3, (LPVOID)0x3244);
-        }
-        else
-        {
-            pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, 3, nullptr);
-        }
-        
+        pDwmpActivateLivePreview(enable, nullptr, nullptr, 3, nullptr);
         aeroPeekActive = enable;
     }
 }
@@ -603,7 +595,6 @@ void Flip3DRenderer::Update(float deltaSeconds)
     m_totalTime += deltaSeconds;
 
     if (m_enterTimeline.active) m_enterTimeline.Update(deltaSeconds);
-    
     if (m_rotateTimeline.active)
     {
         m_rotateTimeline.Update(deltaSeconds);
@@ -613,7 +604,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::Enter && !m_enterTimeline.active)
     {
         m_state = ViewState::Interactive;
-        ApplyAeroPeek(TRUE);
+        ApplyAeroPeek(TRUE); // Aero Peek on !
     }
 
     if (!m_rotateTimeline.active)
@@ -624,7 +615,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        ApplyAeroPeek(FALSE); 
+        ApplyAeroPeek(FALSE); // Aero Peek off
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
@@ -635,7 +626,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             }
 
             ThumbnailAsWindowToForeground(m_selectedHWND);
-            
+
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -647,7 +638,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        ApplyAeroPeek(FALSE); 
+        ApplyAeroPeek(FALSE); // Aero Peek off
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
@@ -658,7 +649,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             }
 
             ThumbnailAsWindowToForeground(m_selectedHWND);
-            
+
             m_selectedWindowActivationDispatched = true;
         }
 
