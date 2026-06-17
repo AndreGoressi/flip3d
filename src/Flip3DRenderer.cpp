@@ -1,6 +1,7 @@
 #include "Flip3DRenderer.h"
 #include "Shaders.h"
 #include "Capture.h"
+#include "UndocumentedDwmApi.h
 
 namespace
 {
@@ -556,44 +557,6 @@ void Flip3DRenderer::ThumbnailAsWindowToForeground(HWND hWnd)
     AttachThreadInput(GetCurrentThreadId(), GetWindowThreadProcessId(hWnd, NULL), FALSE);
 }
 
-using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn, 
-                                                   HWND  hPeekWindow, 
-                                                   HWND  hTopmostWindow, 
-                                                   PeekTypes peekType, 
-                                                   LPVOID param5);
-void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
-{
-    static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
-    static BOOL aeroPeekActive = FALSE;
-    static bool isInitialized = false;
-
-    if (!isInitialized)
-    {
-        HMODULE dwmapiModule = LoadLibraryEx(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if (dwmapiModule)
-        {
-            pDwmpActivateLivePreview = reinterpret_cast<DwmpActivateLivePreview_t>(GetProcAddress(dwmapiModule, reinterpret_cast<PCSTR>(113)));
-        }
-        isInitialized = true;
-    }
-
-    if (!pDwmpActivateLivePreview) return;
-    //
-    if (aeroPeekActive != enable)
-    {
-        if (enable)
-        {
-            pDwmpActivateLivePreview(TRUE, m_hwnd, m_hwnd, PeekTypes::Window, reinterpret_cast<LPVOID>(0x3244));
-        }
-        else
-        {
-            pDwmpActivateLivePreview(FALSE, m_hwnd, m_hwnd, PeekTypes::Window, reinterpret_cast<LPVOID>(0x3244));
-        }
-        
-        aeroPeekActive = enable;
-    }
-}
-
 // ============================================================================
 // Per-frame update
 // ============================================================================
@@ -612,7 +575,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::Enter && !m_enterTimeline.active)
     {
         m_state = ViewState::Interactive;
-        DwmpActivateLivePreview(TRUE); // Aero Peek on !
+        UndocumentedDwmApi::DwmpActivateLivePreview(m_hwnd, TRUE);
     }
 
     if (!m_rotateTimeline.active)
@@ -623,7 +586,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        DwmpActivateLivePreview(FALSE); // Aero Peek off
+        UndocumentedDwmApi::DwmpActivateLivePreview(m_hwnd, FALSE); // Aero Peek off
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
@@ -646,7 +609,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        DwmpActivateLivePreview(FALSE); // Aero Peek off
+        UndocumentedDwmApi::DwmpActivateLivePreview(m_hwnd, FALSE); // Aero Peek off
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
