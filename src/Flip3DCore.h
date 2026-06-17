@@ -1,5 +1,6 @@
 #pragma once
-
+#include <memory>    
+#include "MicaPeek.h" 
 #include "Config.h"
 #include "WindowCapture.h"
 // ============================================================================
