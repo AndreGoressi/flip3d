@@ -1895,7 +1895,7 @@ void Flip3DRenderer::Render()
         objectConstants.world = item.world;
         objectConstants.color = item.color;
         objectConstants.accent = item.accent;
-        objectConstants.flags  = item.flags;
+        objectConstants.flags  = item.flags; 
         m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
 
         size_t pos = 0;
@@ -1909,19 +1909,12 @@ void Flip3DRenderer::Render()
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
         
         m_context->DrawIndexed(6, 0, 0);
-        ComPtr<ID3D11RasterizerState> wireframeState;
-        D3D11_RASTERIZER_DESC rasterizerDesc;
-        m_rasterizerState->GetDesc(&rasterizerDesc); 
-        rasterizerDesc.FillMode = D3D11_FILL_WIREFRAME; 
-        rasterizerDesc.CullMode = D3D11_CULL_NONE;      
 
-        if (SUCCEEDED(m_device->CreateRasterizerState(&rasterizerDesc, &wireframeState)))
-        {
-            m_context->RSSetState(wireframeState.Get());
-            m_context->DrawIndexed(6, 0, 0); 
-            m_context->RSSetState(m_rasterizerState.Get());
-        }
-        // ==================================================================
+        m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+        
+        m_context->DrawIndexed(6, 0, 0); 
+        
+        m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     }
 
     m_swapChain->Present(1, 0);
