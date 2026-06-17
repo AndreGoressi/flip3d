@@ -584,7 +584,19 @@ void Flip3DRenderer::Update(float deltaSeconds)
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
+        if ((m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) && m_selectedWindowWasMinimized)
+        {
+            float animationProgress = m_enterTimeline.progress; 
+            if (animationProgress >= 0.7f && !m_selectedWindowActivationDispatched)
+            {
+                SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+                ForceWindowToForeground(m_selectedHWND);
+                
+                m_selectedWindowActivationDispatched = true;
+            }
+        }
+    }
+        /*if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             ShowWindow(m_selectedHWND, SW_HIDE);
             //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
@@ -598,12 +610,12 @@ void Flip3DRenderer::Update(float deltaSeconds)
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
-    }
+    }*/
 
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
+        /*if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
             ShowWindow(m_selectedHWND, SW_HIDE);
             //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
@@ -612,6 +624,19 @@ void Flip3DRenderer::Update(float deltaSeconds)
             ShowWindow(m_selectedHWND, SW_SHOWNA);
             ForceWindowToForeground(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
+        }*/
+        // IN DEINEM UPDATE-LOOP (während die Animation noch läuft!):
+        if ((m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate) && m_selectedWindowWasMinimized)
+        {
+
+            float animationProgress = m_enterTimeline.progress; 
+            if (animationProgress >= 0.7f && !m_selectedWindowActivationDispatched)
+            {
+                SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+                ForceWindowToForeground(m_selectedHWND);
+                
+                m_selectedWindowActivationDispatched = true;
+            }
         }
 
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
