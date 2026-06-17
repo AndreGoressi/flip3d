@@ -32,18 +32,26 @@ void MicaPeek::ApplyPeek()
 
     for (auto& w : m_windows)
     {
-        if (!w.visual) continue;
+        if (!w.hwnd) continue;
 
         if (w.hwnd == m_selected)
         {
-            w.visual->SetOffsetX(w.originalOffsetX);
-            w.visual->SetOffsetY(0.0f); 
-            D2D_MATRIX_3X2_F scale = { 1.01f, 0.0f, 0.0f, 1.01f, 0.0f, 0.0f };
-            w.visual->SetTransform(scale);
+            SetLayeredWindowAttributes(w.hwnd, 0, 255, LWA_ALPHA);
+            if (w.visual)
+            {
+                w.visual->SetOffsetX(w.originalOffsetX);
+                w.visual->SetOffsetY(0.0f); 
+                D2D_MATRIX_3X2_F scale = { 1.01f, 0.0f, 0.0f, 1.01f, 0.0f, 0.0f };
+                w.visual->SetTransform(scale);
+            }
         }
         else
         {
-            w.visual->SetOffsetY(99999.0f);
+            SetLayeredWindowAttributes(w.hwnd, 0, 0, LWA_ALPHA);
+            if (w.visual)
+            {
+                w.visual->SetOffsetY(99999.0f);
+            }
         }
     }
 
