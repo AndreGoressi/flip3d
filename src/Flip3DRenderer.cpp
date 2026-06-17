@@ -563,6 +563,14 @@ using LocalDwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn,
                                                          void* param5);
 void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
 {
+using LocalDwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL  peekOn, 
+                                                         HWND  hPeekWindow, 
+                                                         HWND  hTopmostWindow, 
+                                                         PeekTypes peekType, 
+                                                         LPVOID param5);
+
+void Flip3DRenderer::SetAeroPeekEnabled(BOOL enable)
+{
     static LocalDwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
     static BOOL aeroPeekActive = FALSE;
     static bool isInitialized = false;
