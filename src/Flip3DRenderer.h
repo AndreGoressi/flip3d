@@ -19,6 +19,14 @@ public:
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+
+    using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn,
+                                                           HWND hPeekWindow,
+                                                           HWND hTopmostWindow,
+                                                           UINT peekType,
+                                                           void* param5);
+    void AeroPeeK(BOOL enable);
+    //
     HANDLE m_frameLatencyWaitableObject = nullptr;
     float m_restoreAlpha = 0.0f;
     //new !
@@ -35,7 +43,6 @@ private:
     // creation
     bool ApplyAcrylic(HWND hwnd);
     bool Render3Dstack();
-    void AeroPeek(BOOL enable);
 
     // D3D initialization
     HRESULT InitializeD3D();
