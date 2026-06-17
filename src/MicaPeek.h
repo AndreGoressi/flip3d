@@ -10,7 +10,7 @@ public:
     MicaPeek(Microsoft::WRL::ComPtr<IDCompositionDevice> dcompDevice);
     ~MicaPeek();
 
-    void AttachThumbnail(HWND hwnd, Microsoft::WRL::ComPtr<IDCompositionVisual2> visual);
+    void AttachThumbnail(HWND hwnd, Microsoft::WRL::ComPtr<IDCompositionVisual> visual);
     void SetSelected(HWND hwnd);
     void ApplyPeek();
     void ClearPeek();
@@ -19,8 +19,8 @@ private:
     struct WindowEntry
     {
         HWND hwnd;
-        Microsoft::WRL::ComPtr<IDCompositionVisual2> visual;
-        float baseOpacity;
+        Microsoft::WRL::ComPtr<IDCompositionVisual> visual;
+        Microsoft::WRL::ComPtr<IUnknown> originalContent; 
     };
 
     Microsoft::WRL::ComPtr<IDCompositionDevice> m_device;
