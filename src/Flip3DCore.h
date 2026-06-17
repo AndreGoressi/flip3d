@@ -25,9 +25,6 @@ private:
     int FrontCardIndex() const;                        // returns 0 (front = head of list)
     int ResolveOriginalFrontIndex() const;
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
-
-    void DwmpActivateLivePreview(BOOL enable);
-
     // creation
     bool DrawAcrylic(HWND hwnd);
     bool Render3Dstack();
