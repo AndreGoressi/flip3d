@@ -16,7 +16,6 @@ add_executable(flip3d WIN32
     src/Capture.cpp
     src/WindowCapture.cpp
     src/Flip3DRenderer.cpp
-    src/UndocumentedDwmApi.cpp
 )
 
 # ---------------------------------------------------------
