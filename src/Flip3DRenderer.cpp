@@ -1120,20 +1120,12 @@ int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
     if (!IsSelectionInputState() || m_cards.empty()) return -1;
     if (m_monitorWidth <= 0 || m_monitorHeight <= 0) return -1;
 
-    UINT dpi = GetDpiForWindow(m_hwnd); 
-    float scale = static_cast<float>(dpi) / 96.0f; // 96 DPI = 100% (Standard)
+    // -----------------------------------------------
 
     const float monitorW = static_cast<float>(m_monitorWidth);
     const float monitorH = static_cast<float>(m_monitorHeight);
-    
-    float ndcX = static_cast<float>(x) * scale; // Cursor X 
-    float ndcY = static_cast<float>(y) * scale; // Cursor Y 
-    // -----------------------------------------------
-
-    /*const float monitorW = static_cast<float>(m_monitorWidth);
-    const float monitorH = static_cast<float>(m_monitorHeight);
     float ndcX = static_cast<float>(x);
-    float ndcY = static_cast<float>(y);*/
+    float ndcY = static_cast<float>(y);
     //
     if (m_fRTLMirror) ndcX = monitorW - ndcX;
     ndcX = ndcX / monitorW - 0.5f;
