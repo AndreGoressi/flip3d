@@ -2,6 +2,8 @@
 
 void UndocumentedDwmApi::DwmpActivateLivePreview(HWND hwnd, BOOL enable)
 {
+    using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL, HWND, HWND, UINT, LPVOID);
+    
     static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
     static BOOL aeroPeekActive = FALSE;
     static bool isInitialized = false;
@@ -22,9 +24,14 @@ void UndocumentedDwmApi::DwmpActivateLivePreview(HWND hwnd, BOOL enable)
 
     if (aeroPeekActive != enable)
     {
-        UINT m_PeekType = static_cast<UINT>(PeekTypes::Window);
-        
-        pDwmpActivateLivePreview(enable, hwnd, hwnd, m_PeekType, reinterpret_cast<LPVOID>(0x3244));
+        if (enable)
+        {
+            pDwmpActivateLivePreview(TRUE, nullptr, hwnd, 1, reinterpret_cast<LPVOID>(0x3244));
+        }
+        else /*(disable)*/
+        {
+            pDwmpActivateLivePreview(FALSE, nullptr, hwnd, 1, nullptr);
+        }
         
         aeroPeekActive = enable;
     }
