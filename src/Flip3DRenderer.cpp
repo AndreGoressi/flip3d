@@ -1,7 +1,7 @@
 #include "Flip3DRenderer.h"
 #include "Shaders.h"
 #include "Capture.h"
-#include "UndocumentedDwmApi.h
+#include "UndocumentedDwmApi.h"
 
 namespace
 {
