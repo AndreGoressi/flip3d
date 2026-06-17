@@ -1,18 +1,22 @@
 #pragma once
 #include <windows.h>
 
-enum class PeekTypes : UINT
+namespace UndocumentedDwmApi
 {
-    NotUsed = 0,
-    Desktop = 1,
-    Window  = 3
-};
+    enum class PeekTypes : UINT
+    {
+        NotUsed = 0,
+        Desktop = 1,
+        Window  = 3
+    };
 
-class UndocumentedDwmApi
-{
-public:
-    static void DwmpActivateLivePreview(HWND hFlip3DWindow, BOOL enable);
+    using DwmpActivateLivePreview_t = BOOL(WINAPI*)(
+        BOOL    enable,
+        HWND    hwnd,
+        HWND    hTopmostWindow,
+        UINT    peekType,
+        LPVOID  param5
+    );
 
-private:
-    using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL, HWND, HWND, UINT, LPVOID);
-};
+    void DwmpActivateLivePreview(HWND hwnd, BOOL enable);
+}
