@@ -538,14 +538,14 @@ HRESULT Flip3DRenderer::CreateWindowSizeResources(bool resizeBuffers)
     return S_OK;
 }
 
-void ForceWindowToForeground(HWND hWnd)
+void Flip3DRenderer::ForceWindowToForeground(HWND hWnd)
 {
     if (!IsWindow(hWnd)) return;
 
     if (IsIconic(hWnd)) {
         ShowWindowAsync(hWnd, SW_RESTORE);
     }
-
+    
     DWORD dwProcessId = 0;
     GetWindowThreadProcessId(hWnd, &dwProcessId);
     AttachThreadInput(GetCurrentThreadId(), GetWindowThreadProcessId(hWnd, NULL), TRUE);
@@ -554,7 +554,9 @@ void ForceWindowToForeground(HWND hWnd)
     SetFocus(hWnd);
     SetActiveWindow(hWnd);
     BringWindowToTop(hWnd);
-
+    
+    SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+    
     AttachThreadInput(GetCurrentThreadId(), GetWindowThreadProcessId(hWnd, NULL), FALSE);
 }
 
@@ -627,9 +629,9 @@ void Flip3DRenderer::Update(float deltaSeconds)
                 ShowWindow(m_selectedHWND, SW_RESTORE);
             }
 
-            //SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             //SetForegroundWindow(m_selectedHWND);
-            //ForceWindowToForeground(m_selectedHWND);
+            ForceWindowToForeground(m_selectedHWND);
             
             m_selectedWindowActivationDispatched = true;
         }
@@ -652,9 +654,9 @@ void Flip3DRenderer::Update(float deltaSeconds)
                 ShowWindow(m_selectedHWND, SW_RESTORE);
             }
 
-            //SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             //SetForegroundWindow(m_selectedHWND);
-            //ForceWindowToForeground(m_selectedHWND);
+            ForceWindowToForeground(m_selectedHWND);
             
             m_selectedWindowActivationDispatched = true;
         }
