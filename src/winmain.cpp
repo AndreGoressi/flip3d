@@ -1,5 +1,5 @@
 #include <windows.h>
-#include "Flip3DRenderer.h"
+#include "Flip3DCore.h"
 #include "Config.h"
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
