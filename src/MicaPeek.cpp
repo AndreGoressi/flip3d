@@ -28,7 +28,7 @@ void MicaPeek::SetSelected(HWND hwnd)
 
 void MicaPeek::ApplyPeek()
 {
-    if (!m_device) return;
+    //if (!m_device) return;
 
     for (auto& w : m_windows)
     {
