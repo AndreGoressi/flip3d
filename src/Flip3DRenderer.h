@@ -26,6 +26,8 @@ private:
     int ResolveOriginalFrontIndex() const;
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
 
+    void DwmpActivateLivePreview(BOOL enable);
+
     // creation
     bool ApplyAcrylic(HWND hwnd);
     bool Render3Dstack();
