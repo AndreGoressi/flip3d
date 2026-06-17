@@ -556,14 +556,14 @@ void Flip3DRenderer::ThumbnailAsWindowToForeground(HWND hWnd)
     AttachThreadInput(GetCurrentThreadId(), GetWindowThreadProcessId(hWnd, NULL), FALSE);
 }
 
-using LocalDwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL  peekOn, 
+using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL  peekOn, 
                                                          HWND  hPeekWindow, 
                                                          HWND  hTopmostWindow, 
                                                          PeekTypes peekType, 
                                                          LPVOID param5);
-void Flip3DRenderer::SetAeroPeekEnabled(BOOL enable)
+void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
 {
-    static LocalDwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
+    static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
     static BOOL aeroPeekActive = FALSE;
     static bool isInitialized = false;
 
@@ -572,7 +572,7 @@ void Flip3DRenderer::SetAeroPeekEnabled(BOOL enable)
         HMODULE dwmapiModule = LoadLibraryEx(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (dwmapiModule)
         {
-            pDwmpActivateLivePreview = (LocalDwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
+            pDwmpActivateLivePreview = (DwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
         }
         isInitialized = true;
     }
