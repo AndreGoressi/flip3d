@@ -185,12 +185,20 @@ void Flip3DCore::CreateWindowCaptures()
     for (auto &card : m_cards)
     {
         if (!card.hwnd) continue;
-        //-------
+        
         auto cap = std::make_unique<WindowCapture>();
         HRESULT hr = cap->Initialize(card.hwnd, m_hwnd, m_device.Get());
         if (SUCCEEDED(hr))
             card.captureSRV = cap->GetSRV();
         card.capture = std::move(cap);
+
+        LONG_PTR exStyle = GetWindowLongPtrW(card.hwnd, GWL_EXSTYLE);
+        SetWindowLongPtrW(card.hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
+
+        if (m_micaPeek)
+        {
+            m_micaPeek->AttachThumbnail(card.hwnd, card.visual, 0.0f);
+        }
     }
 }
 
