@@ -558,12 +558,6 @@ void ForceWindowToForeground(HWND hWnd)
     AttachThreadInput(GetCurrentThreadId(), GetWindowThreadProcessId(hWnd, NULL), FALSE);
 }
 
-using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn,
-                                                   HWND hPeekWindow,
-                                                   HWND hTopmostWindow,
-                                                   UINT peekType,
-                                                   void* param5);
-//
 void Flip3DRenderer::AeroPeek(BOOL enable)
 {
     static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
