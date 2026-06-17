@@ -2,14 +2,6 @@
 
 #include "Config.h"
 #include "WindowCapture.h"
-
-enum class PeekTypes : UINT
-{
-    NotUsed = 0,
-    Desktop = 1,
-    Window  = 3
-};
-
 // ============================================================================
 // Main Flip3D D3D11 prototype application class
 // ============================================================================
@@ -24,8 +16,6 @@ public:
 
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-
-    void DwmpActivateLivePreview(BOOL enable);
     //
     HANDLE m_frameLatencyWaitableObject = nullptr;
     float m_restoreAlpha = 0.0f;
