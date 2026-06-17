@@ -1858,7 +1858,7 @@ void Flip3DRenderer::Render()
         for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition) && card.capture) { card.capture->PollFrame(); break; } ++pos; }
     }
 
-    /*for (const DrawItem &item : drawItems)
+    for (const DrawItem &item : drawItems)
     {
         ObjectConstants objectConstants = {};
         objectConstants.world = item.world;
@@ -1887,34 +1887,6 @@ void Flip3DRenderer::Render()
         ComPtr<ID3D11Texture2D> backBuffer;
         if (SUCCEEDED(m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))))
             m_context->ResolveSubresource(backBuffer.Get(), 0, m_msaaRenderTarget.Get(), 0, DXGI_FORMAT_B8G8R8A8_UNORM);
-    }*/
-
-    for (const DrawItem &item : drawItems)
-    {
-        ObjectConstants objectConstants = {};
-        objectConstants.world = item.world;
-        objectConstants.color = item.color;
-        objectConstants.accent = item.accent;
-        objectConstants.flags  = item.flags; 
-        m_context->UpdateSubresource(m_objectConstantsBuffer.Get(), 0, nullptr, &objectConstants, 0, 0);
-
-        size_t pos = 0;
-        ID3D11ShaderResourceView *srv = nullptr;
-        for (auto &card : m_cards) { if (pos == static_cast<size_t>(item.cardPosition)) { srv = card.captureSRV; break; } ++pos; }
-        if (!srv) continue;
-
-        m_context->PSSetShaderResources(0, 1, &srv);
-        ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()};
-        m_context->VSSetConstantBuffers(1, 1, objectBuffers);
-        m_context->PSSetConstantBuffers(1, 1, objectBuffers);
-        
-        m_context->DrawIndexed(6, 0, 0);
-
-        m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-        
-        m_context->DrawIndexed(6, 0, 0); 
-        
-        m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     }
 
     m_swapChain->Present(1, 0);
