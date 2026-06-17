@@ -5,11 +5,11 @@
 // ============================================================================
 // Main Flip3D D3D11 prototype application class
 // ============================================================================
-class Flip3DRenderer
+class Flip3DCore
 {
 public:
     bool Initialize(HINSTANCE instance);
-    HWND RenderHandle() const { return m_hwnd; }
+    HWND CoreHandle() const { return m_hwnd; }
     int Run();
     // Exposed for WndProc forwarding
     LRESULT HandleMessage(UINT message, WPARAM wParam, LPARAM lParam);
