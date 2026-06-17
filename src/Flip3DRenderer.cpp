@@ -594,7 +594,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             ForceWindowToForeground(m_selectedHWND);*/
             
             ShowWindow(m_selectedHWND, SW_RESTORE);
-            SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             ForceWindowToForeground(m_selectedHWND);
             //
             m_selectedWindowActivationDispatched = true;
@@ -618,7 +618,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
             ForceWindowToForeground(m_selectedHWND);*/
             
             ShowWindow(m_selectedHWND, SW_RESTORE);
-            SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
             ForceWindowToForeground(m_selectedHWND);
             //
             m_selectedWindowActivationDispatched = true;
