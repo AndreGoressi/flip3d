@@ -582,52 +582,25 @@ void Flip3DRenderer::Update(float deltaSeconds)
         TickRepeatedRotate();
     }
 
-    static float s_exitAnimationTimer = 0.0f; 
-
-    if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
-    {
-        if (m_enterTimeline.active)
-        {
-            s_exitAnimationTimer += deltaSeconds; 
-            
-            if (s_exitAnimationTimer >= 0.2f && !m_selectedWindowActivationDispatched && m_selectedWindowWasMinimized)
-            {
-                SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-                ForceWindowToForeground(m_selectedHWND);
-                m_selectedWindowActivationDispatched = true;
-            }
-        }
-    }
-    else
-    {
-        s_exitAnimationTimer = 0.0f; 
-    }
-
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
-        
-        if (m_selectedHWND && IsWindow(m_selectedHWND))
+        if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            DWORD foregroundThreadID = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
-            DWORD targetThreadID = GetWindowThreadProcessId(m_selectedHWND, NULL);
+            /*ShowWindow(m_selectedHWND, SW_HIDE);
+            //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
+                             //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
+            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+            ShowWindow(m_selectedHWND, SW_SHOWNA);
+            ForceWindowToForeground(m_selectedHWND);*/
             
-            if (foregroundThreadID != targetThreadID)
-            {
-                AttachThreadInput(foregroundThreadID, targetThreadID, TRUE);
-                SetForegroundWindow(m_selectedHWND);
-                SetFocus(m_selectedHWND);
-                AttachThreadInput(foregroundThreadID, targetThreadID, FALSE); 
-            }
-            else
-            {
-                SetForegroundWindow(m_selectedHWND);
-            }
-            
-            //ForceWindowToForeground(m_selectedHWND);
-            ShowWindow(m_selectedHWND, SW_SHOW); 
+            ShowWindow(m_selectedHWND, SW_RESTORE);
+            SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            ForceWindowToForeground(m_selectedHWND);
+            //
+            m_selectedWindowActivationDispatched = true;
         }
 
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
@@ -635,29 +608,23 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
-        
-        if (m_selectedHWND && IsWindow(m_selectedHWND))
+        if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            DWORD foregroundThreadID = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
-            DWORD targetThreadID = GetWindowThreadProcessId(m_selectedHWND, NULL);
+            /*ShowWindow(m_selectedHWND, SW_HIDE);
+            //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
+                             //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
+            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+            ShowWindow(m_selectedHWND, SW_SHOWNA);
+            ForceWindowToForeground(m_selectedHWND);*/
             
-            if (foregroundThreadID != targetThreadID)
-            {
-                AttachThreadInput(foregroundThreadID, targetThreadID, TRUE);
-                SetForegroundWindow(m_selectedHWND);
-                SetFocus(m_selectedHWND);
-                AttachThreadInput(foregroundThreadID, targetThreadID, FALSE);
-            }
-            else
-            {
-                SetForegroundWindow(m_selectedHWND);
-            }
-            
-            //ForceWindowToForeground(m_selectedHWND);
-            ShowWindow(m_selectedHWND, SW_SHOW);
+            ShowWindow(m_selectedHWND, SW_RESTORE);
+            SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            ForceWindowToForeground(m_selectedHWND);
+            //
+            m_selectedWindowActivationDispatched = true;
         }
 
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
@@ -665,7 +632,6 @@ void Flip3DRenderer::Update(float deltaSeconds)
     ContinueMouseWheelIfNeeded();
     ContinueKeyboardRepeatIfNeeded();
 }
-
 
 void Flip3DRenderer::OnGlobalTimeUpdated()
 {
