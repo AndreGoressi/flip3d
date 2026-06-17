@@ -623,7 +623,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        DwmpActivateLivePreview(FALSE); // Aero Peek off
+        DwmpActivateLivePreview(FALSE); 
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
@@ -646,7 +646,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        DwmpActivateLivePreview(FALSE); // Aero Peek off
+        DwmpActivateLivePreview(FALSE); 
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
