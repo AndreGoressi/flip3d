@@ -29,7 +29,7 @@ private:
     // creation
     bool DrawAcrylic(HWND hwnd);
     std::unique_ptr<MicaPeek> m_micaPeek;
-    bool Render3Dstack();
+    bool StartFlip3D();
 
     // D3D initialization
     HRESULT InitializeD3D();
