@@ -575,7 +575,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::Enter && !m_enterTimeline.active)
     {
         m_state = ViewState::Interactive;
-        UndocumentedDwmApi::DwmpActivateLivePreview(m_hwnd, TRUE);
+        UndocumentedDwmApi::DwmpActivateLivePreview(m_selectedHWND, m_hwnd, TRUE);
     }
 
     if (!m_rotateTimeline.active)
@@ -586,7 +586,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        UndocumentedDwmApi::DwmpActivateLivePreview(m_hwnd, FALSE); // Aero Peek off
+        UndocumentedDwmApi::DwmpActivateLivePreview(m_selectedHWND, m_hwnd, FALSE); // Aero Peek off
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
@@ -609,7 +609,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        UndocumentedDwmApi::DwmpActivateLivePreview(m_hwnd, FALSE); // Aero Peek off
+        UndocumentedDwmApi::DwmpActivateLivePreview(m_selectedHWND, m_hwnd, FALSE); // Aero Peek off
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
