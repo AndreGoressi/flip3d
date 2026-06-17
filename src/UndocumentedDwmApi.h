@@ -18,5 +18,5 @@ namespace UndocumentedDwmApi
         LPVOID  param5
     );
 
-    void DwmpActivateLivePreview(HWND hTopmostWindow, HWND hwnd, BOOL enable);
+    void DwmpActivateLivePreview(HWND hwnd, HWND hTopmostWindow, BOOL enable);
 }
