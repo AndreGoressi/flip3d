@@ -558,6 +558,36 @@ void ForceWindowToForeground(HWND hWnd)
     AttachThreadInput(GetCurrentThreadId(), GetWindowThreadProcessId(hWnd, NULL), FALSE);
 }
 
+using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn,
+                                                   HWND hPeekWindow,
+                                                   HWND hTopmostWindow,
+                                                   UINT peekType,
+                                                   void* param5);
+void Flip3DRenderer::AeroPeek(BOOL enable)
+{
+    static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
+    static BOOL aeroPeekActive = FALSE;
+    static bool isInitialized = false;
+
+    if (!isInitialized)
+    {
+        HMODULE dwmapiModule = LoadLibraryEx(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (dwmapiModule)
+        {
+            pDwmpActivateLivePreview = (DwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
+        }
+        isInitialized = true; 
+    }
+
+    if (!pDwmpActivateLivePreview) return;
+
+    if (aeroPeekActive != enable)
+    {
+        pDwmpActivateLivePreview(enable, nullptr, nullptr, 3, nullptr);
+        aeroPeekActive = enable;
+    }
+}
+
 // ============================================================================
 // Per-frame update
 // ============================================================================
@@ -574,7 +604,11 @@ void Flip3DRenderer::Update(float deltaSeconds)
     }
 
     if (m_state == ViewState::Enter && !m_enterTimeline.active)
+    {
         m_state = ViewState::Interactive;
+        AeroPeek(TRUE);
+        //---aero_peek---
+    }
 
     if (!m_rotateTimeline.active)
     {
@@ -584,19 +618,13 @@ void Flip3DRenderer::Update(float deltaSeconds)
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
+        AeroPeek(FALSE);
+        //---aero_peek---
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            /*ShowWindow(m_selectedHWND, SW_HIDE);
-            //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                             //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
-            ForceWindowToForeground(m_selectedHWND);*/
-            
-            ShowWindow(m_selectedHWND, SW_RESTORE);
-            SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-            ForceWindowToForeground(m_selectedHWND);
-            //
+            //ShowWindow(m_selectedHWND, SW_RESTORE);
+            //SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            //ForceWindowToForeground(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -608,19 +636,13 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
+        AeroPeek(FALSE);
+        //---aero_peek---
         if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
         {
-            /*ShowWindow(m_selectedHWND, SW_HIDE);
-            //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                             //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
-            ForceWindowToForeground(m_selectedHWND);*/
-            
-            ShowWindow(m_selectedHWND, SW_RESTORE);
-            SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-            ForceWindowToForeground(m_selectedHWND);
-            //
+            //ShowWindow(m_selectedHWND, SW_RESTORE);
+            //SetWindowPos(m_selectedHWND, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            //ForceWindowToForeground(m_selectedHWND);
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -628,7 +650,6 @@ void Flip3DRenderer::Update(float deltaSeconds)
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
     }
-
     ContinueMouseWheelIfNeeded();
     ContinueKeyboardRepeatIfNeeded();
 }
