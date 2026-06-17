@@ -572,7 +572,7 @@ void Flip3DRenderer::ApplyAeroPeek(BOOL enable)
         HMODULE dwmapiModule = LoadLibraryEx(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (dwmapiModule)
         {
-            pDwmpActivateLivePreview = (LocalDwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
+            pDwmpActivateLivePreview = (DwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
         }
         isInitialized = true;
     }
