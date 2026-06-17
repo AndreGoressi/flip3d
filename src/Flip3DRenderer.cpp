@@ -569,7 +569,7 @@ void Flip3DRenderer::ThumbnailAsWindowToForeground(HWND hWnd)
         SetCursorPos(mousePos.x, mousePos.y);
     }
 
-    DwmFlush();
+    //DwmFlush();
 }
 
 using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn, 
