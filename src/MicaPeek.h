@@ -9,16 +9,17 @@ class MicaPeek
 public:
     MicaPeek(Microsoft::WRL::ComPtr<IDCompositionDevice> dcompDevice);
     ~MicaPeek();
-    void AttachThumbnail(HWND hwnd, Microsoft::WRL::ComPtr<IDCompositionVisual> visual);
+
+    void AttachThumbnail(HWND hwnd, Microsoft::WRL::ComPtr<IDCompositionVisual2> visual);
     void SetSelected(HWND hwnd);
-    void DrawPeek();
+    void ApplyPeek();
     void ClearPeek();
 
 private:
     struct WindowEntry
     {
         HWND hwnd;
-        Microsoft::WRL::ComPtr<IDCompositionVisual> visual;
+        Microsoft::WRL::ComPtr<IDCompositionVisual2> visual;
         float baseOpacity;
     };
 
