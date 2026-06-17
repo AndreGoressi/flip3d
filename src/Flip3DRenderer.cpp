@@ -45,7 +45,6 @@ namespace
     }
 } // namespace
 
-
 // ============================================================================
 // Initialisation
 // ============================================================================
@@ -405,8 +404,8 @@ HRESULT Flip3DRenderer::CreateDeviceResources()
         {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}, {{1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
         {{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}}, {{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
     };
+    
     static constexpr std::uint16_t quadIndices[] = {0, 1, 2, 0, 2, 3};
-
     D3D11_BUFFER_DESC vbDesc = {};
     vbDesc.ByteWidth = sizeof(quadVertices);
     vbDesc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -561,7 +560,7 @@ using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn,
                                                    HWND hTopmostWindow, 
                                                    UINT peekType, 
                                                    LPVOID param5);
-void Flip3DRenderer::ApplyAeroPeek(BOOL enable)
+void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
 {
     static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
     static BOOL aeroPeekActive = FALSE;
@@ -581,7 +580,7 @@ void Flip3DRenderer::ApplyAeroPeek(BOOL enable)
     //
     if (aeroPeekActive != enable)
     {
-        pDwmpActivateLivePreview(enable, nullptr, nullptr, 3, nullptr);
+        pDwmpActivateLivePreview(enable, nullptr, nullptr, 1 /*desktop*/, nullptr);
         aeroPeekActive = enable;
     }
 }
@@ -1121,10 +1120,21 @@ int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
     if (!IsSelectionInputState() || m_cards.empty()) return -1;
     if (m_monitorWidth <= 0 || m_monitorHeight <= 0) return -1;
 
+    UINT dpi = GetDpiForWindow(m_hwnd); 
+    float scale = static_cast<float>(dpi) / 96.0f; // 96 DPI = 100% (Standard)
+
     const float monitorW = static_cast<float>(m_monitorWidth);
     const float monitorH = static_cast<float>(m_monitorHeight);
+    
+    float ndcX = static_cast<float>(x) * scale; // Cursor X 
+    float ndcY = static_cast<float>(y) * scale; // Cursor Y 
+    // -----------------------------------------------
+
+    /*const float monitorW = static_cast<float>(m_monitorWidth);
+    const float monitorH = static_cast<float>(m_monitorHeight);
     float ndcX = static_cast<float>(x);
-    float ndcY = static_cast<float>(y);
+    float ndcY = static_cast<float>(y);*/
+    //
     if (m_fRTLMirror) ndcX = monitorW - ndcX;
     ndcX = ndcX / monitorW - 0.5f;
     ndcY = -(ndcY / monitorH - 0.5f);
@@ -1170,7 +1180,7 @@ int Flip3DRenderer::HitTest3DScene(LONG x, LONG y) const
         float t0 = 0, u0 = 0;
         if (IntersectRayTriangle(origin, dir, v[0], v[1], v[2], t0, u0)) return static_cast<int>(entry.cardPosition);
         float t1 = 0, u1 = 0;
-        if (IntersectRayTriangle(origin, dir, /*v[0], v[1], v[3]*/v[1], v[2], v[3], t1, u1)) return static_cast<int>(entry.cardPosition);
+        if (IntersectRayTriangle(origin, dir, /*v[0], v[1], v[3]*/v[0], v[2], v[3], t1, u1)) return static_cast<int>(entry.cardPosition);
     }
     return -1;
 }
@@ -1914,7 +1924,7 @@ void Flip3DRenderer::Render()
         ID3D11Buffer *objectBuffers[] = {m_objectConstantsBuffer.Get()};
         m_context->VSSetConstantBuffers(1, 1, objectBuffers);
         m_context->PSSetConstantBuffers(1, 1, objectBuffers);
-        m_context->DrawIndexed(6, 0, 0);
+        m_context->DrawIndexed(m_cardIndexCount, 0, 0);
     }
 
     ID3D11ShaderResourceView *nullSRV[1] = {nullptr};
