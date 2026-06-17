@@ -1,6 +1,6 @@
 #include "UndocumentedDwmApi.h"
 
-void UndocumentedDwmApi::DwmpActivateLivePreview(HWND hTopmostWindow, HWND hwnd, BOOL enable)
+void UndocumentedDwmApi::DwmpActivateLivePreview(HWND hwnd, HWND hTopmostWindow, BOOL enable)
 {
     using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL, HWND, HWND, UINT, LPVOID);
     
@@ -26,7 +26,7 @@ void UndocumentedDwmApi::DwmpActivateLivePreview(HWND hTopmostWindow, HWND hwnd,
     {
         if (enable)
         {
-            pDwmpActivateLivePreview(TRUE, hTopmostWindow, hwnd, 3, reinterpret_cast<LPVOID>(0x3244));
+            pDwmpActivateLivePreview(TRUE, hwnd, hTopmostWindow, 3, reinterpret_cast<LPVOID>(0x3244));
         }
         else /*(disable)*/
         {
