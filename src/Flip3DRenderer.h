@@ -29,7 +29,7 @@ private:
     void DwmpActivateLivePreview(BOOL enable);
 
     // creation
-    bool ApplyAcrylic(HWND hwnd);
+    bool DrawAcrylic(HWND hwnd);
     bool Render3Dstack();
 
     // D3D initialization
