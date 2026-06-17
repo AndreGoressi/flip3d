@@ -569,7 +569,7 @@ void Flip3DRenderer::ThumbnailAsWindowToForeground(HWND hWnd)
         SetCursorPos(mousePos.x, mousePos.y);
     }
 
-    //DwmFlush();
+    DwmFlush();
 }
 
 using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn, 
@@ -597,7 +597,7 @@ void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
     //
     if (aeroPeekActive != enable)
     {
-        pDwmpActivateLivePreview(enable, nullptr, nullptr, 2/*undocumented*/, nullptr);
+        pDwmpActivateLivePreview(enable, m_selectedHWND, m_hwnd, 2/*undocumented*/, nullptr);
         aeroPeekActive = enable;
     }
 }
