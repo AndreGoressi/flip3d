@@ -19,7 +19,6 @@ public:
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-
     using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn,
                                                            HWND hPeekWindow,
                                                            HWND hTopmostWindow,
@@ -29,10 +28,6 @@ private:
     //
     HANDLE m_frameLatencyWaitableObject = nullptr;
     float m_restoreAlpha = 0.0f;
-    //new !
-    using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL, HWND, HWND, UINT, HWND, int);
-    DwmpActivateLivePreview_t m_pDwmpActivateLivePreview = nullptr;
-
     // Card / window model — uses std::list matching uDWM's linked-list architecture
     void BuildCardModels();
     void CreateWindowCaptures();
