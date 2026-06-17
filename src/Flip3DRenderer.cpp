@@ -541,16 +541,21 @@ void Flip3DRenderer::ThumbnailAsWindowToForeground(HWND hWnd)
 {
     if (!IsWindow(hWnd)) return;
 
+    BOOL bForceShowAnim = TRUE;
+    DwmSetWindowAttribute(hWnd, DWMWA_TRANSITION_FORCED_SHOWN_REMOVED, &bForceShowAnim, sizeof(bForceShowAnim));
+
     if (IsIconic(hWnd)) 
     {
         ShowWindowAsync(hWnd, SW_RESTORE);
     }
 
-    // 2. Den Thread des Zielfensters und unseren eigenen Thread holen
+    BOOL bAllowAnim = FALSE; 
+    DwmSetWindowAttribute(hWnd, DWMWA_TRANSITION_FORCED_SHOWN_REMOVED, &bAllowAnim, sizeof(bAllowAnim));
+
     DWORD dwTargetThreadId = GetWindowThreadProcessId(hWnd, NULL);
     DWORD dwCurrentThreadId = GetCurrentThreadId();
-
     bool bAttached = false;
+    
     if (dwCurrentThreadId != dwTargetThreadId && dwTargetThreadId != 0)
     {
         bAttached = AttachThreadInput(dwCurrentThreadId, dwTargetThreadId, TRUE);
@@ -567,8 +572,10 @@ void Flip3DRenderer::ThumbnailAsWindowToForeground(HWND hWnd)
     POINT mousePos;
     if (GetCursorPos(&mousePos))
     {
-        SetCursorPos(mousePos.x, mousePos.y); 
+        SetCursorPos(mousePos.x, mousePos.y);
     }
+
+    DwmFlush();
 }
 
 using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn, 
@@ -596,7 +603,7 @@ void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
     //
     if (aeroPeekActive != enable)
     {
-        pDwmpActivateLivePreview(enable, nullptr, nullptr, 1/*desktop*/, nullptr);
+        pDwmpActivateLivePreview(enable, nullptr, nullptr, 3/*window*/, nullptr);
         aeroPeekActive = enable;
     }
 }
