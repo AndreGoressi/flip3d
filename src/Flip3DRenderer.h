@@ -19,7 +19,7 @@ public:
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-    void AeroPeeK(BOOL enable);
+    void AeroPeek(BOOL enable);
     //
     HANDLE m_frameLatencyWaitableObject = nullptr;
     float m_restoreAlpha = 0.0f;
