@@ -57,7 +57,7 @@ bool Flip3DCore::Initialize(HINSTANCE instance)
     LoadFlip3DPreferences();
     BuildCardModels();
 
-    if (!Render3Dstack()) return false;
+    if (!StartFlip3D()) return false;
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 
     if (FAILED(InitializeD3D())) return false;
@@ -253,7 +253,7 @@ bool Flip3DCore::DrawAcrylic(HWND hwnd)
 // ============================================================================
 // Window creation
 // ============================================================================
-bool Flip3DCore::Render3Dstack()
+bool Flip3DCore::StartFlip3D()
 {
     WNDCLASSEXW flip3d = {};
     flip3d.cbSize        = sizeof(flip3d);
