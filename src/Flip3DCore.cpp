@@ -1,6 +1,7 @@
 #include "Flip3DCore.h"
 #include "Shaders.h"
 #include "Capture.h"
+#include "MicaPeek.h"
 
 namespace
 {
