@@ -14,8 +14,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
         CoUninitialize();
         return 1;
     }
-
-    HWND CoreHwnd = cnd.CorreHandle();
+    
+    HWND CoreHwnd = cnd.CoreHandle(); 
 
     ShowWindow(CoreHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(CoreHwnd);
@@ -27,7 +27,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     CoUninitialize();
     return result;
 }
-
 
 
 
