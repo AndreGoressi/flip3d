@@ -561,7 +561,7 @@ using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL  peekOn,
                                                          HWND  hTopmostWindow, 
                                                          UINT  peekType, 
                                                          LPVOID param5);
-void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
+void Flip3DRenderer::AeroPeek(BOOL enable)
 {
     static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
     static BOOL aeroPeekActive = FALSE;
@@ -603,6 +603,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     m_totalTime += deltaSeconds;
 
     if (m_enterTimeline.active) m_enterTimeline.Update(deltaSeconds);
+    
     if (m_rotateTimeline.active)
     {
         m_rotateTimeline.Update(deltaSeconds);
@@ -612,7 +613,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::Enter && !m_enterTimeline.active)
     {
         m_state = ViewState::Interactive;
-        DwmpActivateLivePreview(TRUE);
+        ApplyAeroPeek(TRUE);
     }
 
     if (!m_rotateTimeline.active)
@@ -623,7 +624,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        DwmpActivateLivePreview(FALSE); 
+        ApplyAeroPeek(FALSE); 
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
@@ -646,7 +647,7 @@ void Flip3DRenderer::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        DwmpActivateLivePreview(FALSE); 
+        ApplyAeroPeek(FALSE); 
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
