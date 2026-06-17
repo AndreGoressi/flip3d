@@ -556,7 +556,7 @@ void Flip3DRenderer::ThumbnailAsWindowToForeground(HWND hWnd)
     AttachThreadInput(GetCurrentThreadId(), GetWindowThreadProcessId(hWnd, NULL), FALSE);
 }
 
-using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL  peekOn, 
+using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn, 
                                                          HWND  hPeekWindow, 
                                                          HWND  hTopmostWindow, 
                                                          PeekTypes peekType, 
@@ -583,11 +583,11 @@ void Flip3DRenderer::DwmpActivateLivePreview(BOOL enable)
     {
         if (enable)
         {
-            pDwmpActivateLivePreview(TRUE, m_selectedHWND, m_hwnd, PeekTypes::Window, (LPVOID)0x3244);
+            pDwmpActivateLivePreview(TRUE, m_selectedHWND, m_hwnd, static_cast<UINT>(PeekTypes::Window), (LPVOID)0x3244);
         }
-        else /*(disable)*/
+        else
         {
-            pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, PeekTypes::Window, nullptr);
+            pDwmpActivateLivePreview(FALSE, nullptr, m_hwnd, static_cast<UINT>(PeekTypes::Window), nullptr);
         }
         
         aeroPeekActive = enable;
