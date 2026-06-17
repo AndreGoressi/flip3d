@@ -1,6 +1,6 @@
 #include "UndocumentedDwmApi.h"
 
-void UndocumentedDwmApi::DwmpActivateLivePreview(HWND hwnd, BOOL enable)
+void UndocumentedDwmApi::DwmpActivateLivePreview(HWND hTopmostWindow, HWND hwnd, BOOL enable)
 {
     using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL, HWND, HWND, UINT, LPVOID);
     
@@ -26,11 +26,11 @@ void UndocumentedDwmApi::DwmpActivateLivePreview(HWND hwnd, BOOL enable)
     {
         if (enable)
         {
-            pDwmpActivateLivePreview(TRUE, nullptr, hwnd, 1, reinterpret_cast<LPVOID>(0x3244));
+            pDwmpActivateLivePreview(TRUE, hTopmostWindow, hwnd, 3, reinterpret_cast<LPVOID>(0x3244));
         }
         else /*(disable)*/
         {
-            pDwmpActivateLivePreview(FALSE, nullptr, hwnd, 1, nullptr);
+            pDwmpActivateLivePreview(FALSE, nullptr, hwnd, 3, nullptr);
         }
         
         aeroPeekActive = enable;
