@@ -7,15 +7,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     HRESULT hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     if (FAILED(hr)) return -1;
 
-    Flip3DCore rnd;
-    if (!rnd.Initialize(instance))
+    Flip3DCore cnd;
+    if (!cnd.Initialize(instance))
     {
         MessageBoxW(nullptr, L"Failed to initialize.", kTitle, MB_OK | MB_ICONERROR);
         CoUninitialize();
         return 1;
     }
 
-    HWND CoreHwnd = rnd.CorreHandle();
+    HWND CoreHwnd = cnd.CorreHandle();
 
     ShowWindow(CoreHwnd, showCommand == SW_HIDE ? SW_MAXIMIZE : showCommand);
     UpdateWindow(CoreHwnd);
@@ -23,7 +23,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     SetForegroundWindow(CoreHwnd);
     SetActiveWindow(CoreHwnd);
 
-    int result = rnd.Run();
+    int result = cnd.Run();
     CoUninitialize();
     return result;
 }
