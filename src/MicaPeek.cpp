@@ -1,4 +1,5 @@
 #include "MicaPeek.h"
+#include <dwmapi.h> 
 
 MicaPeek::MicaPeek(Microsoft::WRL::ComPtr<IDCompositionDevice> dcompDevice)
     : m_device(dcompDevice)
@@ -34,9 +35,8 @@ void MicaPeek::ApplyPeek()
 
         if (w.hwnd == m_selected)
         {
-            SetLayeredWindowAttributes(w.hwnd, 0, 255, LWA_ALPHA);
-            SetWindowPos(w.hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-            RedrawWindow(w.hwnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+            BOOL cloak = FALSE;
+            DwmSetWindowAttribute(w.hwnd, DWMWA_CLOAK, &cloak, sizeof(cloak));
 
             if (w.visual)
             {
@@ -48,10 +48,8 @@ void MicaPeek::ApplyPeek()
         }
         else
         {
-            SetLayeredWindowAttributes(w.hwnd, 0, 0, LWA_ALPHA);
-            SetWindowPos(w.hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-            RedrawWindow(w.hwnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
-
+            BOOL cloak = TRUE;
+            DwmSetWindowAttribute(w.hwnd, DWMWA_CLOAK, &cloak, sizeof(cloak));
             if (w.visual)
             {
                 w.visual->SetOffsetY(99999.0f);
