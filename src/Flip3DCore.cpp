@@ -63,6 +63,11 @@ bool Flip3DCore::Initialize(HINSTANCE instance)
     if (FAILED(InitializeD3D())) return false;
     CreateWindowCaptures();
 
+    if (m_dcompDevice)
+    {
+        m_micaPeek = std::make_unique<MicaPeek>(m_dcompDevice);
+    }
+
     m_enterTimeline.Restart(0.0f, 1.0f, gEnterExitDurationSec, InterpolationMode::Cubic);
     m_state = ViewState::Enter;
     m_originalFrontHWND = m_cards.empty() ? nullptr : m_cards.front().hwnd;
