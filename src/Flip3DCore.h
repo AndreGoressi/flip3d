@@ -27,6 +27,7 @@ private:
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
     // creation
     bool DrawAcrylic(HWND hwnd);
+    std::unique_ptr<MicaPeek> m_micaPeek;
     bool Render3Dstack();
 
     // D3D initialization
