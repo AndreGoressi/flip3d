@@ -3,6 +3,13 @@
 #include "Config.h"
 #include "WindowCapture.h"
 
+enum class PeekTypes : UINT
+{
+    NotUsed = 0,
+    Desktop = 1,
+    Window  = 3
+};
+
 // ============================================================================
 // Main Flip3D D3D11 prototype application class
 // ============================================================================
@@ -12,14 +19,6 @@ public:
     bool Initialize(HINSTANCE instance);
     HWND RenderHandle() const { return m_hwnd; }
     int Run();
-    //
-    enum class PeekTypes : UINT
-    {
-        NotUsed = 0,
-        Desktop = 1,
-        Window  = 3
-    };
-
     // Exposed for WndProc forwarding
     LRESULT HandleMessage(UINT message, WPARAM wParam, LPARAM lParam);
 
