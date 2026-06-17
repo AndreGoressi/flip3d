@@ -578,17 +578,10 @@ void Flip3DRenderer::ApplyAeroPeek(BOOL enable)
     }
 
     if (!pDwmpActivateLivePreview) return;
-    //
+
     if (aeroPeekActive != enable)
     {
-        if (enable)
-        {
-            pDwmpActivateLivePreview(TRUE, nullptr, nullptr, 3, (LPVOID)0x3244);
-        }
-        else
-        {
-            pDwmpActivateLivePreview(FALSE, nullptr, nullptr, 3, nullptr);
-        }
+        pDwmpActivateLivePreview(enable, nullptr, nullptr, 3, nullptr);
         aeroPeekActive = enable;
     }
 }
