@@ -582,75 +582,40 @@ void Flip3DRenderer::Update(float deltaSeconds)
         TickRepeatedRotate();
     }
     
-    float m_exitAnimationTimer = 0.0f;
-    //
-    if (m_state == ViewState::Exit && !m_enterTimeline.active)
+    static float s_exitAnimationTimer = 0.0f; 
+
+    if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
     {
-        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
+        if (m_enterTimeline.active)
         {
-            if (m_enterTimeline.active)
+            s_exitAnimationTimer += deltaSeconds; 
+            
+            if (s_exitAnimationTimer >= 0.2f && !m_selectedWindowActivationDispatched && m_selectedWindowWasMinimized)
             {
-                m_exitAnimationTimer += 0.016f; 
-                if (m_exitAnimationTimer >= 0.2f && !m_selectedWindowActivationDispatched && m_selectedWindowWasMinimized)
-                {
-                    SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-                    ForceWindowToForeground(m_selectedHWND);
-                    m_selectedWindowActivationDispatched = true;
-                }
+                SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+                ForceWindowToForeground(m_selectedHWND);
+                m_selectedWindowActivationDispatched = true;
             }
         }
-        else
-        {
-            m_exitAnimationTimer = 0.0f;
-        }
     }
-        /*if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
-        {
-            ShowWindow(m_selectedHWND, SW_HIDE);
-            //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                             //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
-            ForceWindowToForeground(m_selectedHWND);
-            m_selectedWindowActivationDispatched = true;
-        }
+    else
+    {
+        s_exitAnimationTimer = 0.0f; 
+    }
 
+    if (m_state == ViewState::Exit && !m_enterTimeline.active)
+    {
         if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
         CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
         return;
-    }*/
+    }
 
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        /*if (m_selectedWindowWasMinimized && m_selectedHWND && IsWindow(m_selectedHWND))
-        {
-            ShowWindow(m_selectedHWND, SW_HIDE);
-            //SetWindowPos(m_selectedHWND, NULL, 0, 0, 0, 0, 
-                             //SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOCOPYBITS);
-            PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-            ShowWindow(m_selectedHWND, SW_SHOWNA);
-            ForceWindowToForeground(m_selectedHWND);
-            m_selectedWindowActivationDispatched = true;
-        }*/
-        //float m_exitAnimationTimer = 0.0f;
-        if (m_state == ViewState::Exit || m_state == ViewState::ExitRepeatedRotate)
-        {
-            if (m_enterTimeline.active)
-            {
-                m_exitAnimationTimer += 0.016f; 
-                if (m_exitAnimationTimer >= 0.2f && !m_selectedWindowActivationDispatched && m_selectedWindowWasMinimized)
-                {
-                    SendMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
-                    ForceWindowToForeground(m_selectedHWND);
-                    m_selectedWindowActivationDispatched = true;
-                }
-            }
-        }
-        else
-        {
-            m_exitAnimationTimer = 0.0f;
-        }
+        if (m_hwnd && IsWindow(m_hwnd)) DestroyWindow(m_hwnd);
+        CompleteDeferredSelectedWindowActivation(m_selectedHWND, m_selectedWindowActivationDispatched);
+        return;
     }
 
     ContinueMouseWheelIfNeeded();
