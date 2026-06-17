@@ -35,6 +35,7 @@ private:
     // creation
     bool ApplyAcrylic(HWND hwnd);
     bool Render3Dstack();
+    void AeroPeek(BOOL enable);
 
     // D3D initialization
     HRESULT InitializeD3D();
