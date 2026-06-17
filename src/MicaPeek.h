@@ -20,7 +20,7 @@ private:
     {
         HWND hwnd;
         Microsoft::WRL::ComPtr<IDCompositionVisual> visual;
-        Microsoft::WRL::ComPtr<IUnknown> originalContent; 
+        float originalOffsetX; 
     };
 
     Microsoft::WRL::ComPtr<IDCompositionDevice> m_device;
