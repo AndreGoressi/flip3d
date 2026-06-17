@@ -12,6 +12,13 @@ public:
     bool Initialize(HINSTANCE instance);
     HWND RenderHandle() const { return m_hwnd; }
     int Run();
+    //
+    enum class PeekTypes : UINT
+    {
+        NotUsed = 0,
+        Desktop = 1,
+        Window  = 3
+    };
 
     // Exposed for WndProc forwarding
     LRESULT HandleMessage(UINT message, WPARAM wParam, LPARAM lParam);
@@ -19,7 +26,7 @@ public:
 private:
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-    void AeroPeek(BOOL enable);
+    void DwmpActivateLivePreview(BOOL enable);
     //
     HANDLE m_frameLatencyWaitableObject = nullptr;
     float m_restoreAlpha = 0.0f;
