@@ -194,10 +194,9 @@ void Flip3DCore::CreateWindowCaptures()
 
         LONG_PTR exStyle = GetWindowLongPtrW(card.hwnd, GWL_EXSTYLE);
         SetWindowLongPtrW(card.hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
-
         if (m_micaPeek)
         {
-            m_micaPeek->AttachThumbnail(card.hwnd, card.visual, 0.0f);
+            m_micaPeek->AttachThumbnail(card.hwnd, nullptr, 0.0f);
         }
     }
 }
