@@ -214,7 +214,7 @@ struct WINDOWCOMPOSITIONATTRIBDATA {
 
 typedef BOOL (WINAPI* SetWindowCompositionAttribute_t)(HWND, WINDOWCOMPOSITIONATTRIBDATA*);
 
-bool Flip3DRenderer::ApplyAcrylic(HWND hwnd)
+bool Flip3DRenderer::DrawAcrylic(HWND hwnd)
 {
     HMODULE user32 = GetModuleHandleW(L"user32.dll");
     if (!user32) return false;
@@ -277,8 +277,7 @@ bool Flip3DRenderer::Render3Dstack()
     {
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
-        ApplyAcrylic(m_hwnd);
-        
+        DrawAcrylic(m_hwnd);
     }
     
     return m_hwnd != nullptr;
