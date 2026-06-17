@@ -178,6 +178,7 @@ private:
 
     // Window captures embedded in each CardModel (uDWM per-window representation)
     ComPtr<ID3D11SamplerState> m_cardSampler;
+    UINT m_cardIndexCount = 6;
 
     // Cached inverse view matrix for 3D hit testing (uDWM m_matHitTestInverse)
     XMMATRIX m_matHitTestInverse = XMMatrixIdentity();
