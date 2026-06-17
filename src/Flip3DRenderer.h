@@ -40,7 +40,7 @@ private:
     HRESULT CreateWindowSizeResources(bool resizeBuffers);
 
     // Per-frame update
-    void ForceWindowToForeground(HWND hWnd);
+    void ThumbnailAsWindowToForeground(HWND hWnd);
     void Update(float deltaSeconds);
     void OnGlobalTimeUpdated();
     void TickRepeatedRotate();
