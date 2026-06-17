@@ -28,8 +28,6 @@ void MicaPeek::SetSelected(HWND hwnd)
 
 void MicaPeek::ApplyPeek()
 {
-    //if (!m_device) return;
-
     for (auto& w : m_windows)
     {
         if (!w.hwnd) continue;
@@ -37,6 +35,9 @@ void MicaPeek::ApplyPeek()
         if (w.hwnd == m_selected)
         {
             SetLayeredWindowAttributes(w.hwnd, 0, 255, LWA_ALPHA);
+            SetWindowPos(w.hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+            RedrawWindow(w.hwnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+
             if (w.visual)
             {
                 w.visual->SetOffsetX(w.originalOffsetX);
@@ -48,6 +49,9 @@ void MicaPeek::ApplyPeek()
         else
         {
             SetLayeredWindowAttributes(w.hwnd, 0, 0, LWA_ALPHA);
+            SetWindowPos(w.hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+            RedrawWindow(w.hwnd, nullptr, nullptr, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+
             if (w.visual)
             {
                 w.visual->SetOffsetY(99999.0f);
@@ -55,7 +59,7 @@ void MicaPeek::ApplyPeek()
         }
     }
 
-    m_device->Commit();
+    if (m_device) m_device->Commit();
 }
 
 void MicaPeek::ClearPeek()
