@@ -1,4 +1,5 @@
 #include "MicaPeek.h"
+#include <d2d1.h>
 
 MicaPeek::MicaPeek(Microsoft::WRL::ComPtr<IDCompositionDevice> dcompDevice)
     : m_device(dcompDevice)
@@ -10,14 +11,14 @@ MicaPeek::~MicaPeek()
     m_windows.clear();
 }
 
-void MicaPeek::AttachThumbnail(HWND hwnd, Microsoft::WRL::ComPtr<IDCompositionVisual> visual)
+void MicaPeek::AttachThumbnail(HWND hwnd, Microsoft::WRL::ComPtr<IDCompositionVisual2> visual)
 {
     if (!m_device || !visual) return;
 
     WindowEntry w{};
     w.hwnd = hwnd;
     w.visual = visual;
-    w.baseOpacity = 1.0f; 
+    w.baseOpacity = 1.0f;
     
     m_windows.push_back(w);
 }
@@ -27,7 +28,7 @@ void MicaPeek::SetSelected(HWND hwnd)
     m_selected = hwnd;
 }
 
-void MicaPeek::DrawPeek()
+void MicaPeek::ApplyPeek()
 {
     if (!m_device) return;
 
@@ -38,8 +39,8 @@ void MicaPeek::DrawPeek()
         if (w.hwnd == m_selected)
         {
             w.visual->SetOpacity(1.0f);
-            w.visual->SetScaleX(1.01f);
-            w.visual->SetScaleY(1.01f);
+            D2D_MATRIX_3X2_F scale = { 1.01f, 0.0f, 0.0f, 1.01f, 0.0f, 0.0f };
+            w.visual->SetTransform(reinterpret_cast<const float*>(&scale));
         }
         else
         {
@@ -66,8 +67,7 @@ void MicaPeek::ClearPeek()
             if (zoomAnim)
             {
                 zoomAnim->AddCubic(0.0, 0.95f, 0.25f, 0.0f, 0.0f);
-                w.visual->SetScaleX(zoomAnim.Get());
-                w.visual->SetScaleY(zoomAnim.Get());
+                w.visual->SetTransform64(zoomAnim.Get()); 
             }
             w.visual->SetOpacity(1.0f);
         }
@@ -82,8 +82,8 @@ void MicaPeek::ClearPeek()
                 w.visual->SetOpacity(fadeAnim.Get());
             }
             
-            w.visual->SetScaleX(1.0f);
-            w.visual->SetScaleY(1.0f);
+            D2D_MATRIX_3X2_F identity = { 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f };
+            w.visual->SetTransform(reinterpret_cast<const float*>(&identity));
         }
     }
 
