@@ -1,6 +1,5 @@
 #pragma once
 #include <memory>    
-#include "MicaPeek.h" 
 #include "Config.h"
 #include "WindowCapture.h"
 // ============================================================================
@@ -28,7 +27,6 @@ private:
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
     // creation
     bool DrawAcrylic(HWND hwnd);
-    std::unique_ptr<MicaPeek> m_micaPeek;
     bool StartFlip3D();
 
     // D3D initialization
