@@ -1,7 +1,6 @@
 #include "Flip3DCore.h"
 #include "Shaders.h"
 #include "Capture.h"
-#include "MicaPeek.h"
 
 namespace
 {
@@ -61,8 +60,6 @@ bool Flip3DCore::Initialize(HINSTANCE instance)
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 
     if (FAILED(InitializeD3D())) return false;
-
-    m_micaPeek = std::make_unique<MicaPeek>(m_dcompDevice);
 
     CreateWindowCaptures();
 
@@ -189,13 +186,6 @@ void Flip3DCore::CreateWindowCaptures()
         if (SUCCEEDED(hr))
             card.captureSRV = cap->GetSRV();
         card.capture = std::move(cap);
-
-        LONG_PTR exStyle = GetWindowLongPtrW(card.hwnd, GWL_EXSTYLE);
-        SetWindowLongPtrW(card.hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
-        if (m_micaPeek)
-        {
-            m_micaPeek->AttachThumbnail(card.hwnd, nullptr, 0.0f);
-        }
     }
 }
 
@@ -601,11 +591,11 @@ void Flip3DCore::Update(float deltaSeconds)
     {
         m_state = ViewState::Interactive;
         
-        if (m_micaPeek)
+        /*if (m_micaPeek)
         {
             m_micaPeek->SetSelected(m_selectedHWND);
             m_micaPeek->ApplyPeek(); 
-        }
+        }*/
     }
 
     if (!m_rotateTimeline.active)
@@ -613,19 +603,19 @@ void Flip3DCore::Update(float deltaSeconds)
         m_showOutgoingDuringRotation = false;
         TickRepeatedRotate();
     
-        if (m_state == ViewState::Interactive && m_micaPeek)
+        /*if (m_state == ViewState::Interactive && m_micaPeek)
         {
             m_micaPeek->SetSelected(m_selectedHWND);
             m_micaPeek->ApplyPeek();
-        }
+        }*/
     }
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        if (m_micaPeek)
+        /*if (m_micaPeek)
         {
             m_micaPeek->ClearPeek();
-        }
+        }*/
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
@@ -647,10 +637,10 @@ void Flip3DCore::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        if (m_micaPeek)
+        /*if (m_micaPeek)
         {
             m_micaPeek->ClearPeek();
-        }
+        }*/
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
