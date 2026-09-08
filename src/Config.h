@@ -213,6 +213,11 @@ struct ObjectConstants
     XMFLOAT4 flags;
 };
 
+struct BlurConstants
+{
+    DirectX::XMFLOAT4 texelSizeAndDirection; // xy = 1/width, 1/height; zw = direction (1,0) or (0,1)
+};
+
 struct CardModel
 {
     XMFLOAT4 color;

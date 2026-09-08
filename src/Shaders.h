@@ -40,6 +40,64 @@ float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
 }
 )";
 
+// Separable Gaussian blur, one direction per pass (horizontal then vertical).
+// Shares kBackgroundVertexShader's full-screen triangle.
+inline constexpr const char *kBlurPixelShader = R"(
+Texture2D<float4> srcTexture : register(t0);
+SamplerState srcSampler : register(s0);
+
+cbuffer BlurCB : register(b0)
+{
+    float4 texelSizeAndDirection; // xy = 1/width, 1/height; zw = direction
+};
+
+float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
+{
+    static const float weights[5] = { 0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f };
+    const float2 texel = texelSizeAndDirection.xy;
+    const float2 dir = texelSizeAndDirection.zw;
+
+    float3 result = srcTexture.Sample(srcSampler, uv).rgb * weights[0];
+    [unroll]
+    for (int i = 1; i < 5; ++i)
+    {
+        // Tap spacing of 2 texels between samples widens the effective blur
+        // radius per pass without needing more samples.
+        const float2 offset = dir * texel * (float)i * 2.0f;
+        result += srcTexture.Sample(srcSampler, uv + offset).rgb * weights[i];
+        result += srcTexture.Sample(srcSampler, uv - offset).rgb * weights[i];
+    }
+    return float4(result, 1.0f);
+}
+)";
+
+// Replaces kBackgroundPixelShader's flat black wash: samples the blurred
+// desktop capture and dims it toward black. ALWAYS outputs alpha = 1 —
+// that full opacity is what actually stops real windows from showing
+// through (see: DrawAcrylic removal). Native blur-behind deliberately did
+// the opposite (let the real desktop bleed through, blurred); this doesn't,
+// because it's our own fully opaque render of an already-captured image,
+// not a live window into whatever's really behind our own window.
+inline constexpr const char *kDesktopWashPixelShader = R"(
+Texture2D<float4> desktopTexture : register(t0);
+SamplerState desktopSampler : register(s0);
+
+cbuffer FrameCB : register(b0)
+{
+    row_major float4x4 viewProj;
+    float4 washParams;
+    float4 viewport;
+};
+
+float4 main(float4 position : SV_POSITION, float2 uv : TEXCOORD0) : SV_TARGET
+{
+    float3 desktop = desktopTexture.Sample(desktopSampler, uv).rgb;
+    float dim = saturate(washParams.x);
+    float3 result = lerp(desktop, float3(0.0f, 0.0f, 0.0f), dim * 0.55f);
+    return float4(result, 1.0f);
+}
+)";
+
 inline constexpr const char *kCardVertexShader = R"(
 cbuffer FrameCB : register(b0)
 {
