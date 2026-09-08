@@ -1,6 +1,7 @@
 #include "Flip3DCore.h"
 #include "Shaders.h"
 #include "Capture.h"
+#include <shellapi.h>   // RegisterShellHookWindow / HSHELL_* (Shell-Hook dynamic card list)
 
 namespace
 {
@@ -58,6 +59,8 @@ bool Flip3DCore::Initialize(HINSTANCE instance)
 
     if (!StartFlip3D()) return false;
     m_fRTLMirror = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
+
+    EnterFlip3DWindowMode();
 
     if (FAILED(InitializeD3D())) return false;
 
@@ -124,6 +127,42 @@ LRESULT CALLBACK Flip3DCore::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPA
 // ============================================================================
 // Card model building
 // ============================================================================
+CardModel Flip3DCore::BuildCardModelFromLayout(const CapturedWindowLayout &layout) const
+{
+    const bool isMinimized = layout.isMinimized;
+    const RECT &targetRect = layout.targetRect;
+    const RECT &originalRect = isMinimized ? targetRect : layout.originalRect;
+    const RECT &wa = layout.monitorWork;
+    const float monW = static_cast<float>(std::max(1L, wa.right - wa.left));
+    const float monH = static_cast<float>(std::max(1L, wa.bottom - wa.top));
+
+    const float targetWidth = static_cast<float>(std::max(1L, targetRect.right - targetRect.left));
+    const float targetHeight = static_cast<float>(std::max(1L, targetRect.bottom - targetRect.top));
+    const float originalWidth = static_cast<float>(std::max(1L, originalRect.right - originalRect.left));
+    const float originalHeight = static_cast<float>(std::max(1L, originalRect.bottom - originalRect.top));
+
+    float normW = targetWidth, normH = targetHeight;
+    if (normW > monW || normH > monH)
+    {
+        const float scale = std::min(monW / normW, monH / normH);
+        normW *= scale; normH *= scale;
+    }
+
+    CardModel card;
+    card.aspectRatio = targetWidth / std::max(targetHeight, 1.0f);
+    card.hwnd = layout.hwnd;
+    card.targetWorldSize = { normW / monW, -(normH / monH) };
+    card.originalWorldPosition = {
+        (static_cast<float>(originalRect.left - wa.left) / monW) - 0.5f,
+        0.5f - (static_cast<float>(originalRect.top - wa.top) / monH),
+    };
+    card.originalWorldSize = { originalWidth / monW, -(originalHeight / monH) };
+    card.sourceOccupancy = std::max(std::abs(card.targetWorldSize.x), std::abs(card.targetWorldSize.y));
+    card.isMinimized = layout.isMinimized;
+    card.hasOriginalRect = true;
+    return card;
+}
+
 void Flip3DCore::BuildCardModels()
 {
     m_cards.clear();
@@ -132,38 +171,159 @@ void Flip3DCore::BuildCardModels()
 
     for (const auto &layout : windowLayouts)
     {
-        const bool isMinimized = layout.isMinimized;
-        const RECT &targetRect = layout.targetRect;
-        const RECT &originalRect = isMinimized ? targetRect : layout.originalRect;
-        const RECT &wa = layout.monitorWork;
-        const float monW = static_cast<float>(std::max(1L, wa.right - wa.left));
-        const float monH = static_cast<float>(std::max(1L, wa.bottom - wa.top));
+        m_cards.push_back(BuildCardModelFromLayout(layout));
+    }
+}
 
-        const float targetWidth = static_cast<float>(std::max(1L, targetRect.right - targetRect.left));
-        const float targetHeight = static_cast<float>(std::max(1L, targetRect.bottom - targetRect.top));
-        const float originalWidth = static_cast<float>(std::max(1L, originalRect.right - originalRect.left));
-        const float originalHeight = static_cast<float>(std::max(1L, originalRect.bottom - originalRect.top));
+// ============================================================================
+// Shell-Hook: dynamic card list (ported from flip3d_comp)
+// ============================================================================
+bool Flip3DCore::QualifiesForView(HWND hwnd) const
+{
+    if (!hwnd || hwnd == m_hwnd)
+        return false;
 
-        float normW = targetWidth, normH = targetHeight;
-        if (normW > monW || normH > monH)
+    if (!IsWindowVisible(hwnd))
+        return false;
+
+    const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
+    const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+    if (!QualifiesForFlip3DProxyWindow(hwnd, style, exStyle))
+        return false;
+
+    DWORD cloaked = 0;
+    if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) && cloaked != 0)
+        return false;
+
+    return true;
+}
+
+void Flip3DCore::EnterFlip3DWindowMode()
+{
+    if (!m_hwnd || m_shellHookRegistered)
+        return;
+
+    if (!m_wmShellHook)
+        m_wmShellHook = RegisterWindowMessageW(L"SHELLHOOK");
+
+    if (RegisterShellHookWindow(m_hwnd))
+        m_shellHookRegistered = true;
+}
+
+void Flip3DCore::LeaveFlip3DWindowMode()
+{
+    if (m_hwnd && m_shellHookRegistered)
+    {
+        DeregisterShellHookWindow(m_hwnd);
+        m_shellHookRegistered = false;
+    }
+}
+
+int Flip3DCore::FindCardIndex(HWND hwnd) const
+{
+    if (!hwnd)
+        return -1;
+
+    int i = 0;
+    for (const auto &card : m_cards)
+    {
+        if (card.hwnd == hwnd)
+            return i;
+        ++i;
+    }
+    return -1;
+}
+
+bool Flip3DCore::AddCardForWindow(HWND hwnd)
+{
+    if (!hwnd || m_cards.size() >= kMaxProxyCards)
+        return false;
+
+    if (FindCardIndex(hwnd) >= 0)
+        return false;
+
+    CapturedWindowLayout layout = {};
+    if (!CaptureSingleWindowLayout(hwnd, m_hwnd, layout))
+        return false;
+
+    CardModel card = BuildCardModelFromLayout(layout);
+
+    if (m_device)
+    {
+        auto cap = std::make_unique<WindowCapture>();
+        if (SUCCEEDED(cap->Initialize(card.hwnd, m_hwnd, m_device.Get())))
+            card.captureSRV = cap->GetSRV();
+        card.capture = std::move(cap);
+    }
+
+    m_cards.push_back(std::move(card));
+    return true;
+}
+
+void Flip3DCore::RemoveCardAt(int index)
+{
+    if (index < 0)
+        return;
+
+    auto it = m_cards.begin();
+    std::advance(it, index);
+    if (it == m_cards.end())
+        return;
+
+    // ~WindowCapture (via unique_ptr reset in the erase below) already calls
+    // Release(), which unregisters the DWM thumbnail — no separate cleanup
+    // needed here, unlike flip3d_comp where the visual is a DComp object.
+    m_cards.erase(it);
+
+    if (m_mousePressedCardIndex == index)
+        m_mousePressedCardIndex = -1;
+}
+
+void Flip3DCore::OnWindowShowHide(HWND hwnd)
+{
+    if (!hwnd || !IsWindow(hwnd) || hwnd == m_hwnd)
+        return;
+
+    const bool qualifies = QualifiesForView(hwnd);
+    const int cardIdx = FindCardIndex(hwnd);
+
+    if (qualifies)
+    {
+        if (cardIdx < 0)
+            AddCardForWindow(hwnd);
+    }
+    else if (cardIdx >= 0)
+    {
+        RemoveCardAt(cardIdx);
+    }
+}
+
+void Flip3DCore::OnShellHookMessage(WPARAM wParam, LPARAM lParam)
+{
+    const UINT code = static_cast<UINT>(wParam & ~HSHELL_HIGHBIT);
+    const HWND hwnd = reinterpret_cast<HWND>(lParam);
+
+    switch (code)
+    {
+    case HSHELL_WINDOWCREATED:
+    case HSHELL_WINDOWACTIVATED:
+    case HSHELL_WINDOWREPLACED:
+    case HSHELL_RUDEAPPACTIVATED:
+        if (hwnd)
+            OnWindowShowHide(hwnd);
+        break;
+
+    case HSHELL_WINDOWDESTROYED:
+        if (hwnd)
         {
-            const float scale = std::min(monW / normW, monH / normH);
-            normW *= scale; normH *= scale;
+            const int idx = FindCardIndex(hwnd);
+            if (idx >= 0)
+                RemoveCardAt(idx);
         }
+        break;
 
-        CardModel card;
-        card.aspectRatio = targetWidth / std::max(targetHeight, 1.0f);
-        card.hwnd = layout.hwnd;
-        card.targetWorldSize = { normW / monW, -(normH / monH) };
-        card.originalWorldPosition = {
-            (static_cast<float>(originalRect.left - wa.left) / monW) - 0.5f,
-            0.5f - (static_cast<float>(originalRect.top - wa.top) / monH),
-        };
-        card.originalWorldSize = { originalWidth / monW, -(originalHeight / monH) };
-        card.sourceOccupancy = std::max(std::abs(card.targetWorldSize.x), std::abs(card.targetWorldSize.y));
-        card.isMinimized = layout.isMinimized;
-        card.hasOriginalRect = true;
-        m_cards.push_back(std::move(card));
+    default:
+        break;
     }
 }
 
@@ -2025,8 +2185,16 @@ LRESULT Flip3DCore::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
         else BeginExitView();
         return 0;
     case WM_DESTROY:
+        LeaveFlip3DWindowMode();
         PostQuitMessage(0);
         return 0;
     }
+
+    if (m_wmShellHook && message == m_wmShellHook)
+    {
+        OnShellHookMessage(wParam, lParam);
+        return 0;
+    }
+
     return DefWindowProcW(m_hwnd, message, wParam, lParam);
 }

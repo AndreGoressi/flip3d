@@ -18,6 +18,8 @@ bool QualifiesForFlip3DProxyWindow(HWND hwnd, LONG_PTR style, LONG_PTR exStyle);
 RECT BuildFinalMinRect(const RECT &minimizeRect, float aspectRatio);
 BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam);
 std::vector<CapturedWindowLayout> CapturePrimaryMonitorWindowRects(size_t limit, HWND skipHwnd);
+bool TryBuildFlip3DWindowLayout(HWND hwnd, const RECT &primaryWorkArea, HWND skipHwnd, CapturedWindowLayout &outLayout);
+bool CaptureSingleWindowLayout(HWND hwnd, HWND skipHwnd, CapturedWindowLayout &outLayout);
 
 // ============================================================================
 // D3D shader compilation

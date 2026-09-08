@@ -21,10 +21,24 @@ private:
     float m_restoreAlpha = 0.0f;
     // Card / window model — uses std::list matching uDWM's linked-list architecture
     void BuildCardModels();
+    CardModel BuildCardModelFromLayout(const CapturedWindowLayout &layout) const;
     void CreateWindowCaptures();
     int FrontCardIndex() const;                        // returns 0 (front = head of list)
     int ResolveOriginalFrontIndex() const;
     int DistanceBetween(size_t sourcePos, size_t targetPos, bool forward) const;
+
+    // Shell-Hook: dynamic card list (ported from flip3d_comp) — windows
+    // opened/closed while Flip3D is showing appear/disappear live instead
+    // of only reflecting whatever was open at the moment Flip3D started.
+    bool QualifiesForView(HWND hwnd) const;
+    void EnterFlip3DWindowMode();
+    void LeaveFlip3DWindowMode();
+    void OnShellHookMessage(WPARAM wParam, LPARAM lParam);
+    void OnWindowShowHide(HWND hwnd);
+    int FindCardIndex(HWND hwnd) const;
+    bool AddCardForWindow(HWND hwnd);
+    void RemoveCardAt(int index);
+
     // creation
     bool DrawAcrylic(HWND hwnd);
     bool StartFlip3D();
@@ -122,6 +136,10 @@ private:
 
     // uDWM m_leWindows — doubly-linked list, head = frontmost card
     std::list<CardModel> m_cards;
+
+    // Shell-Hook: dynamic card list
+    UINT m_wmShellHook = 0;
+    bool m_shellHookRegistered = false;
 
     ViewState m_state = ViewState::Inactive;
     Timeline m_enterTimeline;

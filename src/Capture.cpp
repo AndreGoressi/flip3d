@@ -215,23 +215,41 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         return TRUE;
     }
 
+    CapturedWindowLayout layout = {};
+    if (TryBuildFlip3DWindowLayout(hwnd, context->workArea, context->skipHwnd, layout))
+    {
+        context->layouts.push_back(layout);
+    }
+    return TRUE;
+}
+
+// Extracted out of CollectFlip3DWindowRects so a single newly-created window
+// (Shell-Hook HSHELL_WINDOWCREATED) can be laid out exactly the same way as
+// the initial bulk enumeration does, instead of duplicating this logic.
+bool TryBuildFlip3DWindowLayout(HWND hwnd, const RECT &primaryWorkArea, HWND skipHwnd, CapturedWindowLayout &outLayout)
+{
+    if (!hwnd || hwnd == skipHwnd)
+    {
+        return false;
+    }
+
     const LONG_PTR style = GetWindowLongPtrW(hwnd, GWL_STYLE);
     const LONG_PTR exStyle = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
     if (!QualifiesForFlip3DProxyWindow(hwnd, style, exStyle))
     {
-        return TRUE;
+        return false;
     }
 
     DWORD cloaked = 0;
     if (SUCCEEDED(DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, &cloaked, sizeof(cloaked))) && cloaked != 0)
     {
-        return TRUE;
+        return false;
     }
 
     const bool isMinimized = IsIconic(hwnd) != FALSE;
 
     // Get the window's *own* monitor work area (not the primary monitor).
-    RECT winWorkArea = context->workArea;
+    RECT winWorkArea = primaryWorkArea;
     if (const HMONITOR hMon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST))
     {
         MONITORINFO mi = {};
@@ -261,21 +279,21 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         && FAILED(DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, &targetBounds, sizeof(targetBounds))))
     {
         if (!GetWindowRect(hwnd, &targetBounds))
-            return TRUE;
+            return false;
     }
 
     RECT targetClipped = {};
     if (!IntersectRect(&targetClipped, &targetBounds, &winWorkArea))
-        return TRUE;
+        return false;
 
     if ((targetClipped.right - targetClipped.left) < 80 || (targetClipped.bottom - targetClipped.top) < 80)
-        return TRUE;
+        return false;
 
-    CapturedWindowLayout layout = {};
-    layout.targetRect   = targetBounds;
-    layout.monitorWork  = winWorkArea;
-    layout.isMinimized  = isMinimized;
-    layout.hwnd         = hwnd;
+    outLayout = {};
+    outLayout.targetRect  = targetBounds;
+    outLayout.monitorWork = winWorkArea;
+    outLayout.isMinimized = isMinimized;
+    outLayout.hwnd        = hwnd;
 
     if (isMinimized)
     {
@@ -285,17 +303,16 @@ BOOL CALLBACK CollectFlip3DWindowRects(HWND hwnd, LPARAM lParam)
         {
             const float width = static_cast<float>(std::max(1L, targetBounds.right - targetBounds.left));
             const float height = static_cast<float>(std::max(1L, targetBounds.bottom - targetBounds.top));
-            layout.originalRect = BuildFinalMinRect(minimizeRect, height / width);
+            outLayout.originalRect = BuildFinalMinRect(minimizeRect, height / width);
         }
     }
 
-    if (IsRectEmpty(&layout.originalRect))
+    if (IsRectEmpty(&outLayout.originalRect))
     {
-        layout.originalRect = targetBounds;
+        outLayout.originalRect = targetBounds;
     }
 
-    context->layouts.push_back(layout);
-    return TRUE;
+    return true;
 }
 
 std::vector<CapturedWindowLayout> CapturePrimaryMonitorWindowRects(size_t limit, HWND skipHwnd)
@@ -319,6 +336,27 @@ std::vector<CapturedWindowLayout> CapturePrimaryMonitorWindowRects(size_t limit,
     }
 
     return context.layouts;
+}
+
+// Single-window counterpart of CapturePrimaryMonitorWindowRects, for
+// Shell-Hook HSHELL_WINDOWCREATED — same qualification + layout math,
+// just for one HWND instead of a full EnumWindows pass.
+bool CaptureSingleWindowLayout(HWND hwnd, HWND skipHwnd, CapturedWindowLayout &outLayout)
+{
+    MONITORINFO monitorInfo = {};
+    monitorInfo.cbSize = sizeof(monitorInfo);
+    const HMONITOR monitor = MonitorFromWindow(nullptr, MONITOR_DEFAULTTOPRIMARY);
+    if (monitor == nullptr || !GetMonitorInfoW(monitor, &monitorInfo))
+    {
+        return false;
+    }
+
+    if (!IsWindowVisible(hwnd))
+    {
+        return false;
+    }
+
+    return TryBuildFlip3DWindowLayout(hwnd, monitorInfo.rcWork, skipHwnd, outLayout);
 }
 
 // ============================================================================
