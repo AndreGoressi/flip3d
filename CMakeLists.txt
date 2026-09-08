@@ -57,4 +57,5 @@ target_link_libraries(flip3d PRIVATE
     runtimeobject
     dwmapi
     d2d1
+    shell32   # RegisterShellHookWindow / DeregisterShellHookWindow (Shell-Hook dynamic card list)
 )
