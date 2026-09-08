@@ -33,8 +33,6 @@ public:
 
     bool IsValid() const { return m_srv != nullptr; }
     ID3D11ShaderResourceView *GetSRV() const { return m_srv.Get(); }
-    UINT GetWidth() const { return m_width; }
-    UINT GetHeight() const { return m_height; }
 
     // Poll for a new captured frame (call from render thread).
     void PollFrame();
@@ -53,8 +51,6 @@ private:
     ComPtr<ID3D11DeviceContext> m_context;
     ComPtr<ID3D11Texture2D> m_captureTexture;
     ComPtr<ID3D11ShaderResourceView> m_srv;
-    UINT m_width = 0;
-    UINT m_height = 0;
 
     // ABI:: (WinRT interop) capture objects (only for WGC paths)
     ComPtr<ABI::Windows::Graphics::Capture::IGraphicsCaptureItem> m_captureItem;

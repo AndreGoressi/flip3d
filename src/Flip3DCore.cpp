@@ -447,18 +447,7 @@ bool Flip3DCore::StartFlip3D()
 
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
-
-        // NOT calling DrawAcrylic() anymore — this was the actual root cause
-        // of real windows (e.g. Edge) staying visible behind Flip3D. Native
-        // blur-behind (ACCENT_ENABLE_ACRYLICBLURBEHIND) tells DWM to composite
-        // whatever is genuinely behind our window into it, blurred — i.e. it
-        // deliberately lets the real desktop show through wherever our own
-        // D3D content isn't fully opaque. flip3d_comp never does this at all;
-        // it just paints a fully opaque bitmap over the whole screen itself.
-        // The background wash pass just below now does the same (see the
-        // washParams.x fix in Render()) — real windows can no longer peek
-        // through no matter what, because nothing relies on true transparency
-        // to the real desktop anymore.
+        DrawAcrylic(m_hwnd);
     }
     
     return m_hwnd != nullptr;
@@ -2063,7 +2052,7 @@ void Flip3DCore::Render()
 
     FrameConstants frameConstants = {};
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
-    frameConstants.washParams = XMFLOAT4(enterProgress, m_totalTime, static_cast<float>(m_cards.size()), 0.85f); // was "enterProgress * 0.0f" — wash was silently disabled, doing nothing at all
+    frameConstants.washParams = XMFLOAT4(enterProgress * 0.0f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f); //0.5f, 0.85f 
     frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 

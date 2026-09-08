@@ -73,8 +73,6 @@ WindowCapture::WindowCapture(WindowCapture &&other) noexcept
     , m_context(std::move(other.m_context))
     , m_captureTexture(std::move(other.m_captureTexture))
     , m_srv(std::move(other.m_srv))
-    , m_width(other.m_width)
-    , m_height(other.m_height)
     , m_captureItem(std::move(other.m_captureItem))
     , m_framePool(std::move(other.m_framePool))
     , m_session(std::move(other.m_session))
@@ -82,8 +80,6 @@ WindowCapture::WindowCapture(WindowCapture &&other) noexcept
     , m_hThumbnail(other.m_hThumbnail)
 {
     other.m_hThumbnail = nullptr;
-    other.m_width = 0;
-    other.m_height = 0;
 }
 
 WindowCapture &WindowCapture::operator=(WindowCapture &&other) noexcept
@@ -95,16 +91,12 @@ WindowCapture &WindowCapture::operator=(WindowCapture &&other) noexcept
         m_context        = std::move(other.m_context);
         m_captureTexture = std::move(other.m_captureTexture);
         m_srv            = std::move(other.m_srv);
-        m_width          = other.m_width;
-        m_height         = other.m_height;
         m_captureItem    = std::move(other.m_captureItem);
         m_framePool      = std::move(other.m_framePool);
         m_session        = std::move(other.m_session);
         m_thumbVisual    = std::move(other.m_thumbVisual);
         m_hThumbnail     = other.m_hThumbnail;
         other.m_hThumbnail = nullptr;
-        other.m_width = 0;
-        other.m_height = 0;
     }
     return *this;
 }
@@ -130,8 +122,6 @@ void WindowCapture::Release()
     }
     m_srv.Reset();
     m_captureTexture.Reset();
-    m_width = 0;
-    m_height = 0;
     if (m_context)
     {
         m_context->Flush();
@@ -381,9 +371,6 @@ void WindowCapture::PollFrame() {
 // ---------------------------------------------------------------------------
 HRESULT WindowCapture::CreateTextureAndSRV(UINT width, UINT height)
 {
-    m_width = width;
-    m_height = height;
-
     D3D11_TEXTURE2D_DESC desc = {};
     desc.Width = width;
     desc.Height = height;
