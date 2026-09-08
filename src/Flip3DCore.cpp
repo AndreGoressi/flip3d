@@ -621,7 +621,10 @@ void Flip3DCore::Update(float deltaSeconds)
         {
             if (IsIconic(m_selectedHWND) || m_selectedWindowWasMinimized)
             {
-                PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+                // Only ONE restore trigger, not two: PostMessage(WM_SYSCOMMAND, SC_RESTORE)
+                // was firing Windows' own restore animation in the target window's message
+                // loop AND ShowWindow(SW_RESTORE) was firing it again synchronously here —
+                // two overlapping genie animations, which looked like the window opening twice.
                 ShowWindow(m_selectedHWND, SW_RESTORE);
             }
 
@@ -646,7 +649,10 @@ void Flip3DCore::Update(float deltaSeconds)
         {
             if (IsIconic(m_selectedHWND) || m_selectedWindowWasMinimized)
             {
-                PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
+                // Only ONE restore trigger, not two: PostMessage(WM_SYSCOMMAND, SC_RESTORE)
+                // was firing Windows' own restore animation in the target window's message
+                // loop AND ShowWindow(SW_RESTORE) was firing it again synchronously here —
+                // two overlapping genie animations, which looked like the window opening twice.
                 ShowWindow(m_selectedHWND, SW_RESTORE);
             }
 
@@ -1123,35 +1129,36 @@ int Flip3DCore::HitTest3DScene(LONG x, LONG y) const
     if (m_monitorWidth <= 0 || m_monitorHeight <= 0) return -1;
 
     // -----------------------------------------------
-
-    const float monitorW = static_cast<float>(m_monitorWidth);
-    const float monitorH = static_cast<float>(m_monitorHeight);
-    float ndcX = static_cast<float>(x);
-    float ndcY = static_cast<float>(y);
-    //
-    if (m_fRTLMirror) ndcX = monitorW - ndcX;
-    ndcX = ndcX / monitorW - 0.5f;
-    ndcY = -(ndcY / monitorH - 0.5f);
+    // Ported from flip3d_comp's HitTest3DScene: instead of casting a 3D ray
+    // through an inverse-view matrix and testing ray/triangle intersection
+    // (which only found the FIRST hit in iteration order — wrong when that
+    // order didn't exactly match true visual front-to-back order), project
+    // each card's 4 corners straight to screen space with the same MVP used
+    // for rendering, do a 2D point-in-quad test, and pick whichever hit has
+    // the smallest NDC depth. Cheaper, and correct regardless of iteration
+    // order since every candidate is depth-compared explicitly.
 
     const float enterProgress = EnterProgress();
-    const float nearPlaneExtent = gNearPlaneEdgeSize;
+    const XMMATRIX view = BuildViewMatrix(enterProgress);
+    const XMMATRIX projection = BuildProjectionMatrix(enterProgress);
+    const XMMATRIX viewProj = view * projection;
 
-    XMFLOAT3 rayOrigin = {0.0f, 0.0f, 0.0f};
-    XMVECTOR nearPoint = XMVectorSet(ndcX * nearPlaneExtent, ndcY * nearPlaneExtent, -1.0f, 0.0f);
-    XMVECTOR originWS = XMVector3TransformCoord(XMLoadFloat3(&rayOrigin), m_matHitTestInverse);
-    XMVECTOR nearWS = XMVector3TransformCoord(nearPoint, m_matHitTestInverse);
-    XMVECTOR rayDir = XMVector3Normalize(nearWS - originWS);
-    XMFLOAT3 origin = {}, dir = {};
-    XMStoreFloat3(&origin, originWS);
-    XMStoreFloat3(&dir, rayDir);
+    const float screenW = static_cast<float>(m_width);
+    const float screenH = static_cast<float>(m_height);
+    float sx = static_cast<float>(x);
+    float sy = static_cast<float>(y);
+    if (m_fRTLMirror) sx = screenW - sx;
 
     const DrawBuildContext context = CreateDrawBuildContext();
     if (context.countInt <= 0) return -1;
 
     const std::vector<VisibleCardStructure> structure = BuildVisibleCardStructure(context);
-    for (auto it = structure.rbegin(); it != structure.rend(); ++it)
+
+    float bestNdcZ = 1e10f;
+    int bestPosition = -1;
+
+    for (const auto &entry : structure)
     {
-        const auto &entry = *it;
         size_t pos = 0;
         const CardModel *cardPtr = nullptr;
         for (auto &card : m_cards) { if (pos == entry.cardPosition) { cardPtr = &card; break; } ++pos; }
@@ -1160,23 +1167,41 @@ int Flip3DCore::HitTest3DScene(LONG x, LONG y) const
         const CardAnimationState animState = ResolveCardAnimationState(entry, context);
         const CardWorldState worldState = GetWorldFromParametric(context, *cardPtr, entry.cardPosition, animState, enterProgress);
         const XMMATRIX world = XMLoadFloat4x4(&worldState.world);
+        const XMMATRIX mvp = world * viewProj;
 
-        XMFLOAT3 c;
-        c = {0.0f, 0.0f, 0.0f}; XMVECTOR p0 = XMVector3TransformCoord(XMLoadFloat3(&c), world);
-        c = {1.0f, 0.0f, 0.0f}; XMVECTOR p1 = XMVector3TransformCoord(XMLoadFloat3(&c), world);
-        c = {0.0f, 1.0f, 0.0f}; XMVECTOR p2 = XMVector3TransformCoord(XMLoadFloat3(&c), world);
-        c = {1.0f, 1.0f, 0.0f}; XMVECTOR p3 = XMVector3TransformCoord(XMLoadFloat3(&c), world);
+        // XMVector3TransformCoord divides by w for us, so this lands
+        // directly in NDC [-1,1] — no manual perspective divide needed.
+        auto project = [&](float px, float py) -> XMFLOAT2
+        {
+            XMVECTOR ndc = XMVector3TransformCoord(XMVectorSet(px, py, 0.0f, 0.0f), mvp);
+            return { (XMVectorGetX(ndc) * 0.5f + 0.5f) * screenW,
+                     (0.5f - XMVectorGetY(ndc) * 0.5f) * screenH };
+        };
 
-        XMFLOAT3 v[4];
-        XMStoreFloat3(&v[0], p0); XMStoreFloat3(&v[1], p1);
-        XMStoreFloat3(&v[2], p2); XMStoreFloat3(&v[3], p3);
+        const XMFLOAT2 c0 = project(0.0f, 0.0f);
+        const XMFLOAT2 c1 = project(1.0f, 0.0f);
+        const XMFLOAT2 c2 = project(1.0f, 1.0f);
+        const XMFLOAT2 c3 = project(0.0f, 1.0f);
 
-        float t0 = 0, u0 = 0;
-        if (IntersectRayTriangle(origin, dir, v[0], v[1], v[2], t0, u0)) return static_cast<int>(entry.cardPosition);
-        float t1 = 0, u1 = 0;
-        if (IntersectRayTriangle(origin, dir, /*v[0], v[1], v[3]*/v[0], v[2], v[3], t1, u1)) return static_cast<int>(entry.cardPosition);
+        auto cross = [](float x1, float y1, float x2, float y2) { return x1 * y2 - y1 * x2; };
+        const float d0 = cross(c1.x - c0.x, c1.y - c0.y, sx - c0.x, sy - c0.y);
+        const float d1 = cross(c2.x - c1.x, c2.y - c1.y, sx - c1.x, sy - c1.y);
+        const float d2 = cross(c3.x - c2.x, c3.y - c2.y, sx - c2.x, sy - c2.y);
+        const float d3 = cross(c0.x - c3.x, c0.y - c3.y, sx - c3.x, sy - c3.y);
+        const bool inside = (d0 >= 0 && d1 >= 0 && d2 >= 0 && d3 >= 0)
+                          || (d0 <= 0 && d1 <= 0 && d2 <= 0 && d3 <= 0);
+        if (!inside) continue;
+
+        const XMVECTOR centerNdc = XMVector3TransformCoord(XMVectorSet(0.5f, 0.5f, 0.0f, 0.0f), mvp);
+        const float ndcZ = XMVectorGetZ(centerNdc);
+        if (ndcZ < bestNdcZ)
+        {
+            bestNdcZ = ndcZ;
+            bestPosition = static_cast<int>(entry.cardPosition);
+        }
     }
-    return -1;
+
+    return bestPosition;
 }
 
 
@@ -1969,6 +1994,16 @@ LRESULT Flip3DCore::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
     case WM_MOUSEWHEEL: case WM_MOUSEHWHEEL: case WM_LBUTTONDOWN: case WM_LBUTTONUP:
         if (ProcessMouseInput(message, wParam, lParam)) return 0;
         break;
+    case WM_MOUSEMOVE:
+    {
+        // Ported from flip3d_comp: cursor feedback so hovering a card is
+        // visibly obvious, using the same HitTest3DScene the click handler
+        // already relies on (no separate hit-test path to keep in sync).
+        const int hit = HitTest3DScene(static_cast<LONG>(static_cast<short>(LOWORD(lParam))),
+                                        static_cast<LONG>(static_cast<short>(HIWORD(lParam))));
+        SetCursor(LoadCursorW(nullptr, hit >= 0 ? IDC_HAND : IDC_ARROW));
+        return 0;
+    }
     case WM_KEYDOWN:
         if (wParam == VK_SPACE) { if ((lParam & 0x40000000) == 0) ReplayEnterAnimation(); return 0; }
         if (ProcessKeyboardInput(true, static_cast<UINT>(wParam), (lParam & 0x40000000) != 0)) return 0;
