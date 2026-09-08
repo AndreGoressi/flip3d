@@ -106,10 +106,20 @@ WindowCapture &WindowCapture::operator=(WindowCapture &&other) noexcept
 // ---------------------------------------------------------------------------
 void WindowCapture::Release()
 {
+    // Was missing entirely: m_hThumbnail was stored but never unregistered,
+    // leaking a DWM thumbnail registration (and its bandwidth) for every
+    // single card, every single time Flip3D was invoked, for the lifetime
+    // of the process. Same leak flip3d_comp's original code had — fixed
+    // there too, fixing it here for consistency.
     m_session.Reset();
     m_framePool.Reset();
     m_captureItem.Reset();
     m_thumbVisual.Reset();
+    if (m_hThumbnail)
+    {
+        DwmUnregisterThumbnail(m_hThumbnail);
+        m_hThumbnail = nullptr;
+    }
     m_srv.Reset();
     m_captureTexture.Reset();
     if (m_context)

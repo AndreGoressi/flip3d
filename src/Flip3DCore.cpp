@@ -267,7 +267,7 @@ bool Flip3DCore::StartFlip3D()
     const int w_screenH = wc.bottom - wc.top;
     
     m_hwnd = CreateWindowExW(
-        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_LAYERED, 
+        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_TOPMOST,
         kRenderClassName, 
         kTitle,
         WS_POPUP | WS_VISIBLE, 
@@ -276,6 +276,15 @@ bool Flip3DCore::StartFlip3D()
     //
     if (m_hwnd)
     {
+        // Ported from flip3d_comp: WITHOUT this, our overlay isn't guaranteed
+        // to stay in front of every real desktop window. flip3d_comp never
+        // actually minimizes/hides anything — the "desktop clearing" effect
+        // is purely this: a topmost, fullscreen overlay visually covering
+        // everything, while every real window underneath stays completely
+        // untouched. Re-assert topmost explicitly too, since some apps
+        // (other topmost windows, some overlays) can otherwise steal it.
+        SetWindowPos(m_hwnd, HWND_TOPMOST, w_x, w_y, w_screenW, w_screenH, SWP_SHOWWINDOW);
+
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
         DrawAcrylic(m_hwnd);
