@@ -447,7 +447,18 @@ bool Flip3DCore::StartFlip3D()
 
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
-        DrawAcrylic(m_hwnd);
+
+        // NOT calling DrawAcrylic() anymore — this was the actual root cause
+        // of real windows (e.g. Edge) staying visible behind Flip3D. Native
+        // blur-behind (ACCENT_ENABLE_ACRYLICBLURBEHIND) tells DWM to composite
+        // whatever is genuinely behind our window into it, blurred — i.e. it
+        // deliberately lets the real desktop show through wherever our own
+        // D3D content isn't fully opaque. flip3d_comp never does this at all;
+        // it just paints a fully opaque bitmap over the whole screen itself.
+        // The background wash pass just below now does the same (see the
+        // washParams.x fix in Render()) — real windows can no longer peek
+        // through no matter what, because nothing relies on true transparency
+        // to the real desktop anymore.
     }
     
     return m_hwnd != nullptr;
@@ -536,6 +547,7 @@ HRESULT Flip3DCore::InitializeD3D()
     if (FAILED(hr)) return hr;
     hr = CreateDeviceResources();
     if (FAILED(hr)) return hr;
+    InitDesktopBackdrop(); // best-effort: on failure we just fall back to flat black (see RenderDesktopBackdrop)
     return CreateWindowSizeResources(false);
 }
 
@@ -652,6 +664,167 @@ HRESULT Flip3DCore::CreateDeviceResources()
     sampDesc.MipLODBias     = 0.0f;
     hr = m_device->CreateSamplerState(&sampDesc, &m_cardSampler);
     return hr;
+}
+
+// ============================================================================
+// Flip3DCore::InitDesktopBackdrop
+// Captures GetShellWindow() (same source flip3d_comp uses for its desktop
+// thumbnail) via WGC, and sets up the ping-pong blur render targets sized
+// to match its actual resolution.
+// ============================================================================
+namespace {
+void LogBackdropStep(const char *step, HRESULT hr)
+{
+    char buf[256];
+    sprintf_s(buf, "[Flip3D DesktopBackdrop] %s -> hr=0x%08lX\n", step, static_cast<unsigned long>(hr));
+    OutputDebugStringA(buf);
+}
+} // namespace
+
+HRESULT Flip3DCore::InitDesktopBackdrop()
+{
+    if (!m_device) { LogBackdropStep("no device", E_FAIL); return E_FAIL; }
+
+    ComPtr<ID3DBlob> blurPS, deskPS;
+    HRESULT hr = CompileShader(kBlurPixelShader, "main", "ps_5_0", blurPS);
+    LogBackdropStep("CompileShader(blur PS)", hr);
+    if (FAILED(hr)) return hr;
+    hr = CompileShader(kDesktopWashPixelShader, "main", "ps_5_0", deskPS);
+    LogBackdropStep("CompileShader(desktop wash PS)", hr);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreatePixelShader(blurPS->GetBufferPointer(), blurPS->GetBufferSize(), nullptr, &m_blurPixelShader);
+    LogBackdropStep("CreatePixelShader(blur)", hr);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreatePixelShader(deskPS->GetBufferPointer(), deskPS->GetBufferSize(), nullptr, &m_desktopWashPixelShader);
+    LogBackdropStep("CreatePixelShader(desktop wash)", hr);
+    if (FAILED(hr)) return hr;
+
+    D3D11_BUFFER_DESC cbDesc = {};
+    cbDesc.ByteWidth = sizeof(BlurConstants);
+    cbDesc.Usage = D3D11_USAGE_DEFAULT;
+    cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    hr = m_device->CreateBuffer(&cbDesc, nullptr, &m_blurConstantsBuffer);
+    LogBackdropStep("CreateBuffer(BlurCB)", hr);
+    if (FAILED(hr)) return hr;
+
+    const HWND shellHwnd = GetShellWindow();
+    {
+        char buf[128];
+        sprintf_s(buf, "[Flip3D DesktopBackdrop] GetShellWindow() -> 0x%p, m_hwnd=0x%p\n", (void*)shellHwnd, (void*)m_hwnd);
+        OutputDebugStringA(buf);
+    }
+    hr = m_desktopCapture.Initialize(shellHwnd, m_hwnd, m_device.Get());
+    LogBackdropStep("m_desktopCapture.Initialize(GetShellWindow())", hr);
+    if (FAILED(hr)) return hr;
+
+    m_blurTextureWidth = std::max<UINT>(1, m_desktopCapture.GetWidth());
+    m_blurTextureHeight = std::max<UINT>(1, m_desktopCapture.GetHeight());
+    {
+        char buf[128];
+        sprintf_s(buf, "[Flip3D DesktopBackdrop] capture size = %ux%u\n", m_blurTextureWidth, m_blurTextureHeight);
+        OutputDebugStringA(buf);
+    }
+
+    D3D11_TEXTURE2D_DESC texDesc = {};
+    texDesc.Width = m_blurTextureWidth;
+    texDesc.Height = m_blurTextureHeight;
+    texDesc.MipLevels = 1;
+    texDesc.ArraySize = 1;
+    texDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    texDesc.SampleDesc.Count = 1;
+    texDesc.Usage = D3D11_USAGE_DEFAULT;
+    texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+    hr = m_device->CreateTexture2D(&texDesc, nullptr, &m_blurTextureA);
+    LogBackdropStep("CreateTexture2D(A)", hr);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateTexture2D(&texDesc, nullptr, &m_blurTextureB);
+    LogBackdropStep("CreateTexture2D(B)", hr);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateRenderTargetView(m_blurTextureA.Get(), nullptr, &m_blurRTVA);
+    LogBackdropStep("CreateRenderTargetView(A)", hr);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateRenderTargetView(m_blurTextureB.Get(), nullptr, &m_blurRTVB);
+    LogBackdropStep("CreateRenderTargetView(B)", hr);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateShaderResourceView(m_blurTextureA.Get(), nullptr, &m_blurSRVA);
+    LogBackdropStep("CreateShaderResourceView(A)", hr);
+    if (FAILED(hr)) return hr;
+    hr = m_device->CreateShaderResourceView(m_blurTextureB.Get(), nullptr, &m_blurSRVB);
+    LogBackdropStep("CreateShaderResourceView(B)", hr);
+    if (FAILED(hr)) return hr;
+
+    m_desktopCaptureReady = true;
+    OutputDebugStringA("[Flip3D DesktopBackdrop] READY\n");
+    return S_OK;
+}
+
+// ============================================================================
+// Flip3DCore::RenderDesktopBackdrop
+// Runs the two-pass separable blur (desktop capture -> A -> B) and draws
+// the result as the fully-opaque background instead of flat black. Called
+// from Render() in place of the old kBackgroundPixelShader draw. Falls back
+// to the old flat wash if the capture/blur setup ever failed.
+// ============================================================================
+void Flip3DCore::RenderDesktopBackdrop()
+{
+    if (!m_desktopCaptureReady)
+    {
+        // Fallback: same flat wash draw Render() used before this feature.
+        ID3D11Buffer *frameBuffers[] = {m_frameConstantsBuffer.Get()};
+        m_context->VSSetShader(m_backgroundVertexShader.Get(), nullptr, 0);
+        m_context->PSSetShader(m_backgroundPixelShader.Get(), nullptr, 0);
+        m_context->VSSetConstantBuffers(0, 1, frameBuffers);
+        m_context->PSSetConstantBuffers(0, 1, frameBuffers);
+        m_context->Draw(3, 0);
+        return;
+    }
+
+    m_desktopCapture.PollFrame();
+
+    D3D11_VIEWPORT blurViewport = {0.0f, 0.0f, (float)m_blurTextureWidth, (float)m_blurTextureHeight, 0.0f, 1.0f};
+    m_context->RSSetViewports(1, &blurViewport);
+    m_context->IASetInputLayout(nullptr);
+    m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_context->VSSetShader(m_backgroundVertexShader.Get(), nullptr, 0);
+    m_context->PSSetShader(m_blurPixelShader.Get(), nullptr, 0);
+    m_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
+
+    ID3D11SamplerState *samplers[] = {m_cardSampler.Get()};
+    m_context->PSSetSamplers(0, 1, samplers);
+
+    BlurConstants blurCB = {};
+    ID3D11Buffer *blurBuffers[] = {m_blurConstantsBuffer.Get()};
+
+    // Pass 1: desktop capture -> horizontal blur -> A
+    blurCB.texelSizeAndDirection = XMFLOAT4(1.0f / (float)m_blurTextureWidth, 1.0f / (float)m_blurTextureHeight, 1.0f, 0.0f);
+    m_context->UpdateSubresource(m_blurConstantsBuffer.Get(), 0, nullptr, &blurCB, 0, 0);
+    m_context->PSSetConstantBuffers(0, 1, blurBuffers);
+    ID3D11ShaderResourceView *desktopSRV = m_desktopCapture.GetSRV();
+    m_context->PSSetShaderResources(0, 1, &desktopSRV);
+    m_context->OMSetRenderTargets(1, m_blurRTVA.GetAddressOf(), nullptr);
+    m_context->Draw(3, 0);
+
+    // Pass 2: A -> vertical blur -> B
+    blurCB.texelSizeAndDirection = XMFLOAT4(1.0f / (float)m_blurTextureWidth, 1.0f / (float)m_blurTextureHeight, 0.0f, 1.0f);
+    m_context->UpdateSubresource(m_blurConstantsBuffer.Get(), 0, nullptr, &blurCB, 0, 0);
+    m_context->PSSetConstantBuffers(0, 1, blurBuffers);
+    m_context->PSSetShaderResources(0, 1, m_blurSRVA.GetAddressOf());
+    m_context->OMSetRenderTargets(1, m_blurRTVB.GetAddressOf(), nullptr);
+    m_context->Draw(3, 0);
+
+    // Final: draw B, dimmed, fully opaque, into the actual MSAA scene target.
+    m_context->RSSetViewports(1, &m_viewport);
+    m_context->OMSetRenderTargets(1, m_msaaRTV.GetAddressOf(), m_depthStencilView.Get());
+    m_context->PSSetShader(m_desktopWashPixelShader.Get(), nullptr, 0);
+    ID3D11Buffer *frameBuffers[] = {m_frameConstantsBuffer.Get()};
+    m_context->VSSetConstantBuffers(0, 1, frameBuffers);
+    m_context->PSSetConstantBuffers(0, 1, frameBuffers);
+    m_context->PSSetShaderResources(0, 1, m_blurSRVB.GetAddressOf());
+    m_context->Draw(3, 0);
+
+    ID3D11ShaderResourceView *nullSRV = nullptr;
+    m_context->PSSetShaderResources(0, 1, &nullSRV);
 }
 
 HRESULT Flip3DCore::CreateWindowSizeResources(bool resizeBuffers)
@@ -1172,7 +1345,14 @@ void Flip3DCore::SelectThumbnail(HWND targetHwnd)
             m_rotationTargetIndex = -1; 
             m_rRepeatedRotateRate = 0.0f;
 
-            m_state = ViewState::Exit; 
+            // Was ViewState::Exit — that's what silently disabled the whole
+            // "rotate the selection to front first, then fade out" sequence
+            // (ported concept from flip3d_comp: TickRepeatedRotate() and the
+            // per-frame completion check both gate on ExitRepeatedRotate
+            // specifically). With plain Exit, the selected card just faded
+            // out from wherever it happened to be — no rotate-to-front step
+            // at all, which is what looked like a jarring "double open".
+            m_state = ViewState::ExitRepeatedRotate;
             
             TickRepeatedRotate(); 
         }
@@ -2052,7 +2232,7 @@ void Flip3DCore::Render()
 
     FrameConstants frameConstants = {};
     XMStoreFloat4x4(&frameConstants.viewProj, viewProj);
-    frameConstants.washParams = XMFLOAT4(enterProgress * 0.0f, m_totalTime, static_cast<float>(m_cards.size()), 0.85f); //0.5f, 0.85f 
+    frameConstants.washParams = XMFLOAT4(enterProgress, m_totalTime, static_cast<float>(m_cards.size()), 0.85f); // was "enterProgress * 0.0f" — wash was silently disabled, doing nothing at all
     frameConstants.viewport = XMFLOAT4(static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, enterProgress);
     m_context->UpdateSubresource(m_frameConstantsBuffer.Get(), 0, nullptr, &frameConstants, 0, 0);
 
@@ -2069,10 +2249,11 @@ void Flip3DCore::Render()
     m_context->IASetInputLayout(nullptr);
     m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_context->VSSetShader(m_backgroundVertexShader.Get(), nullptr, 0);
-    m_context->PSSetShader(m_backgroundPixelShader.Get(), nullptr, 0);
     m_context->VSSetConstantBuffers(0, 1, frameBuffers);
-    m_context->PSSetConstantBuffers(0, 1, frameBuffers);
-    m_context->Draw(3, 0);
+    // Real, self-rendered, fully opaque blurred desktop instead of the old
+    // flat black wash (and instead of native ACCENT_ENABLE_ACRYLICBLURBEHIND,
+    // which is what let real windows peek through in the first place).
+    RenderDesktopBackdrop();
     m_context->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 
     const UINT stride = sizeof(Vertex);
