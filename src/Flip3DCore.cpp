@@ -410,15 +410,14 @@ bool Flip3DCore::StartFlip3D()
     flip3d.hCursor       = LoadCursorW(nullptr, IDC_ARROW);
     flip3d.style         = CS_HREDRAW | CS_VREDRAW;
     flip3d.hbrBackground = nullptr; 
-    //
+    
     if (!GetClassInfoExW(m_instance, kRenderClassName, &flip3d))
     {
         if (!RegisterClassExW(&flip3d)) {
             return false;
         }
     }
-    //old// if (!RegisterClassExW(&flip3d)) return false;                                                                             
-    //
+    
     RECT wc{};
     SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
     const int w_x       = wc.left;
@@ -432,18 +431,31 @@ bool Flip3DCore::StartFlip3D()
         kTitle,
         WS_POPUP | WS_VISIBLE, 
         w_x, w_y, w_screenW, w_screenH, 
-        nullptr, nullptr, m_instance, this); // nullptr, nullptr, m_instance, this);
-    //
+        nullptr, nullptr, m_instance, this);
+    
     if (m_hwnd)
     {
-        // Ported from flip3d_comp: WITHOUT this, our overlay isn't guaranteed
-        // to stay in front of every real desktop window. flip3d_comp never
-        // actually minimizes/hides anything — the "desktop clearing" effect
-        // is purely this: a topmost, fullscreen overlay visually covering
-        // everything, while every real window underneath stays completely
-        // untouched. Re-assert topmost explicitly too, since some apps
-        // (other topmost windows, some overlays) can otherwise steal it.
         SetWindowPos(m_hwnd, HWND_TOPMOST, w_x, w_y, w_screenW, w_screenH, SWP_SHOWWINDOW);
+
+        APPBARDATA abd = {};
+        abd.cbSize = sizeof(APPBARDATA);
+        UINT appBarState = static_cast<UINT>(SHAppBarMessage(ABM_GETSTATE, &abd));
+        bool taskbarAutoHide = (appBarState & ABS_AUTOHIDE) != 0;
+
+        if (!taskbarAutoHide)
+        {
+            HWND hTaskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
+            if (hTaskbar)
+            {
+                ShowWindow(hTaskbar, SW_SHOW);
+                HWND hSecondaryTray = FindWindowW(L"Shell_SecondaryTrayWnd", nullptr);
+                if (hSecondaryTray)
+                {
+                    ShowWindow(hSecondaryTray, SW_SHOW);
+                }
+            }
+        }
+        // -------------------------------------------------------------
 
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
