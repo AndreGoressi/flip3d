@@ -435,8 +435,6 @@ bool Flip3DCore::StartFlip3D()
     
     if (m_hwnd)
     {
-        SetWindowPos(m_hwnd, HWND_TOPMOST, w_x, w_y, w_screenW, w_screenH, SWP_SHOWWINDOW);
-
         APPBARDATA abd = {};
         abd.cbSize = sizeof(APPBARDATA);
         UINT appBarState = static_cast<UINT>(SHAppBarMessage(ABM_GETSTATE, &abd));
@@ -454,6 +452,13 @@ bool Flip3DCore::StartFlip3D()
                     ShowWindow(hSecondaryTray, SW_SHOW);
                 }
             }
+        }
+
+        BOOL exclude = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
+        
+        DrawAcrylic(m_hwnd);
+
         }
         // -------------------------------------------------------------
 
