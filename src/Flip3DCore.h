@@ -180,27 +180,6 @@ private:
 
     ComPtr<ID3D11VertexShader> m_backgroundVertexShader;
     ComPtr<ID3D11PixelShader> m_backgroundPixelShader;
-
-    // Desktop backdrop: capture + real self-rendered blur, ported concept
-    // from flip3d_comp's GetShellWindow() DWM thumbnail. Runs entirely
-    // through our own opaque D3D11 pipeline — no native blur-behind, so
-    // nothing can ever peek through regardless of how blurred it looks.
-    WindowCapture m_desktopCapture;
-    bool m_desktopCaptureReady = false;
-    ComPtr<ID3D11PixelShader> m_blurPixelShader;
-    ComPtr<ID3D11PixelShader> m_desktopWashPixelShader;
-    ComPtr<ID3D11Buffer> m_blurConstantsBuffer;
-    ComPtr<ID3D11Texture2D> m_blurTextureA;
-    ComPtr<ID3D11Texture2D> m_blurTextureB;
-    ComPtr<ID3D11RenderTargetView> m_blurRTVA;
-    ComPtr<ID3D11RenderTargetView> m_blurRTVB;
-    ComPtr<ID3D11ShaderResourceView> m_blurSRVA;
-    ComPtr<ID3D11ShaderResourceView> m_blurSRVB;
-    UINT m_blurTextureWidth = 0;
-    UINT m_blurTextureHeight = 0;
-
-    HRESULT InitDesktopBackdrop();
-    void RenderDesktopBackdrop();
     ComPtr<ID3D11VertexShader> m_cardVertexShader;
     ComPtr<ID3D11PixelShader> m_cardPixelShader;
     ComPtr<ID3D11InputLayout> m_inputLayout;
