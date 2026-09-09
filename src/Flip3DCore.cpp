@@ -456,14 +456,6 @@ bool Flip3DCore::StartFlip3D()
 
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
-        
-        DrawAcrylic(m_hwnd);
-
-        }
-        // -------------------------------------------------------------
-
-        BOOL exclude = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
         DrawAcrylic(m_hwnd);
     }
     
