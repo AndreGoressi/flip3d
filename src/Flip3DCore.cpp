@@ -415,14 +415,16 @@ using CreateWindowInBand_t = HWND(WINAPI*)(DWORD dwExStyle,
                                            DWORD band);
 
 HWND Flip3DCore::CreateWindowInBand(DWORD exStyle,
-                                       ATOM atom,
-                                       LPCWSTR title,
-                                       DWORD style,
-                                       int x,
-                                       int y,
-                                       int width,
-                                       int height,
-                                       DWORD band)
+                                    ATOM atom,
+                                    LPCWSTR title,
+                                    DWORD style,
+                                    int x,
+                                    int y,
+                                    int width,
+                                    int height,
+                                    HINSTANCE instance,
+                                    LPVOID param,
+                                    DWORD band);
 {
     static CreateWindowInBand_t pCreateWindowInBand = nullptr;
     static bool isInitialized = false;
@@ -433,8 +435,7 @@ HWND Flip3DCore::CreateWindowInBand(DWORD exStyle,
 
         if (user32)
         {
-            pCreateWindowInBand = reinterpret_cast<CreateWindowInBand_t>(GetProcAddress(user32,
-                                                                                        "CreateWindowInBand"));
+            pCreateWindowInBand = reinterpret_cast<CreateWindowInBand_t>(GetProcAddress(user32, "CreateWindowInBand"));
         }
 
         isInitialized = true;
