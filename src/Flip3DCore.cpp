@@ -417,47 +417,45 @@ bool Flip3DCore::StartFlip3D()
             return false;
         }
     }
-    
-    RECT wc{};
-    SystemParametersInfoW(SPI_GETWORKAREA, 0, &wc, 0);
-    const int w_x       = wc.left;
-    const int w_y       = wc.top;
-    const int w_screenW = wc.right  - wc.left;
-    const int w_screenH = wc.bottom - wc.top;
-    
+
+    /*ATOM atom = RegisterClassExW(&wc);
+    if (!atom)
+    {
+        return false;
+    }*/
+
+
+    const int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    const int y = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    const int w = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    const int h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
     m_hwnd = CreateWindowExW(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_TOPMOST,
         kRenderClassName, 
         kTitle,
         WS_POPUP | WS_VISIBLE, 
-        w_x, w_y, w_screenW, w_screenH, 
+        x, y, w, h, 
         nullptr, nullptr, m_instance, this);
     
     if (m_hwnd)
     {
-        APPBARDATA abd = {};
-        abd.cbSize = sizeof(APPBARDATA);
-        UINT appBarState = static_cast<UINT>(SHAppBarMessage(ABM_GETSTATE, &abd));
-        bool taskbarAutoHide = (appBarState & ABS_AUTOHIDE) != 0;
-
-        if (!taskbarAutoHide)
-        {
-            HWND hTaskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
-            if (hTaskbar)
-            {
-                ShowWindow(hTaskbar, SW_SHOW);
-                HWND hSecondaryTray = FindWindowW(L"Shell_SecondaryTrayWnd", nullptr);
-                if (hSecondaryTray)
-                {
-                    ShowWindow(hSecondaryTray, SW_SHOW);
-                }
-            }
-        }
-
         BOOL exclude = TRUE;
         DwmSetWindowAttribute(m_hwnd, DWMWA_EXCLUDED_FROM_PEEK, &exclude, sizeof(exclude));
         DrawAcrylic(m_hwnd);
     }
+    //
+    /*if (!m_hwnd)
+        return false;
+
+    m_rtl = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
+
+    RECT client = {};
+    if (GetClientRect(m_hwnd, &client))
+    {
+        m_width  = std::max(1u, (UINT)(client.right  - client.left));
+        m_height = std::max(1u, (UINT)(client.bottom - client.top));
+    }*/
     
     return m_hwnd != nullptr;
 }
@@ -750,6 +748,36 @@ void Flip3DCore::ThumbnailAsWindowToForeground(HWND hWnd)
     DwmFlush();
 }
 
+using DwmpActivateLivePreview_t = HRESULT(WINAPI*)(BOOL peekOn, 
+                                                   HWND hPeekWindow, 
+                                                   HWND hTopmostWindow, 
+                                                   UINT peekType, 
+                                                   LPVOID param5);
+void Flip3DCore::DwmpActivateLivePreview(BOOL enable)
+{
+    static DwmpActivateLivePreview_t pDwmpActivateLivePreview = nullptr;
+    static BOOL aeroPeekActive = FALSE;
+    static bool isInitialized = false;
+
+    if (!isInitialized)
+    {
+        HMODULE dwmapiModule = LoadLibraryEx(L"dwmapi.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (dwmapiModule)
+        {
+            pDwmpActivateLivePreview = (DwmpActivateLivePreview_t)GetProcAddress(dwmapiModule, (PCSTR)113);
+        }
+        isInitialized = true;
+    }
+
+    if (!pDwmpActivateLivePreview) return;
+    //
+    if (aeroPeekActive != enable)
+    {
+        pDwmpActivateLivePreview(enable, m_selectedHWND, m_hwnd, 1/*desktop*/, nullptr);
+        aeroPeekActive = enable;
+    }
+}
+
 // ============================================================================
 // Per-frame update
 // ============================================================================
@@ -768,45 +796,29 @@ void Flip3DCore::Update(float deltaSeconds)
     if (m_state == ViewState::Enter && !m_enterTimeline.active)
     {
         m_state = ViewState::Interactive;
-        
-        /*if (m_micaPeek)
-        {
-            m_micaPeek->SetSelected(m_selectedHWND);
-            m_micaPeek->ApplyPeek(); 
-        }*/
+        DwmpActivateLivePreview(TRUE); // Aero Peek on !
     }
 
     if (!m_rotateTimeline.active)
     {
         m_showOutgoingDuringRotation = false;
         TickRepeatedRotate();
-    
-        /*if (m_state == ViewState::Interactive && m_micaPeek)
-        {
-            m_micaPeek->SetSelected(m_selectedHWND);
-            m_micaPeek->ApplyPeek();
-        }*/
     }
 
     if (m_state == ViewState::Exit && !m_enterTimeline.active)
     {
-        /*if (m_micaPeek)
-        {
-            m_micaPeek->ClearPeek();
-        }*/
+        DwmpActivateLivePreview(FALSE); // Aero Peek off
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
             if (IsIconic(m_selectedHWND) || m_selectedWindowWasMinimized)
             {
-                // Only ONE restore trigger, not two: PostMessage(WM_SYSCOMMAND, SC_RESTORE)
-                // was firing Windows' own restore animation in the target window's message
-                // loop AND ShowWindow(SW_RESTORE) was firing it again synchronously here —
-                // two overlapping genie animations, which looked like the window opening twice.
+                PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
                 ShowWindow(m_selectedHWND, SW_RESTORE);
             }
 
             ThumbnailAsWindowToForeground(m_selectedHWND);
+
             m_selectedWindowActivationDispatched = true;
         }
 
@@ -818,23 +830,18 @@ void Flip3DCore::Update(float deltaSeconds)
     if (m_state == ViewState::ExitRepeatedRotate
         && !m_enterTimeline.active && !m_rotateTimeline.active && m_rotationTargetIndex == -1)
     {
-        /*if (m_micaPeek)
-        {
-            m_micaPeek->ClearPeek();
-        }*/
+        DwmpActivateLivePreview(FALSE); // Aero Peek off
 
         if (m_selectedHWND && IsWindow(m_selectedHWND))
         {
             if (IsIconic(m_selectedHWND) || m_selectedWindowWasMinimized)
             {
-                // Only ONE restore trigger, not two: PostMessage(WM_SYSCOMMAND, SC_RESTORE)
-                // was firing Windows' own restore animation in the target window's message
-                // loop AND ShowWindow(SW_RESTORE) was firing it again synchronously here —
-                // two overlapping genie animations, which looked like the window opening twice.
+                PostMessage(m_selectedHWND, WM_SYSCOMMAND, SC_RESTORE, 0);
                 ShowWindow(m_selectedHWND, SW_RESTORE);
             }
 
             ThumbnailAsWindowToForeground(m_selectedHWND);
+
             m_selectedWindowActivationDispatched = true;
         }
 
