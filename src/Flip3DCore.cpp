@@ -2,6 +2,9 @@
 #include "Shaders.h"
 #include "Capture.h"
 #include <shellapi.h>   // RegisterShellHookWindow / HSHELL_* (Shell-Hook dynamic card list)
+#include <algorithm>
+#include <vector>
+
 
 namespace
 {
@@ -397,6 +400,98 @@ bool Flip3DCore::DrawAcrylic(HWND hwnd)
     return SetWCA(hwnd, &data) != FALSE;
 }
 
+using CreateWindowInBand_t = HWND(WINAPI*)(DWORD dwExStyle,
+                                           ATOM atom,
+                                           LPCWSTR lpWindowName,
+                                           DWORD dwStyle,
+                                           int X,
+                                           int Y,
+                                           int nWidth,
+                                           int nHeight,
+                                           HWND hWndParent,
+                                           HMENU hMenu,
+                                           HINSTANCE hInstance,
+                                           LPVOID lpParam,
+                                           DWORD band);
+
+HWND Flip3DCompApp::CreateWindowInBand(DWORD exStyle,
+                                       ATOM atom,
+                                       LPCWSTR title,
+                                       DWORD style,
+                                       int x,
+                                       int y,
+                                       int width,
+                                       int height,
+                                       DWORD band)
+{
+    static CreateWindowInBand_t pCreateWindowInBand = nullptr;
+    static bool isInitialized = false;
+
+    if (!isInitialized)
+    {
+        HMODULE user32 = GetModuleHandleW(L"user32.dll");
+
+        if (user32)
+        {
+            pCreateWindowInBand = reinterpret_cast<CreateWindowInBand_t>(GetProcAddress(user32,
+                                                                                        "CreateWindowInBand"));
+        }
+
+        isInitialized = true;
+    }
+
+    if (!pCreateWindowInBand)
+        return nullptr;
+
+    return pCreateWindowInBand(exStyle,
+                               atom,
+                               title,
+                               style,
+                               x,
+                               y,
+                               width,
+                               height,
+                               nullptr,
+                               nullptr,
+                               m_hInstance,
+                               this,
+                               band);
+}
+
+void Flip3DCore::ApplyFullscreenLayout()
+{
+    if (!m_hwnd)
+        return;
+
+    const int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    const int y = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    const int w = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    const int h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+    SetWindowPos(m_hwnd,
+                 nullptr,
+                 x,
+                 y,
+                 w,
+                 h,
+                 SWP_SHOWWINDOW);
+
+    RECT client = {};
+
+    if (GetClientRect(m_hwnd, &client))
+    {
+        m_width = std::max(1u,
+                          (UINT)(client.right - 
+                           client.left));
+
+        m_height = std::max(1u,
+                           (UINT)(client.bottom - 
+                                  client.top));
+    }
+
+    //UpdateMonitorRect();
+}
+
 // ============================================================================
 // Window creation
 // ============================================================================
@@ -411,32 +506,48 @@ bool Flip3DCore::StartFlip3D()
     flip3d.style         = CS_HREDRAW | CS_VREDRAW;
     flip3d.hbrBackground = nullptr; 
     
-    if (!GetClassInfoExW(m_instance, kRenderClassName, &flip3d))
+    /*if (!GetClassInfoExW(m_instance, kRenderClassName, &flip3d))
     {
         if (!RegisterClassExW(&flip3d)) {
             return false;
         }
-    }
-
-    /*ATOM atom = RegisterClassExW(&wc);
-    if (!atom)
-    {
-        return false;
     }*/
-
+    ATOM atom = RegisterClassExW(&flip3d);
+    if (!GetClassInfoExW(m_instance, kRenderClassName, &flip3d))
+    {
+        if (!atom)
+        {
+            return false;
+        }
+    }
 
     const int x = GetSystemMetrics(SM_XVIRTUALSCREEN);
     const int y = GetSystemMetrics(SM_YVIRTUALSCREEN);
     const int w = GetSystemMetrics(SM_CXVIRTUALSCREEN);
     const int h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
-    m_hwnd = CreateWindowExW(
+    m_hwnd = CreateWindowInBand(
         WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_TOPMOST,
-        kRenderClassName, 
-        kTitle,
-        WS_POPUP | WS_VISIBLE, 
-        x, y, w, h, 
-        nullptr, nullptr, m_instance, this);
+        atom,
+        kRenderClassName,
+        WS_POPUP | WS_VISIBLE,
+        x,
+        y,
+        w,
+        h,
+        m_instance,
+        this,
+        /*desktop*/1
+    );
+    SetWindowPos(m_hwnd,
+                 nullptr,
+                 x,
+                 y,
+                 w,
+                 h,
+                 SWP_FRAMECHANGED |
+                 SWP_SHOWWINDOW |
+                 SWP_NOZORDER);
     
     if (m_hwnd)
     {
@@ -445,7 +556,7 @@ bool Flip3DCore::StartFlip3D()
         DrawAcrylic(m_hwnd);
     }
     //
-    /*if (!m_hwnd)
+    if (!m_hwnd)
         return false;
 
     m_rtl = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
@@ -455,7 +566,7 @@ bool Flip3DCore::StartFlip3D()
     {
         m_width  = std::max(1u, (UINT)(client.right  - client.left));
         m_height = std::max(1u, (UINT)(client.bottom - client.top));
-    }*/
+    }
     
     return m_hwnd != nullptr;
 }
@@ -2176,6 +2287,11 @@ LRESULT Flip3DCore::HandleMessage(UINT message, WPARAM wParam, LPARAM lParam)
         if (m_swapChain) CreateWindowSizeResources(true);
         return 0;
     }
+    case WM_DISPLAYCHANGE:
+        ApplyFullscreenLayout();
+        //UpdateMonitorRect();
+        return 0;
+        
     case WM_MOUSEWHEEL: case WM_MOUSEHWHEEL: case WM_LBUTTONDOWN: case WM_LBUTTONUP:
         if (ProcessMouseInput(message, wParam, lParam)) return 0;
         break;
