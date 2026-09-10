@@ -50,6 +50,8 @@ private:
         int y,
         int width,
         int height,
+        HINSTANCE instance,
+        LPVOID param,
         DWORD band);
 
     // creation
