@@ -56,6 +56,8 @@ private:
     bool DrawAcrylic(HWND hwnd);
     bool StartFlip3D();
 
+    void ApplyFullscreenLayout();
+
     // D3D initialization
     HRESULT InitializeD3D();
     HRESULT CreateDeviceResources();
