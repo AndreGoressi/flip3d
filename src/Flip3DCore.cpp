@@ -885,7 +885,7 @@ void Flip3DCore::DwmpActivateLivePreview(BOOL enable)
     //
     if (aeroPeekActive != enable)
     {
-        pDwmpActivateLivePreview(enable, m_selectedHWND, m_hwnd, 3/*window(s)*/ , nullptr);
+        pDwmpActivateLivePreview(enable, m_selectedHWND, m_hwnd, 1/*desktop*/ , nullptr);
         aeroPeekActive = enable;
     }
 }
