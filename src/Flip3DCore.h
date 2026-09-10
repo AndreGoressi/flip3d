@@ -41,6 +41,17 @@ private:
 
     void DwmpActivateLivePreview(BOOL enable);
 
+    HWND CreateWindowInBand(
+        DWORD exStyle,
+        ATOM atom,
+        LPCWSTR title,
+        DWORD style,
+        int x,
+        int y,
+        int width,
+        int height,
+        DWORD band);
+
     // creation
     bool DrawAcrylic(HWND hwnd);
     bool StartFlip3D();
