@@ -414,7 +414,7 @@ using CreateWindowInBand_t = HWND(WINAPI*)(DWORD dwExStyle,
                                            LPVOID lpParam,
                                            DWORD band);
 
-HWND Flip3DCompApp::CreateWindowInBand(DWORD exStyle,
+HWND Flip3DCore::CreateWindowInBand(DWORD exStyle,
                                        ATOM atom,
                                        LPCWSTR title,
                                        DWORD style,
