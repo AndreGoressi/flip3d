@@ -424,7 +424,7 @@ HWND Flip3DCore::CreateWindowInBand(DWORD exStyle,
                                     int height,
                                     HINSTANCE instance,
                                     LPVOID param,
-                                    DWORD band);
+                                    DWORD band)
 {
     static CreateWindowInBand_t pCreateWindowInBand = nullptr;
     static bool isInitialized = false;
@@ -454,8 +454,8 @@ HWND Flip3DCore::CreateWindowInBand(DWORD exStyle,
                                height,
                                nullptr,
                                nullptr,
-                               m_hInstance,
-                               this,
+                               instance,
+                               param,
                                band);
 }
 
