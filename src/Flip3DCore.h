@@ -39,6 +39,8 @@ private:
     bool AddCardForWindow(HWND hwnd);
     void RemoveCardAt(int index);
 
+    void DwmpActivateLivePreview(BOOL enable);
+
     // creation
     bool DrawAcrylic(HWND hwnd);
     bool StartFlip3D();
