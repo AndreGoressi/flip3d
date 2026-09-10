@@ -538,7 +538,7 @@ bool Flip3DCore::StartFlip3D()
         h,
         m_instance,
         this,
-        /*default*/0 // was: 1 desktop, before
+        /*default*/0
     );
     SetWindowPos(m_hwnd,
                  nullptr,
@@ -885,7 +885,7 @@ void Flip3DCore::DwmpActivateLivePreview(BOOL enable)
     //
     if (aeroPeekActive != enable)
     {
-        pDwmpActivateLivePreview(enable, m_selectedHWND, m_hwnd, 3/*window, was: 1 desktop, before*/ , nullptr);
+        pDwmpActivateLivePreview(enable, m_selectedHWND, m_hwnd, 3/*window(s)*/ , nullptr);
         aeroPeekActive = enable;
     }
 }
