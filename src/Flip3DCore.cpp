@@ -560,7 +560,7 @@ bool Flip3DCore::StartFlip3D()
     if (!m_hwnd)
         return false;
 
-    m_rtl = (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
+    (GetWindowLongPtrW(m_hwnd, GWL_EXSTYLE) & WS_EX_LAYOUTRTL) != 0;
 
     RECT client = {};
     if (GetClientRect(m_hwnd, &client))
