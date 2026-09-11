@@ -528,7 +528,7 @@ bool Flip3DCore::StartFlip3D()
     const int h = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
     m_hwnd = CreateWindowInBand(
-        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_TOPMOST,
+        WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOOLWINDOW | WS_EX_LAYERED,
         atom,
         kRenderClassName,
         WS_POPUP | WS_VISIBLE,
